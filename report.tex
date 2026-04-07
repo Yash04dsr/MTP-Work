@@ -1,0 +1,337 @@
+\documentclass[12pt,a4paper]{report}
+
+% ── Encoding & Fonts ──
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+
+% ── Page Layout ──
+\usepackage[margin=1in,headheight=15pt]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+
+% ── Language ──
+\usepackage[english]{babel}
+
+% ── Graphics & Colors ──
+\usepackage{graphicx}
+\usepackage[dvipsnames,svgnames,table]{xcolor}
+
+% ── Math ──
+\usepackage{amsmath,amssymb,amsfonts}
+
+% ── Tables ──
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{multirow}
+
+% ── Lists ──
+\usepackage{enumitem}
+
+% ── Code Listings ──
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue}\bfseries,
+  commentstyle=\color{gray},
+  stringstyle=\color{red},
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{gray!5},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=8pt,
+  tabsize=4,
+  showstringspaces=false,
+}
+
+% ── Highlighting ──
+\usepackage{ulem}
+\normalem
+% Custom highlight command (soul.sty not available)
+\newcommand{\hl}[1]{\colorbox{yellow}{#1}}
+
+% ── Hyperlinks ──
+\usepackage[colorlinks=true,linkcolor=NavyBlue,citecolor=Green,urlcolor=RoyalBlue]{hyperref}
+
+% ── Headers & Footers ──
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ── Chapter Style ──
+\usepackage{titlesec}
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries}
+  {\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{-20pt}{30pt}
+
+% ── Caption Styling ──
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf}
+
+% ── Bibliography ──
+\usepackage[numbers,sort&compress]{natbib}
+
+% ── Misc ──
+\usepackage{parskip}
+\usepackage{float}
+
+% ════════════════════════════════════════════════
+%  DOCUMENT METADATA — Update these as needed
+% ════════════════════════════════════════════════
+\title{\textbf{CFD Setup Instructions}}
+\author{Yash}
+\date{\today}
+
+\begin{document}
+
+% ── Title Page ──
+\maketitle
+\thispagestyle{empty}
+
+% ── Table of Contents ──
+\tableofcontents
+\newpage
+
+% ════════════════════════════════════════════════
+%  CHAPTERS — Content will be added below
+% ════════════════════════════════════════════════
+
+% ────────────────────────────────────────────────
+%  CHAPTER 1
+% ────────────────────────────────────────────────
+\chapter{Geometry Creation in DesignModeler}
+
+% ── Section 1 ──
+\section{Prepare DesignModeler}
+
+\textbf{From Workbench}
+
+Right-click the Geometry cell $\rightarrow$ New Geometry $\rightarrow$ DesignModeler.
+
+When prompted, select the desired length unit (\hl{\textbf{Millimeter is recommended}}).
+
+\subsection*{Change to ``Inches'' temporarily (optional)}
+
+The main pipe is specified as \textbf{18 inch} in the paper.
+
+You can set the unit to \textbf{Inch (Units $\rightarrow$ Inch)} to enter \textbf{18 directly}, then switch back to \textbf{Millimeter} for the rest of the dimensions.
+
+If you prefer to stay in mm, simply enter the metric equivalents.
+
+
+% ── Section 2 ──
+\section{Create the Main (Horizontal) Pipe}
+
+\subsection*{Select the sketching plane}
+
+In the Tree Outline, expand \textbf{XYPlane $\rightarrow$ click Sketching}.
+
+\subsection*{Draw the main pipe cross-section}
+
+In the Draw toolbox, choose \textbf{Circle}.
+
+Click the origin (0,0) to place the centre, then drag out a circle.
+
+In the Details window under Dimensions set the \textbf{Diameter to 460\,mm (or 18\,in)}.
+
+\textbf{Why?} The paper states: \textit{``In the UK, the current natural gas network consists of 18 inch (460\,mm) diameter pipes''}.
+
+\subsection*{Extrude the main pipe}
+
+Switch to \textbf{Modeling (top of the Tree Outline)}.
+
+Select the circle face you just sketched.
+
+Click \textbf{Extrude} in the Create toolbar.
+
+In the Details window:
+
+\begin{itemize}
+  \item \textbf{Extent Type:} Fixed
+  \item \textbf{Depth (>0):} 10\,m ($\approx$ 10{,}000\,mm) for the upstream section
+  \item \textbf{Direction:} Reversed if you want the origin at the inlet face (optional)
+\end{itemize}
+
+Click \textbf{Generate}.
+
+\textbf{Why 10\,m?} The upstream length should be at least \textbf{10 pipe diameters ($10 \times 460$\,mm)} to allow the main flow to become fully developed before the branch. The paper does not specify a length, but this is a standard CFD practice.
+
+\subsection*{Rename the body (optional)}
+
+In the Tree Outline right-click \textbf{Extrude\,1 $\rightarrow$ Rename $\rightarrow$ MainPipe}.
+
+
+% ── Section 3 ──
+\section{Create the Branch (Vertical) Pipe}
+
+\subsection*{Define a new sketch plane at the branch location}
+
+The branch should be centred at a distance \textbf{5\,m from the main inlet} (i.e., half of the 10\,m upstream length).
+
+In the Tree Outline click \textbf{New Plane $\rightarrow$ Plane from Face}.
+
+Select the outer cylindrical face of the main pipe and \textbf{offset the plane by 5\,m along the main pipe axis (Z-direction)}.
+
+Alternatively, use the \textbf{XYPlane} and extrude the branch from there, then move it into position.
+
+\subsection*{Sketch the branch cross-section}
+
+On the newly created plane, enter \textbf{Sketching}.
+
+Draw a circle centred on the main pipe axis.
+
+Set its \textbf{Diameter to 115\,mm} (since $d_2/d_1 = 1/4$ and $d_1 = 460$\,mm).
+
+\textbf{Why?} The paper examines \textit{``geometrical differences of $d_2/d_1 = 1/2,\; 1/4$''}. For the $1/4$ case, the branch diameter is \textbf{$460/4 = 115$\,mm}.
+
+\subsection*{Extrude the branch}
+
+Go back to \textbf{Modeling}, select the branch circle.
+
+Click \textbf{Extrude}.
+
+\begin{itemize}
+  \item \textbf{Extent Type:} Fixed
+  \item \textbf{Depth (>0):} 1\,m ($10 \times$ branch diameter, a typical length to ensure the branch flow develops before entering the main pipe)
+  \item \textbf{Direction:} Normal (upwards for top-side injection)
+\end{itemize}
+
+Click \textbf{Generate}.
+
+Rename to \textbf{BranchPipe}.
+
+\subsection*{Position the branch (if not already centred at the correct Z-coordinate)}
+
+Use \textbf{Body Transform $\rightarrow$ Translate} to move the branch so that its centre lies exactly at the desired distance from the main inlet.
+
+
+% ── Section 4 ──
+\section{Merge the Two Pipes}
+
+\subsection*{Select both bodies}
+
+In the Tree Outline, select \textbf{MainPipe and BranchPipe (Ctrl+click)}.
+
+\subsection*{Unite them}
+
+Click \textbf{Create $\rightarrow$ Boolean $\rightarrow$ Unite}.
+
+The two bodies become a \textbf{single fluid volume}.
+
+\textbf{Why?} You need a \textbf{watertight, continuous domain for CFD}. The Unite operation removes the internal overlapping face, leaving only the outer walls.
+
+\subsection*{Check that the geometry is a single body}
+
+In the Tree Outline you should see \textbf{one Part containing one Body}.
+
+
+% ── Section 5 ──
+\section{Named Selections (for later use in Fluent)}
+
+Named selections make it easy to apply boundary conditions without manually picking faces each time.
+
+\subsection*{Select the main inlet face}
+
+Pick the circular face at the upstream end of the main pipe.
+
+Right-click $\rightarrow$ Named Selection $\rightarrow$ enter \textbf{main\_inlet}.
+
+\subsection*{Select the branch inlet face}
+
+Pick the circular face at the bottom of the branch.
+
+Right-click $\rightarrow$ Named Selection $\rightarrow$ enter \textbf{branch\_inlet}.
+
+\subsection*{Select the outlet face}
+
+Pick the circular face at the downstream end of the main pipe.
+
+Right-click $\rightarrow$ Named Selection $\rightarrow$ enter \textbf{outlet}.
+
+\subsection*{Select all wall faces}
+
+Use \textbf{Ctrl+click} to select every remaining face (all cylindrical surfaces, the T-junction inner corner, etc.).
+
+Right-click $\rightarrow$ Named Selection $\rightarrow$ enter \textbf{wall}.
+
+\textbf{Tip:} The wall selection can be later split into separate groups (e.g., \textbf{upper\_wall, lower\_wall}) in Fluent if you need more detailed post-processing.
+
+
+% ── Section 6 ──
+\section{Final Checks}
+
+\begin{itemize}
+  \item \textbf{Dimensions:} Use the Measure tool to verify the main pipe diameter (\textbf{460\,mm}), branch diameter (\textbf{115\,mm}), and lengths
+  \item \textbf{Watertightness:} Look at the Tree Outline -- if the Unite operation was successful you will see only one body. No gaps should be visible when you rotate the view
+  \item \textbf{Named selections:} Right-click any selection and choose \textbf{Show} to ensure the correct faces are highlighted
+\end{itemize}
+
+
+% ── Section 7 ──
+\section{Exit and Save}
+
+File $\rightarrow$ \textbf{Save As\ldots} $\rightarrow$ give the geometry a meaningful name\\(e.g., \textbf{T\_Junction\_Hydrogen\_Base.wbpj}).
+
+Close DesignModeler (\textbf{the geometry is automatically transferred to the Geometry cell in Workbench}).
+
+
+% ────────────────────────────────────────────────
+%  CHAPTER 2
+% ────────────────────────────────────────────────
+\chapter{Literature Review}
+
+\section{The Foundation and The Problem}
+
+\subsection{The Big Picture Goal}
+
+To fight climate change, there is a major drive to reduce carbon dioxide emissions, especially from domestic heating.
+
+The proposed solution is to create a \textit{``blend''} by injecting \textbf{green hydrogen} into existing natural gas pipelines, targeting a hydrogen concentration of \textbf{5\% to 20\% by volume}.
+
+At these percentages, consumers wouldn't need to change their home boilers.
+
+\subsection{The Core Engineering Challenge}
+
+Currently, the UK gas network is primarily made of steel and only allows a maximum hydrogen concentration of \textbf{0.1\%}.
+
+This limit must be safely raised to deliver the new hydrogen blends.
+
+However, blending hydrogen into natural gas creates two directly conflicting problems:
+
+\begin{description}[style=nextline, font=\normalfont\bfseries, leftmargin=1.5em]
+
+  \item[The Energy Density Problem:]
+  Pure hydrogen holds a lot of energy per kilogram, but its density is \textbf{9 times lower} than natural gas. This means a hydrogen-blended gas contains less energy per unit of volume. To deliver the same amount of heating energy to a home, you must either pump the gas faster or increase the pipeline pressure.
+
+  \item[The Material Safety Problem:]
+  Hydrogen causes carbon steel to become brittle---a process known as \textbf{embrittlement}. This reduces the steel's ``toughness,'' making it much easier for existing microscopic defects or welds to turn into critical, fast-growing cracks under stress. Because of this danger, safety codes typically require that you \textit{decrease} the pipeline pressure.
+
+  \item[The Conflict:]
+  Energy demand requires \textbf{higher} pressures, but safety regulations require \textbf{lower} pressures.
+
+\end{description}
+
+\subsection{The Mixing Problem (The Focus of the Paper)}
+
+Hydrogen is typically injected into the main natural gas line through a \textbf{``T-junction''} (a pipe connecting at a 90-degree angle).
+
+Because hydrogen is so light compared to natural gas, it lacks the momentum to penetrate deeply into the main gas flow.
+
+Instead of mixing smoothly, the buoyant hydrogen floats to the top of the pipe. This is called \textbf{stratification}.
+
+The authors' computer simulations show that injecting hydrogen from the top (\textbf{top-side injection}) results in poor mixing, leaving extremely high concentrations of hydrogen (\textbf{over 40\%}) clinging to the upper wall of the pipe for long distances.
+
+This is dangerous because exposing the top of the steel pipe to such high concentrations of hydrogen rapidly accelerates the \textbf{embrittlement} process.
+
+\medskip
+\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{Key Finding previewed in the abstract:} Injecting the hydrogen from the bottom (\textbf{under-side injection}) forces the light hydrogen to rise \textit{through} the natural gas, which promotes much better mixing and reduces the dangerous concentration on the pipe walls.}}
+
+
+\end{document}
