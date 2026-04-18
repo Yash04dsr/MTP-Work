@@ -1,0 +1,37 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      p;
+}
+
+dimensions  [1 -1 -2 0 0 0 0];
+
+// Operating pressure: 6.9 MPa = 6900000 Pa
+internalField   uniform 6900000;
+
+boundaryField
+{
+    main_inlet
+    {
+        type    zeroGradient;
+    }
+
+    branch_inlet
+    {
+        type    zeroGradient;
+    }
+
+    outlet
+    {
+        type    fixedValue;
+        value   uniform 6900000;    // gauge 0 relative to operating pressure
+    }
+
+    wall
+    {
+        type    fixedFluxPressure;
+        value   uniform 6900000;
+    }
+}

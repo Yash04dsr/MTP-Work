@@ -1,0 +1,10 @@
+#!/bin/bash
+cd "${0%/*}" || exit 1
+. ${WM_PROJECT_DIR:?}/bin/tools/CleanFunctions
+
+cleanCase
+rm -rf constant/polyMesh
+rm -f  constant/triSurface/*.stl
+rm -f  constant/extendedFeatureEdgeMesh/*.eMesh 2>/dev/null
+rm -rf processor*
+rm -rf postProcessing

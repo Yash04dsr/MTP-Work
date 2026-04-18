@@ -1,0 +1,40 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volVectorField;
+    object      U;
+}
+
+dimensions  [0 1 -1 0 0 0 0];
+
+// Internal field initialised to main-flow direction (along +Z)
+internalField   uniform (0 0 10);
+
+boundaryField
+{
+    main_inlet
+    {
+        type    fixedValue;
+        value   uniform (0 0 10);       // 10 m/s along +Z
+    }
+
+    branch_inlet
+    {
+        // 32 m/s along -Y (branch injects downward into main pipe)
+        type    fixedValue;
+        value   uniform (0 -32 0);
+    }
+
+    outlet
+    {
+        type            inletOutlet;
+        inletValue      uniform (0 0 0);
+        value           uniform (0 0 10);
+    }
+
+    wall
+    {
+        type    noSlip;
+    }
+}

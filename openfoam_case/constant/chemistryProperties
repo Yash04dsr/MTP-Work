@@ -1,0 +1,17 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      chemistryProperties;
+}
+
+// No chemical reactions — mechanical mixing study only
+chemistryType
+{
+    chemistrySolver none;
+}
+
+chemistry       off;
+
+initialChemicalTimeStep 1e+30;

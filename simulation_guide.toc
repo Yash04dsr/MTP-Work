@@ -2,69 +2,79 @@
 \contentsline {chapter}{\numberline {1}Introduction and Problem Definition}{4}{chapter.1}%
 \contentsline {section}{\numberline {1.1}Background}{4}{section.1.1}%
 \contentsline {section}{\numberline {1.2}Parametric Variables}{4}{section.1.2}%
-\contentsline {section}{\numberline {1.3}Base Operating Conditions}{5}{section.1.3}%
+\contentsline {section}{\numberline {1.3}Base Operating Conditions}{6}{section.1.3}%
 \contentsline {section}{\numberline {1.4}Simulation Strategy Overview}{6}{section.1.4}%
 \contentsline {chapter}{\numberline {2}Parameterised Geometry (DesignModeler)}{7}{chapter.2}%
 \contentsline {section}{\numberline {2.1}Design Rationale}{7}{section.2.1}%
 \contentsline {section}{\numberline {2.2}Setup}{7}{section.2.2}%
-\contentsline {section}{\numberline {2.3}Main Pipeline}{7}{section.2.3}%
-\contentsline {section}{\numberline {2.4}Adjustable Injection Plane}{8}{section.2.4}%
-\contentsline {section}{\numberline {2.5}Parameterised Branch Pipe}{8}{section.2.5}%
+\contentsline {section}{\numberline {2.3}Main Pipeline}{8}{section.2.3}%
+\contentsline {section}{\numberline {2.4}Injection Plane (Fixed per Base)}{8}{section.2.4}%
+\contentsline {section}{\numberline {2.5}Parameterised Branch Pipe}{9}{section.2.5}%
 \contentsline {subsection}{\numberline {2.5.1}Branch Extrude Depth Expression}{9}{subsection.2.5.1}%
-\contentsline {section}{\numberline {2.6}Material Assignment and Cleanup}{9}{section.2.6}%
-\contentsline {chapter}{\numberline {3}Parameterised Mesh Generation}{11}{chapter.3}%
-\contentsline {section}{\numberline {3.1}Pre-Requisite: Body of Influence in DesignModeler}{11}{section.3.1}%
-\contentsline {subsection}{\numberline {3.1.1}BOI Radius Expression}{11}{subsection.3.1.1}%
-\contentsline {section}{\numberline {3.2}Global Mesh Settings}{12}{section.3.2}%
-\contentsline {section}{\numberline {3.3}Named Selections (Boundary Labels)}{12}{section.3.3}%
-\contentsline {section}{\numberline {3.4}Mesh Method}{13}{section.3.4}%
-\contentsline {section}{\numberline {3.5}Body-of-Influence Sizing}{13}{section.3.5}%
-\contentsline {section}{\numberline {3.6}Inflation Layer (Boundary Layer Mesh)}{13}{section.3.6}%
-\contentsline {subsection}{\numberline {3.6.1}First-Layer Height Derivation}{13}{subsection.3.6.1}%
-\contentsline {subsection}{\numberline {3.6.2}Inflation Settings}{14}{subsection.3.6.2}%
-\contentsline {section}{\numberline {3.7}Mesh Quality Targets}{15}{section.3.7}%
-\contentsline {chapter}{\numberline {4}Fluent Setup --- General and Physical Models}{16}{chapter.4}%
-\contentsline {section}{\numberline {4.1}General Settings}{16}{section.4.1}%
-\contentsline {section}{\numberline {4.2}Viscous Model (Turbulence)}{17}{section.4.2}%
-\contentsline {section}{\numberline {4.3}Species Transport}{17}{section.4.3}%
-\contentsline {section}{\numberline {4.4}Energy Equation}{18}{section.4.4}%
-\contentsline {chapter}{\numberline {5}Materials and Operating Conditions}{19}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Creating the Gas Mixture}{19}{section.5.1}%
-\contentsline {section}{\numberline {5.2}Species Material Properties}{19}{section.5.2}%
-\contentsline {section}{\numberline {5.3}Mass Diffusivity}{20}{section.5.3}%
-\contentsline {section}{\numberline {5.4}Operating Conditions}{20}{section.5.4}%
-\contentsline {chapter}{\numberline {6}Boundary Conditions (Parameterised)}{22}{chapter.6}%
-\contentsline {section}{\numberline {6.1}Main Inlet (\texttt {main\_inlet})}{22}{section.6.1}%
-\contentsline {section}{\numberline {6.2}Branch Inlet (\texttt {branch\_inlet})}{22}{section.6.2}%
-\contentsline {section}{\numberline {6.3}Outlet (\texttt {outlet})}{23}{section.6.3}%
-\contentsline {section}{\numberline {6.4}Walls (\texttt {wall})}{23}{section.6.4}%
-\contentsline {section}{\numberline {6.5}Regarding the 1/7th Power-Law Inlet Profile}{23}{section.6.5}%
-\contentsline {chapter}{\numberline {7}Solution Methods and Controls}{25}{chapter.7}%
-\contentsline {section}{\numberline {7.1}Pressure--Velocity Coupling}{25}{section.7.1}%
-\contentsline {section}{\numberline {7.2}Spatial Discretisation}{25}{section.7.2}%
-\contentsline {section}{\numberline {7.3}Transient Formulation}{26}{section.7.3}%
-\contentsline {section}{\numberline {7.4}Under-Relaxation Factors}{26}{section.7.4}%
-\contentsline {chapter}{\numberline {8}Monitors, Initialisation, and Transient Execution}{27}{chapter.8}%
-\contentsline {section}{\numberline {8.1}Residual Monitors}{27}{section.8.1}%
-\contentsline {section}{\numberline {8.2}Surface Monitors}{27}{section.8.2}%
-\contentsline {section}{\numberline {8.3}RANS Precursor Initialisation}{28}{section.8.3}%
-\contentsline {subsection}{\numberline {8.3.1}Step 1: Hybrid Initialisation}{28}{subsection.8.3.1}%
-\contentsline {subsection}{\numberline {8.3.2}Step 2: Steady-State RANS Run}{28}{subsection.8.3.2}%
-\contentsline {subsection}{\numberline {8.3.3}Step 3: Switch to Transient DDES}{29}{subsection.8.3.3}%
-\contentsline {section}{\numberline {8.4}Time-Step Selection}{29}{section.8.4}%
-\contentsline {subsection}{\numberline {8.4.1}Transient Run Settings}{29}{subsection.8.4.1}%
-\contentsline {chapter}{\numberline {9}Workbench Parameterisation and Design Points}{31}{chapter.9}%
-\contentsline {section}{\numberline {9.1}Parameter Summary}{31}{section.9.1}%
-\contentsline {section}{\numberline {9.2}Defining Expressions}{31}{section.9.2}%
-\contentsline {section}{\numberline {9.3}Creating the Design-Point Table}{32}{section.9.3}%
-\contentsline {section}{\numberline {9.4}Update Configuration}{32}{section.9.4}%
-\contentsline {chapter}{\numberline {10}Post-Processing and Validation}{34}{chapter.10}%
-\contentsline {section}{\numberline {10.1}Key Output Metrics}{34}{section.10.1}%
-\contentsline {subsection}{\numberline {10.1.1}Coefficient of Variation (COV)}{34}{subsection.10.1.1}%
-\contentsline {subsection}{\numberline {10.1.2}Wall H2 Concentration}{34}{subsection.10.1.2}%
-\contentsline {subsection}{\numberline {10.1.3}Velocity Vectors at Junction}{35}{subsection.10.1.3}%
-\contentsline {section}{\numberline {10.2}y+ Verification}{35}{section.10.2}%
-\contentsline {section}{\numberline {10.3}Mesh Independence Study}{35}{section.10.3}%
-\contentsline {subsection}{\numberline {10.3.1}Three-Mesh Protocol}{35}{subsection.10.3.1}%
-\contentsline {subsection}{\numberline {10.3.2}GCI Calculation}{36}{subsection.10.3.2}%
-\contentsline {section}{\numberline {10.4}Validation Against Reference Data}{36}{section.10.4}%
+\contentsline {section}{\numberline {2.6}Named Selections (in DesignModeler)}{10}{section.2.6}%
+\contentsline {subsection}{\numberline {2.6.1}Enable Named Selection Transfer in Workbench}{10}{subsection.2.6.1}%
+\contentsline {subsection}{\numberline {2.6.2}Creating the Named Selections}{10}{subsection.2.6.2}%
+\contentsline {subsubsection}{Body-Level Named Selections}{10}{subsection.2.6.2}%
+\contentsline {subsubsection}{Face-Level Named Selections (Boundary Conditions)}{11}{Item.32}%
+\contentsline {subsection}{\numberline {2.6.3}Post-Update Verification}{11}{subsection.2.6.3}%
+\contentsline {section}{\numberline {2.7}Material Assignment and Cleanup}{12}{section.2.7}%
+\contentsline {chapter}{\numberline {3}Parameterised Mesh Generation}{13}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Pre-Requisite: Body of Influence in DesignModeler}{13}{section.3.1}%
+\contentsline {subsection}{\numberline {3.1.1}BOI Radius Expression}{13}{subsection.3.1.1}%
+\contentsline {section}{\numberline {3.2}Global Mesh Settings}{14}{section.3.2}%
+\contentsline {section}{\numberline {3.3}Named Selections}{14}{section.3.3}%
+\contentsline {section}{\numberline {3.4}Mesh Method}{15}{section.3.4}%
+\contentsline {section}{\numberline {3.5}Body-of-Influence Sizing}{15}{section.3.5}%
+\contentsline {section}{\numberline {3.6}Inflation Layer (Boundary Layer Mesh)}{15}{section.3.6}%
+\contentsline {subsection}{\numberline {3.6.1}First-Layer Height Derivation}{16}{subsection.3.6.1}%
+\contentsline {subsection}{\numberline {3.6.2}Inflation Settings}{16}{subsection.3.6.2}%
+\contentsline {section}{\numberline {3.7}Mesh Quality Targets}{17}{section.3.7}%
+\contentsline {chapter}{\numberline {4}Fluent Setup --- General and Physical Models}{18}{chapter.4}%
+\contentsline {section}{\numberline {4.1}General Settings}{18}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Viscous Model (Turbulence)}{18}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Species Transport}{19}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Energy Equation}{20}{section.4.4}%
+\contentsline {chapter}{\numberline {5}Materials and Operating Conditions}{21}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Phase 1 --- Import the Pure Gases}{21}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Phase 2 --- Build the Custom Mixture}{21}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Phase 3 --- Set Mixture Physical Properties}{22}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Individual Species Properties (Verification)}{22}{section.5.4}%
+\contentsline {section}{\numberline {5.5}Turbulent Schmidt Number}{23}{section.5.5}%
+\contentsline {section}{\numberline {5.6}Operating Conditions}{23}{section.5.6}%
+\contentsline {chapter}{\numberline {6}Boundary Conditions (Parameterised)}{24}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Main Inlet (\texttt {main\_inlet}) --- The Natural Gas Crossflow}{24}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Branch Inlet (\texttt {branch\_inlet}) --- The Hydrogen Jet}{24}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Outlet (\texttt {outlet}) --- The Downstream Exhaust}{25}{section.6.3}%
+\contentsline {section}{\numberline {6.4}Walls (\texttt {wall}) --- The Pipe Boundaries}{26}{section.6.4}%
+\contentsline {chapter}{\numberline {7}Solution Methods and Controls}{27}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Pressure--Velocity Coupling}{27}{section.7.1}%
+\contentsline {section}{\numberline {7.2}Spatial Discretisation}{27}{section.7.2}%
+\contentsline {section}{\numberline {7.3}Transient Formulation}{28}{section.7.3}%
+\contentsline {section}{\numberline {7.4}Under-Relaxation Factors}{28}{section.7.4}%
+\contentsline {chapter}{\numberline {8}Run Setup, Monitors, and Execution}{29}{chapter.8}%
+\contentsline {section}{\numberline {8.1}Step 1: Verify Solution Methods (Quick Check)}{29}{section.8.1}%
+\contentsline {section}{\numberline {8.2}Step 2: Run Calculation Parameters}{29}{section.8.2}%
+\contentsline {section}{\numberline {8.3}Step 3: Residual Monitors}{30}{section.8.3}%
+\contentsline {section}{\numberline {8.4}Step 4: Surface Monitors (Track Mixing)}{30}{section.8.4}%
+\contentsline {section}{\numberline {8.5}Step 5: Point Monitors (Wall Concentrations)}{31}{section.8.5}%
+\contentsline {section}{\numberline {8.6}Step 6: Autosave (Prevents Data Loss)}{31}{section.8.6}%
+\contentsline {section}{\numberline {8.7}Step 7: Initialisation}{31}{section.8.7}%
+\contentsline {section}{\numberline {8.8}Step 8: Start the Calculation}{32}{section.8.8}%
+\contentsline {section}{\numberline {8.9}Step 9: During the Run --- What to Watch}{32}{section.8.9}%
+\contentsline {section}{\numberline {8.10}Step 10: Enable Time Statistics (After $t = 4$\,s)}{32}{section.8.10}%
+\contentsline {chapter}{\numberline {9}Workbench Parameterisation and Design Points}{33}{chapter.9}%
+\contentsline {section}{\numberline {9.1}Parameter Summary}{33}{section.9.1}%
+\contentsline {section}{\numberline {9.2}Defining Expressions}{33}{section.9.2}%
+\contentsline {section}{\numberline {9.3}Creating the Design-Point Table}{34}{section.9.3}%
+\contentsline {section}{\numberline {9.4}Update Configuration}{34}{section.9.4}%
+\contentsline {chapter}{\numberline {10}Post-Processing and Validation}{36}{chapter.10}%
+\contentsline {section}{\numberline {10.1}Hydrogen Volume Fraction (Custom Field Function)}{36}{section.10.1}%
+\contentsline {section}{\numberline {10.2}Key Output Metrics}{36}{section.10.2}%
+\contentsline {subsection}{\numberline {10.2.1}Coefficient of Variation (COV)}{36}{subsection.10.2.1}%
+\contentsline {subsection}{\numberline {10.2.2}Wall H2 Concentration}{37}{subsection.10.2.2}%
+\contentsline {subsection}{\numberline {10.2.3}Velocity Vectors at Junction}{37}{subsection.10.2.3}%
+\contentsline {section}{\numberline {10.3}y+ Verification}{37}{section.10.3}%
+\contentsline {section}{\numberline {10.4}Mesh Independence Study}{38}{section.10.4}%
+\contentsline {subsection}{\numberline {10.4.1}Three-Mesh Protocol}{38}{subsection.10.4.1}%
+\contentsline {subsection}{\numberline {10.4.2}GCI Calculation}{38}{subsection.10.4.2}%
+\contentsline {section}{\numberline {10.5}Validation Against Reference Data}{39}{section.10.5}%

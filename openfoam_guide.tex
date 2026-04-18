@@ -1,0 +1,1210 @@
+\documentclass[12pt,a4paper]{report}
+
+% ── Encoding & Fonts ──
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+
+% ── Page Layout ──
+\usepackage[margin=1in,headheight=15pt]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+
+% ── Language ──
+\usepackage[english]{babel}
+
+% ── Graphics & Colors ──
+\usepackage{graphicx}
+\usepackage[dvipsnames,svgnames,table]{xcolor}
+
+% ── Math ──
+\usepackage{amsmath,amssymb,amsfonts}
+
+% ── Tables ──
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{multirow}
+
+% ── Lists ──
+\usepackage{enumitem}
+
+% ── Code Listings ──
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue}\bfseries,
+  commentstyle=\color{gray},
+  stringstyle=\color{red},
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{gray!5},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=8pt,
+  tabsize=4,
+  showstringspaces=false,
+}
+
+% ── Hyperlinks ──
+\usepackage[colorlinks=true,linkcolor=NavyBlue,citecolor=Green,urlcolor=RoyalBlue]{hyperref}
+
+% ── Headers & Footers ──
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ── Chapter Style ──
+\usepackage{titlesec}
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries}
+  {\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{-20pt}{30pt}
+
+% ── Caption Styling ──
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf}
+
+% ── Misc ──
+\usepackage{parskip}
+\usepackage{float}
+
+% ════════════════════════════════════════════════
+%  DOCUMENT METADATA
+% ════════════════════════════════════════════════
+\title{\textbf{OpenFOAM Simulation Guide}\\[6pt]
+       \Large Hydrogen--Methane T-Junction DDES\\
+       Equivalent Setup to ANSYS Fluent}
+\author{Yash}
+\date{\today}
+
+\begin{document}
+
+% ── Title Page ──
+\maketitle
+\thispagestyle{empty}
+
+% ── Table of Contents ──
+\tableofcontents
+\newpage
+
+
+% ════════════════════════════════════════════════════════════════
+%  CHAPTER 1 — Introduction
+% ════════════════════════════════════════════════════════════════
+\chapter{Introduction}
+\label{ch:intro}
+
+This guide documents the complete OpenFOAM setup for a transient
+Delayed Detached Eddy Simulation (DDES) of hydrogen injection into a
+methane-filled T-junction pipeline.  Every dictionary file, boundary
+condition, and solver setting is a direct translation of the validated
+ANSYS Fluent configuration described in the companion
+\emph{Parameterised CFD Simulation Guide}.
+
+\section{Simulation Overview}
+
+\begin{itemize}
+  \item \textbf{Physics:} Compressible binary-species mixing
+        (H$_2$\,/\,CH$_4$), no combustion.
+  \item \textbf{Turbulence:} Spalart--Allmaras DDES with curvature
+        correction.
+  \item \textbf{Operating pressure:} 6.9\,MPa.
+  \item \textbf{Solver:} \texttt{reactingFoam} (compressible,
+        multi-species, transient).
+  \item \textbf{Time step:} $\Delta t = 2\times10^{-4}$\,s,
+        25\,000 steps (5\,s physical time).
+\end{itemize}
+
+\section{Fluent-to-OpenFOAM Equivalence}
+
+Table~\ref{tab:equiv} summarises the top-level mapping between the
+Fluent and OpenFOAM configurations.
+
+\begin{table}[H]
+\centering
+\caption{Fluent $\leftrightarrow$ OpenFOAM equivalence summary.}
+\label{tab:equiv}
+\begin{tabularx}{\textwidth}{@{}lXX@{}}
+\toprule
+\textbf{Setting} & \textbf{Fluent} & \textbf{OpenFOAM} \\
+\midrule
+Solver          & Pressure-Based, Transient
+                & \texttt{reactingFoam} \\
+Turbulence      & SA-DDES
+                & \texttt{SpalartAllmarasDDES} \\
+P--V coupling   & PISO
+                & PIMPLE (\texttt{nOuterCorrectors 1}) \\
+Momentum scheme & Bounded Central Differencing
+                & LUST \\
+Transient scheme& Bounded Second Order Implicit
+                & \texttt{backward} \\
+Species         & Species Transport (no reactions)
+                & \texttt{reactingMixture}, chemistry off \\
+Meshing         & ANSYS Meshing / Workbench
+                & \texttt{blockMesh} + \texttt{snappyHexMesh} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Case Directory Structure}
+
+The complete case follows the standard OpenFOAM three-directory layout:
+
+\begin{lstlisting}[language={},numbers=none,frame=none,
+  backgroundcolor=\color{white}]
+openfoam_case/
+  0/                  Initial & boundary conditions
+    U  p  T  H2  CH4  nuTilda  nut  alphat
+  constant/           Physical properties & mesh
+    g  momentumTransport  turbulenceProperties
+    thermophysicalProperties  chemistryProperties
+    combustionProperties  reactions
+    triSurface/       STL geometry files
+  system/             Solver & mesh controls
+    controlDict  fvSchemes  fvSolution
+    blockMeshDict  snappyHexMeshDict
+    surfaceFeatureExtractDict  setFieldsDict
+    decomposeParDict
+  Allrun              Full workflow script
+  Allclean            Clean script
+  generateSTL.py      Geometry generator
+\end{lstlisting}
+
+
+% ════════════════════════════════════════════════════════════════
+%  CHAPTER 2 — Geometry and Meshing
+% ════════════════════════════════════════════════════════════════
+\chapter{Geometry and Meshing}
+\label{ch:mesh}
+
+\section{Geometry Definition}
+
+The T-junction consists of two intersecting cylinders:
+
+\begin{table}[H]
+\centering
+\caption{Geometry dimensions.}
+\label{tab:geom}
+\begin{tabular}{@{}llr@{}}
+\toprule
+\textbf{Component} & \textbf{Parameter} & \textbf{Value} \\
+\midrule
+Main pipe   & Diameter $d_1$       & 460\,mm \\
+            & Length               & 9200\,mm \\
+            & Axis                 & $Z$-direction \\
+Branch pipe & Diameter $d_2$       & 115\,mm ($\beta=0.25$) \\
+            & Length               & 1380\,mm ($\geq 10\,d_2$) \\
+            & Axis                 & $+Y$-direction \\
+            & Junction location    & $Z = 4600$\,mm \\
+            & Injection angle      & $90^{\circ}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\section{Step 1: Generate the STL}
+
+A Python script (\texttt{generateSTL.py}) creates the T-junction
+surface as four separate STL files in \texttt{constant/triSurface/}:
+
+\begin{enumerate}
+  \item \texttt{wall.stl} --- combined wall surfaces of both pipes.
+  \item \texttt{main\_inlet.stl} --- cap at $Z = 0$.
+  \item \texttt{outlet.stl} --- cap at $Z = 9.2$\,m.
+  \item \texttt{branch\_inlet.stl} --- cap at the branch tip.
+\end{enumerate}
+
+\noindent Run:
+\begin{lstlisting}[language=bash,numbers=none]
+python3 generateSTL.py
+\end{lstlisting}
+
+\noindent\textbf{Dependency:} \texttt{numpy} and \texttt{numpy-stl}
+(\texttt{pip install numpy-stl}).
+
+
+\section{Step 2: Background Mesh (\texttt{blockMesh})}
+
+The \texttt{blockMeshDict} creates a single hexahedral block enclosing
+the entire domain:
+
+\begin{table}[H]
+\centering
+\caption{\texttt{blockMeshDict} extents.}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+\textbf{Direction} & \textbf{Min (m)} & \textbf{Max (m)} \\
+\midrule
+$X$ & $-0.30$ & $+0.30$ \\
+$Y$ & $-0.30$ & $+1.50$ \\
+$Z$ & $-0.10$ & $+9.30$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Cell count: $30 \times 90 \times 470$ (background cell size $\approx 20$\,mm).
+
+\begin{lstlisting}[language=bash,numbers=none]
+blockMesh
+\end{lstlisting}
+
+
+\section{Step 3: Feature Extraction}
+
+Extract sharp edges from the STL files so that \texttt{snappyHexMesh}
+can snap mesh vertices accurately to geometric features:
+
+\begin{lstlisting}[language=bash,numbers=none]
+surfaceFeatureExtract
+\end{lstlisting}
+
+\noindent This reads \texttt{surfaceFeatureExtractDict} and produces
+\texttt{.eMesh} files for each STL surface.
+
+
+\section{Step 4: \texttt{snappyHexMesh}}
+
+The \texttt{snappyHexMeshDict} performs three operations:
+
+\subsection{Castellated Mesh}
+
+\begin{itemize}
+  \item Refines cells intersecting the STL surfaces to \textbf{level 2--3}.
+  \item Applies \textbf{level 3} refinement inside a sphere of radius
+        690\,mm centred at the junction $(0, 0, 4.6)$ --- matching the
+        Fluent BOI region ($1.5 \times d_1$).
+  \item Removes cells outside the pipe geometry.
+  \item \texttt{locationInMesh}: $(0, 0, 2.0)$ --- a point guaranteed
+        to be inside the main pipe.
+\end{itemize}
+
+\subsection{Snapping}
+
+Mesh vertices are iteratively moved onto the STL surface.  The feature
+edges (\texttt{.eMesh} files) ensure clean resolution of the pipe--branch
+intersection.
+
+\subsection{Boundary Layers}
+
+Five prismatic layers are added to the \texttt{wall} patch:
+
+\begin{table}[H]
+\centering
+\caption{Layer insertion parameters.}
+\begin{tabular}{@{}lr@{}}
+\toprule
+\textbf{Parameter}     & \textbf{Value} \\
+\midrule
+Surface layers          & 5 \\
+Expansion ratio         & 1.2 \\
+Final layer thickness   & 0.3 (relative) \\
+Min thickness           & 0.1 (relative) \\
+Feature angle           & $60^{\circ}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{lstlisting}[language=bash,numbers=none]
+snappyHexMesh -overwrite
+\end{lstlisting}
+
+\noindent The \texttt{-overwrite} flag writes the final mesh directly
+into \texttt{constant/polyMesh/} rather than creating time directories.
+
+\subsection{Boundary Patches}
+
+\texttt{snappyHexMesh} automatically creates the following patches from
+the named STL regions:
+
+\begin{table}[H]
+\centering
+\caption{Boundary patches.}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Patch name} & \textbf{Type} & \textbf{Description} \\
+\midrule
+\texttt{main\_inlet}   & \texttt{patch} & Main pipe inlet ($Z = 0$) \\
+\texttt{branch\_inlet}  & \texttt{patch} & Branch pipe inlet \\
+\texttt{outlet}         & \texttt{patch} & Main pipe outlet ($Z = 9.2$\,m) \\
+\texttt{wall}           & \texttt{wall}  & All pipe walls \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ════════════════════════════════════════════════════════════════
+%  CHAPTER 3 — Physical Models and Turbulence
+% ════════════════════════════════════════════════════════════════
+\chapter{Physical Models and Turbulence}
+\label{ch:models}
+
+\section{Turbulence Model (\texttt{momentumTransport})}
+
+The turbulence model is configured in
+\texttt{constant/momentumTransport}:
+
+\begin{lstlisting}[language={},title=constant/momentumTransport]
+simulationType  LES;
+
+LES
+{
+    LESModel        SpalartAllmarasDDES;
+    turbulence      on;
+    printCoeffs     on;
+    delta           cubeRootVol;
+
+    cubeRootVolCoeffs
+    {
+        deltaCoeff  1;
+    }
+
+    SpalartAllmarasDDESCoeffs
+    {
+        curvatureCorrection yes;
+    }
+}
+\end{lstlisting}
+
+\subsection{Key Settings}
+
+\begin{itemize}
+  \item \textbf{simulationType LES:}  In OpenFOAM, DES/DDES models
+        are classified under the LES framework.  The
+        \texttt{SpalartAllmarasDDES} model automatically switches
+        between RANS behaviour in attached boundary layers and LES
+        behaviour in separated regions.
+  \item \textbf{Curvature correction:}  Enabled to improve prediction
+        accuracy in the curved flow region near the T-junction.
+        Equivalent to the ``Curvature Correction'' checkbox in
+        Fluent's viscous model panel.
+  \item \textbf{delta cubeRootVol:}  The LES filter width is taken as
+        the cube root of the cell volume ($\Delta = V^{1/3}$), which
+        is the standard choice for unstructured meshes.
+\end{itemize}
+
+\subsection{Turbulent Schmidt Number}
+
+The turbulent Schmidt number is set in
+\texttt{constant/turbulenceProperties}:
+
+\begin{lstlisting}[language={},title=constant/turbulenceProperties]
+Sct     0.5;
+\end{lstlisting}
+
+\noindent This matches the Fluent TUI command
+\texttt{/define/models/viscous/turbulent-schmidt-number 0.5}.
+
+
+\section{Species Transport (\texttt{thermophysicalProperties})}
+\label{sec:thermo}
+
+The binary H$_2$/CH$_4$ mixture is defined in
+\texttt{constant/thermophysicalProperties}:
+
+\begin{lstlisting}[language={},title=constant/thermophysicalProperties
+  (header)]
+thermoType
+{
+    type            heRhoThermo;
+    mixture         reactingMixture;
+    transport       sutherland;
+    thermo          janaf;
+    energy          sensibleEnthalpy;
+    equationOfState perfectGas;
+    specie          specie;
+}
+
+inertSpecie CH4;
+species ( H2 CH4 );
+\end{lstlisting}
+
+\subsection{Thermo-type Breakdown}
+
+\begin{table}[H]
+\centering
+\caption{\texttt{thermoType} entries and their Fluent equivalents.}
+\label{tab:thermotype}
+\begin{tabularx}{\textwidth}{@{}lXX@{}}
+\toprule
+\textbf{Entry} & \textbf{OpenFOAM} & \textbf{Fluent Equivalent} \\
+\midrule
+\texttt{type}            & \texttt{heRhoThermo}
+  & Pressure-based energy with density \\
+\texttt{mixture}         & \texttt{reactingMixture}
+  & Species Transport model \\
+\texttt{transport}       & \texttt{sutherland}
+  & Kinetic Theory / Sutherland viscosity \\
+\texttt{thermo}          & \texttt{janaf}
+  & Polynomial $c_p$ (piecewise) \\
+\texttt{equationOfState} & \texttt{perfectGas}
+  & Ideal Gas density law \\
+\texttt{energy}          & \texttt{sensibleEnthalpy}
+  & Energy Equation enabled \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Species Properties (NIST Reference Data)}
+
+Each species entry contains molecular weight, JANAF thermodynamic
+coefficients, and Sutherland transport coefficients fitted to NIST
+data at 6.9\,MPa:
+
+\begin{table}[H]
+\centering
+\caption{Species properties (NIST verification values at 284\,K, 6.9\,MPa).}
+\label{tab:nist}
+\begin{tabular}{@{}lrrl@{}}
+\toprule
+\textbf{Property} & \textbf{CH$_4$} & \textbf{H$_2$} & \textbf{Source} \\
+\midrule
+Molecular weight (kg\,kmol$^{-1}$) & 16.043  & 2.016   & NIST \\
+$c_p$ (J\,kg$^{-1}$\,K$^{-1}$)    & 2580    & 14\,500 & NIST \\
+Thermal conductivity (W\,m$^{-1}$\,K$^{-1}$) & 0.038 & 0.185 & NIST \\
+Dynamic viscosity (Pa\,s) & $1.25\times10^{-5}$ & $9.0\times10^{-6}$ & NIST \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\section{Chemistry and Combustion (Disabled)}
+
+Since this is a mechanical mixing study (no combustion), the chemistry
+and combustion models are explicitly disabled:
+
+\begin{lstlisting}[language={},title=constant/chemistryProperties]
+chemistryType
+{
+    chemistrySolver none;
+}
+chemistry       off;
+\end{lstlisting}
+
+\begin{lstlisting}[language={},title=constant/combustionProperties]
+combustionModel none;
+\end{lstlisting}
+
+\begin{lstlisting}[language={},title=constant/reactions]
+species ( H2 CH4 );
+reactions ();
+\end{lstlisting}
+
+\noindent This is equivalent to setting \textbf{Reactions: Disabled}
+in Fluent's Species Transport panel.
+
+
+\section{Gravity}
+
+Gravity is set in \texttt{constant/g}:
+
+\begin{lstlisting}[language={},title=constant/g]
+dimensions  [0 1 -2 0 0 0 0];
+value       (0 -9.81 0);
+\end{lstlisting}
+
+\noindent Combined with the \texttt{perfectGas} equation of state,
+the solver fully resolves buoyancy-driven stratification (density
+ratio CH$_4$:H$_2$ $\approx 8$ at 6.9\,MPa).  This is equivalent
+to Fluent's gravity enablement with \emph{Specified Operating
+Density = 0}.
+
+
+% ════════════════════════════════════════════════════════════════
+%  CHAPTER 4 — Boundary Conditions
+% ════════════════════════════════════════════════════════════════
+\chapter{Boundary Conditions}
+\label{ch:bc}
+
+All boundary condition files reside in the \texttt{0/} directory.
+Each file specifies an \texttt{internalField} (initial value) and
+a \texttt{boundaryField} with entries for every patch.
+
+\section{Velocity (\texttt{0/U})}
+
+\begin{table}[H]
+\centering
+\caption{Velocity boundary conditions.}
+\begin{tabularx}{\textwidth}{@{}lllX@{}}
+\toprule
+\textbf{Patch} & \textbf{Type} & \textbf{Value} & \textbf{Notes} \\
+\midrule
+\texttt{main\_inlet}
+  & \texttt{fixedValue}
+  & $(0,\; 0,\; 10)$\,m/s
+  & 10\,m/s along $+Z$ \\
+\texttt{branch\_inlet}
+  & \texttt{fixedValue}
+  & $(0,\; {-32},\; 0)$\,m/s
+  & 32\,m/s along $-Y$ (into main pipe) \\
+\texttt{outlet}
+  & \texttt{inletOutlet}
+  & \texttt{inletValue} $(0,0,0)$
+  & Prevents backflow \\
+\texttt{wall}
+  & \texttt{noSlip}
+  & ---
+  & Stationary, no-slip \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Branch Velocity Derivation}
+
+The branch velocity of 32\,m/s is derived from the volumetric
+dilution factor $\mathcal{D} = 0.2$:
+\[
+  \mathcal{D} = \beta^2 \frac{u_2}{u_1}
+  \quad\Rightarrow\quad
+  0.2 = (0.25)^2 \times \frac{u_2}{10}
+  \quad\Rightarrow\quad
+  u_2 = 32\;\text{m/s}
+\]
+
+
+\section{Pressure (\texttt{0/p})}
+
+\begin{table}[H]
+\centering
+\caption{Pressure boundary conditions.}
+\begin{tabularx}{\textwidth}{@{}lllX@{}}
+\toprule
+\textbf{Patch} & \textbf{Type} & \textbf{Value (Pa)} & \textbf{Notes} \\
+\midrule
+\texttt{main\_inlet}
+  & \texttt{zeroGradient} & --- & Extrapolated from interior \\
+\texttt{branch\_inlet}
+  & \texttt{zeroGradient} & --- & Extrapolated from interior \\
+\texttt{outlet}
+  & \texttt{fixedValue} & 6\,900\,000
+  & Operating pressure (gauge 0 relative) \\
+\texttt{wall}
+  & \texttt{fixedFluxPressure} & ---
+  & Adjusts pressure gradient for body forces \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{Note:}  In OpenFOAM's compressible solvers, \texttt{p} is the
+absolute pressure (not gauge).  The \texttt{fixedValue} at the outlet
+is therefore set to the full operating pressure of 6.9\,MPa.  This is
+equivalent to Fluent's gauge pressure of 0\,Pa with operating pressure
+6.9\,MPa.}}
+
+
+\section{Temperature (\texttt{0/T})}
+
+\begin{table}[H]
+\centering
+\caption{Temperature boundary conditions.}
+\begin{tabular}{@{}llr@{}}
+\toprule
+\textbf{Patch} & \textbf{Type} & \textbf{Value (K)} \\
+\midrule
+\texttt{main\_inlet}   & \texttt{fixedValue}  & 284 \\
+\texttt{branch\_inlet}  & \texttt{fixedValue}  & 293 \\
+\texttt{outlet}         & \texttt{inletOutlet} & 284 (backflow) \\
+\texttt{wall}           & \texttt{zeroGradient}& --- (adiabatic) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\section{Species Mass Fractions (\texttt{0/H2}, \texttt{0/CH4})}
+
+\begin{table}[H]
+\centering
+\caption{H$_2$ mass fraction boundary conditions.}
+\begin{tabular}{@{}llr@{}}
+\toprule
+\textbf{Patch} & \textbf{Type} & $Y_{\mathrm{H_2}}$ \\
+\midrule
+\texttt{main\_inlet}   & \texttt{fixedValue}  & 0 (pure CH$_4$) \\
+\texttt{branch\_inlet}  & \texttt{fixedValue}  & 1 (pure H$_2$) \\
+\texttt{outlet}         & \texttt{inletOutlet} & 0 (backflow) \\
+\texttt{wall}           & \texttt{zeroGradient}& --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent CH$_4$ is the \textbf{inert (balance) species}:
+$Y_{\mathrm{CH_4}} = 1 - Y_{\mathrm{H_2}}$.  Its boundary values
+mirror H$_2$ accordingly.
+
+
+\section{Turbulence Fields (\texttt{0/nuTilda}, \texttt{0/nut})}
+
+\begin{table}[H]
+\centering
+\caption{Turbulence boundary conditions.}
+\begin{tabularx}{\textwidth}{@{}llrX@{}}
+\toprule
+\textbf{Patch} & \textbf{Type} & \textbf{Value} & \textbf{Notes} \\
+\midrule
+\multicolumn{4}{@{}l}{\textbf{\texttt{nuTilda}} (SA working variable)} \\
+\midrule
+\texttt{main\_inlet}   & \texttt{fixedValue}  & $8\times10^{-7}$ & $\approx 3\nu$ \\
+\texttt{branch\_inlet}  & \texttt{fixedValue}  & $8\times10^{-7}$ & \\
+\texttt{outlet}         & \texttt{inletOutlet} & $8\times10^{-7}$ & \\
+\texttt{wall}           & \texttt{fixedValue}  & 0                & \\
+\midrule
+\multicolumn{4}{@{}l}{\textbf{\texttt{nut}} (turbulent viscosity)} \\
+\midrule
+Inlets / outlet & \texttt{calculated} & $10^{-6}$ & Derived from \texttt{nuTilda} \\
+\texttt{wall}   & \texttt{nutUSpaldingWallFunction} & 0 & All-$y^+$ wall function \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+
+\section{Thermal Diffusivity (\texttt{0/alphat})}
+
+\begin{table}[H]
+\centering
+\caption{Turbulent thermal diffusivity BCs.}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Patch} & \textbf{Type} \\
+\midrule
+Inlets / outlet & \texttt{calculated} \\
+\texttt{wall}   & \texttt{compressible::alphatWallFunction} ($Pr_t = 0.85$) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ════════════════════════════════════════════════════════════════
+%  CHAPTER 5 — Solution Methods and Controls
+% ════════════════════════════════════════════════════════════════
+\chapter{Solution Methods and Controls}
+\label{ch:solution}
+
+\section{Pressure--Velocity Coupling (\texttt{fvSolution})}
+
+The PIMPLE algorithm with \texttt{nOuterCorrectors = 1} is used,
+which reduces to the PISO algorithm --- matching the Fluent setup
+exactly.
+
+\begin{lstlisting}[language={},title=system/fvSolution (PIMPLE block)]
+PIMPLE
+{
+    nOuterCorrectors    1;      // = PISO
+    nCorrectors         2;
+    nNonOrthogonalCorrectors 1;
+    momentumPredictor   yes;
+}
+\end{lstlisting}
+
+\subsection{Linear Solvers}
+
+\begin{table}[H]
+\centering
+\caption{Linear solver configuration.}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Field} & \textbf{Solver} & \textbf{Preconditioner} & \textbf{Tolerance} \\
+\midrule
+\texttt{p}      & GAMG         & Gauss-Seidel & $10^{-6}$ \\
+\texttt{U, h, nuTilda} & PBiCGStab & DILU     & $10^{-6}$ \\
+\texttt{H2, CH4}& PBiCGStab    & DILU         & $10^{-8}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\section{Discretisation Schemes (\texttt{fvSchemes})}
+
+\subsection{Temporal}
+
+\begin{lstlisting}[language={},numbers=none]
+ddtSchemes { default  backward; }
+\end{lstlisting}
+
+\noindent \texttt{backward} is second-order implicit and unbounded.
+It is the OpenFOAM equivalent of Fluent's \textbf{Bounded Second
+Order Implicit} transient formulation.
+
+\subsection{Gradient}
+
+\begin{lstlisting}[language={},numbers=none]
+gradSchemes { default  Gauss linear; }
+\end{lstlisting}
+
+\noindent Equivalent to Fluent's \textbf{Least Squares Cell Based}
+gradient.
+
+\subsection{Convection (Divergence)}
+
+\begin{table}[H]
+\centering
+\caption{Convection scheme mapping.}
+\label{tab:divschemes}
+\begin{tabularx}{\textwidth}{@{}llX@{}}
+\toprule
+\textbf{Term} & \textbf{OpenFOAM Scheme} & \textbf{Fluent Equivalent} \\
+\midrule
+\texttt{div(phi,U)}
+  & \texttt{Gauss LUST grad(U)}
+  & Bounded Central Differencing \\
+\texttt{div(phi,H2)} etc.
+  & \texttt{Gauss limitedLinear 1}
+  & Second Order Upwind \\
+\texttt{div(phi,nuTilda)}
+  & \texttt{Gauss limitedLinear 1}
+  & Second Order Upwind \\
+\texttt{div(phi,h)}
+  & \texttt{Gauss limitedLinear 1}
+  & Second Order Upwind \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{Why LUST for momentum?}  LUST (Linear-Upwind Stabilised
+Transport) is a blend of 75\,\% linear (central) and 25\,\% upwind.
+It provides the low numerical dissipation needed for resolving
+turbulent structures in DES regions while maintaining stability.
+This is the closest OpenFOAM equivalent to Fluent's Bounded Central
+Differencing.}}
+
+\subsection{Laplacian and Surface-Normal Gradient}
+
+\begin{lstlisting}[language={},numbers=none]
+laplacianSchemes { default  Gauss linear corrected; }
+snGradSchemes    { default  corrected; }
+\end{lstlisting}
+
+\noindent The \texttt{corrected} scheme provides second-order accuracy
+on non-orthogonal meshes.  This handles the equivalent of Fluent's
+\textbf{PRESTO!} pressure interpolation via the corrected Laplacian.
+
+
+\section{Under-Relaxation Factors}
+
+\begin{table}[H]
+\centering
+\caption{Under-relaxation factors (matching Fluent).}
+\label{tab:urf}
+\begin{tabular}{@{}lr@{}}
+\toprule
+\textbf{Variable} & \textbf{Factor} \\
+\midrule
+Pressure (\texttt{p})            & 0.3 \\
+Momentum (\texttt{U})            & 0.7 \\
+Modified turbulent viscosity (\texttt{nuTilda}) & 0.8 \\
+Species (\texttt{H2}, \texttt{CH4}) & 0.9 \\
+Energy (\texttt{h})              & 1.0 \\
+Density (\texttt{rho})           & 1.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ════════════════════════════════════════════════════════════════
+%  CHAPTER 6 — Run Setup, Monitors, and Execution
+% ════════════════════════════════════════════════════════════════
+\chapter{Run Setup, Monitors, and Execution}
+\label{ch:run}
+
+\section{Step 1: Time-Stepping Parameters}
+
+Set in \texttt{system/controlDict}:
+
+\begin{table}[H]
+\centering
+\caption{Run calculation parameters.}
+\label{tab:runparams}
+\begin{tabular}{@{}lr@{}}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Time step size, $\Delta t$ & $2\times10^{-4}$\,s \\
+End time                   & 5\,s (= 25\,000 steps) \\
+Write interval             & 0.1\,s (= 500 steps) \\
+Write format               & binary \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent The time step gives $\text{CFL} \approx 1.3$ based on
+the branch velocity (32\,m/s) and a representative cell size of
+$\sim 5$\,mm in the junction region.
+
+
+\section{Step 2: Monitors (Function Objects)}
+
+All monitors are defined as function objects in the
+\texttt{functions} sub-dictionary of \texttt{controlDict}.
+
+\subsection{Residuals}
+
+\begin{lstlisting}[language={},title=Residual monitor]
+residuals
+{
+    type            solverInfo;
+    libs            (utilityFunctionObjects);
+    writeControl    timeStep;
+    writeInterval   1;
+    fields          (U p h nuTilda H2);
+}
+\end{lstlisting}
+
+\noindent Output is written to \texttt{postProcessing/residuals/}.
+
+
+\subsection{Surface Monitors}
+
+Three surface monitors track mixing at the outlet and mass
+conservation:
+
+\begin{table}[H]
+\centering
+\caption{Surface monitors.}
+\begin{tabular}{@{}lllr@{}}
+\toprule
+\textbf{Name} & \textbf{Quantity} & \textbf{Patch} & \textbf{Operation} \\
+\midrule
+\texttt{outletH2}
+  & H$_2$ mass fraction & \texttt{outlet}
+  & Weighted average (\texttt{phi}) \\
+\texttt{outletMassFlow}
+  & Mass flow rate & \texttt{outlet}
+  & Sum (\texttt{phi}) \\
+\texttt{mainInletMassFlow}
+  & Mass flow rate & \texttt{main\_inlet}
+  & Sum (\texttt{phi}) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent Expected outlet H$_2$ mass fraction
+$\rightarrow \sim 0.149$ for $\mathcal{D} = 0.2$.
+
+
+\subsection{Point Monitors (Wall H$_2$ Probes)}
+
+Four probes monitor H$_2$ mass fraction at the pipe-top wall
+($y = +0.23$\,m) at downstream distances of $z/d_1 = 2, 4, 6, 8$
+from the junction:
+
+\begin{table}[H]
+\centering
+\caption{Probe locations ($d_1 = 0.46$\,m, junction at $Z = 4.6$\,m).}
+\begin{tabular}{@{}lrrrl@{}}
+\toprule
+\textbf{Name} & $X$ (m) & $Y$ (m) & $Z$ (m) & $z/d_1$ \\
+\midrule
+\texttt{wall\_h2\_z2d} & 0 & 0.23 & 5.52 & 2 \\
+\texttt{wall\_h2\_z4d} & 0 & 0.23 & 6.44 & 4 \\
+\texttt{wall\_h2\_z6d} & 0 & 0.23 & 7.36 & 6 \\
+\texttt{wall\_h2\_z8d} & 0 & 0.23 & 8.28 & 8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent Output is written to
+\texttt{postProcessing/wallH2Probes/}.
+
+
+\section{Step 3: Autosave}
+
+OpenFOAM's \texttt{writeInterval 0.1} (with
+\texttt{writeControl adjustableRunTime}) saves case data every
+0.1\,s of simulation time, equivalent to Fluent's autosave every
+500 time steps.
+
+
+\section{Step 4: Initialisation}
+
+\subsection{Default Fields}
+
+The \texttt{internalField} entries in each \texttt{0/} file provide
+the baseline initialisation (pure CH$_4$ at 284\,K flowing at
+10\,m/s along $+Z$).
+
+\subsection{Patch Branch Region (\texttt{setFields})}
+
+The \texttt{setFieldsDict} patches a cylindrical region around the
+branch with pure H$_2$ and the branch velocity:
+
+\begin{lstlisting}[language={},title=system/setFieldsDict (region)]
+cylinderToCell
+{
+    p1      (0 0.20 4.6);
+    p2      (0 1.40 4.6);
+    radius  0.06;
+
+    fieldValues
+    (
+        volScalarFieldValue H2  1
+        volScalarFieldValue CH4 0
+        volVectorFieldValue U   (0 -32 0)
+    );
+}
+\end{lstlisting}
+
+\noindent This is equivalent to Fluent's \textbf{Hybrid Initialisation}
+followed by \textbf{Patch} on the branch cell register.
+
+\begin{lstlisting}[language=bash,numbers=none]
+setFields
+\end{lstlisting}
+
+
+\section{Step 5: Decompose and Run}
+
+\subsection{Domain Decomposition}
+
+\begin{lstlisting}[language=bash,numbers=none]
+decomposePar
+\end{lstlisting}
+
+\noindent The \texttt{decomposeParDict} uses \texttt{scotch}
+partitioning with 8 subdomains (matching the Fluent setup of 8
+solver processes).
+
+\subsection{Run the Solver}
+
+\begin{lstlisting}[language=bash,numbers=none]
+mpirun -np 8 reactingFoam -parallel
+\end{lstlisting}
+
+\noindent Or simply use the provided \texttt{Allrun} script which
+executes the full workflow automatically:
+
+\begin{lstlisting}[language=bash,numbers=none]
+./Allrun
+\end{lstlisting}
+
+\subsection{Reconstruct}
+
+After the run completes, reconstruct the decomposed data for
+post-processing:
+
+\begin{lstlisting}[language=bash,numbers=none]
+reconstructPar
+\end{lstlisting}
+
+
+\section{Step 6: During the Run --- What to Watch}
+
+\begin{enumerate}
+  \item \textbf{Residuals:}  Check
+        \texttt{postProcessing/residuals/} --- all residuals should
+        drop by at least 1--2 orders of magnitude within each time
+        step.
+  \item \textbf{Mass balance:}  Compare inlet and outlet mass flow
+        rates.  Imbalance $> 1\,\%$ indicates a problem.
+  \item \textbf{Outlet H$_2$:}  Should stabilise near $\sim 0.149$
+        for $\mathcal{D} = 0.2$.
+  \item \textbf{Courant number:}  The solver prints the maximum
+        Courant number each time step.  Target: $\text{Co} < 2$.
+        If consistently higher, reduce $\Delta t$ to $1\times10^{-4}$\,s.
+\end{enumerate}
+
+
+\section{Step 7: Enable Time Statistics (After $t = 4$\,s)}
+
+The \texttt{fieldAverage1} function object in \texttt{controlDict}
+is pre-configured to begin time-averaging at $t = 4$\,s
+(\texttt{timeStart 4.0}).  The first 20\,000 steps (4\,s) are
+treated as the initial transient; the final 5\,000 steps (1\,s)
+are used for time-averaged statistics.
+
+Fields averaged:
+\begin{itemize}
+  \item \texttt{UMean}, \texttt{UPrime2Mean} ---
+        mean velocity and Reynolds stresses.
+  \item \texttt{pMean} --- mean pressure.
+  \item \texttt{H2Mean}, \texttt{H2Prime2Mean} ---
+        mean H$_2$ concentration and its variance (for COV calculation).
+  \item \texttt{TMean} --- mean temperature.
+\end{itemize}
+
+
+% ════════════════════════════════════════════════════════════════
+%  CHAPTER 7 — Post-Processing
+% ════════════════════════════════════════════════════════════════
+\chapter{Post-Processing}
+\label{ch:post}
+
+\section{Hydrogen Volume Fraction}
+
+Fluent solves for mass fraction $Y_{\mathrm{H_2}}$, while the
+reference paper reports volume fraction $\phi_{\mathrm{H_2}}$.
+The conversion is:
+
+\begin{equation}
+  \phi_{\mathrm{H_2}}
+  = \frac{Y_{\mathrm{H_2}} / M_{\mathrm{H_2}}}
+         {Y_{\mathrm{H_2}} / M_{\mathrm{H_2}}
+          + (1 - Y_{\mathrm{H_2}}) / M_{\mathrm{CH_4}}}
+  \label{eq:volfrac}
+\end{equation}
+
+\noindent where $M_{\mathrm{H_2}} = 2.016$\,kg/kmol and
+$M_{\mathrm{CH_4}} = 16.043$\,kg/kmol.
+
+In OpenFOAM, compute this in ParaView using a \textbf{Calculator}
+filter:
+
+\begin{lstlisting}[language={},numbers=none]
+(H2/2.016) / (H2/2.016 + (1-H2)/16.043)
+\end{lstlisting}
+
+\noindent Alternatively, add a \texttt{coded} function object to
+\texttt{controlDict} for automatic computation during the run.
+
+
+\section{Visualisation in ParaView}
+
+Open the reconstructed case:
+
+\begin{lstlisting}[language=bash,numbers=none]
+paraFoam
+\end{lstlisting}
+
+\noindent Key visualisations:
+
+\begin{enumerate}
+  \item \textbf{Contour plots:}  H$_2$ mass/volume fraction on
+        cross-sectional planes downstream of the junction.
+  \item \textbf{Streamlines:}  Coloured by H$_2$ to visualise
+        mixing patterns.
+  \item \textbf{Time-averaged fields:}  Use \texttt{H2Mean} for
+        time-averaged concentration, \texttt{UMean} for mean
+        velocity.
+  \item \textbf{Wall $y^+$:}  Plot \texttt{yPlus} (requires the
+        \texttt{yPlus} function object or post-processing utility).
+\end{enumerate}
+
+
+\section{Coefficient of Variation (COV)}
+
+The COV quantifies mixing uniformity on a cross-section:
+\[
+  \text{COV} = \frac{\sigma_{\phi}}{\bar{\phi}}
+\]
+
+\noindent Compute from time-averaged fields:
+\begin{itemize}
+  \item $\bar{\phi}$ from \texttt{H2Mean}.
+  \item $\sigma_{\phi}$ from
+        $\sqrt{\texttt{H2Prime2Mean}}$.
+\end{itemize}
+
+\noindent $\text{COV} = 0$ indicates perfect mixing;
+$\text{COV} = 1$ indicates complete segregation.
+
+
+\section{Monitoring Data}
+
+All function-object output is in \texttt{postProcessing/}:
+
+\begin{table}[H]
+\centering
+\caption{Post-processing output directories.}
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{Directory} & \textbf{Contents} \\
+\midrule
+\texttt{residuals/}        & Solver residual history \\
+\texttt{outletH2/}         & Mass-weighted H$_2$ at outlet vs.\ time \\
+\texttt{outletMassFlow/}   & Outlet mass flow rate vs.\ time \\
+\texttt{mainInletMassFlow/}& Main-inlet mass flow rate vs.\ time \\
+\texttt{wallH2Probes/}     & H$_2$ at four wall probe locations \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\noindent All files are plain-text columns (time + value) that can
+be plotted directly with \texttt{gnuplot}, Python, or imported into
+Excel.
+
+
+% ════════════════════════════════════════════════════════════════
+%  CHAPTER 8 — Quick-Start Summary
+% ════════════════════════════════════════════════════════════════
+\chapter{Quick-Start Summary}
+\label{ch:quickstart}
+
+\noindent The complete workflow from a clean directory to a running
+simulation:
+
+\begin{enumerate}
+  \item \textbf{Install dependencies:}
+\begin{lstlisting}[language=bash,numbers=none]
+pip install numpy numpy-stl
+\end{lstlisting}
+
+  \item \textbf{Generate STL geometry:}
+\begin{lstlisting}[language=bash,numbers=none]
+python3 generateSTL.py
+\end{lstlisting}
+
+  \item \textbf{Create background mesh:}
+\begin{lstlisting}[language=bash,numbers=none]
+blockMesh
+\end{lstlisting}
+
+  \item \textbf{Extract surface features:}
+\begin{lstlisting}[language=bash,numbers=none]
+surfaceFeatureExtract
+\end{lstlisting}
+
+  \item \textbf{Generate the final mesh:}
+\begin{lstlisting}[language=bash,numbers=none]
+snappyHexMesh -overwrite
+\end{lstlisting}
+
+  \item \textbf{Patch initial conditions:}
+\begin{lstlisting}[language=bash,numbers=none]
+setFields
+\end{lstlisting}
+
+  \item \textbf{Decompose for parallel run:}
+\begin{lstlisting}[language=bash,numbers=none]
+decomposePar
+\end{lstlisting}
+
+  \item \textbf{Run the simulation:}
+\begin{lstlisting}[language=bash,numbers=none]
+mpirun -np 8 reactingFoam -parallel
+\end{lstlisting}
+
+  \item \textbf{Reconstruct and post-process:}
+\begin{lstlisting}[language=bash,numbers=none]
+reconstructPar
+paraFoam
+\end{lstlisting}
+\end{enumerate}
+
+\noindent Or simply run everything with:
+
+\begin{lstlisting}[language=bash,numbers=none]
+./Allrun
+\end{lstlisting}
+
+
+\vfill
+\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{Checklist before running:}
+\begin{itemize}[nosep]
+  \item[\checkmark] STL files present in \texttt{constant/triSurface/}
+  \item[\checkmark] \texttt{thermophysicalProperties} species match
+        \texttt{0/H2} and \texttt{0/CH4}
+  \item[\checkmark] Boundary patch names in all \texttt{0/} files
+        match \texttt{snappyHexMeshDict} surface names
+  \item[\checkmark] \texttt{decomposeParDict} \texttt{numberOfSubdomains}
+        matches \texttt{mpirun -np} count
+  \item[\checkmark] \texttt{controlDict} \texttt{endTime} and
+        \texttt{deltaT} give desired physical time
+  \item[\checkmark] \texttt{fieldAverage1} \texttt{timeStart} set to
+        4.0\,s (skip initial transient)
+\end{itemize}}}
+
+\end{document}

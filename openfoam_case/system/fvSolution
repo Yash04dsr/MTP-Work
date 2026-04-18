@@ -1,0 +1,77 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      fvSolution;
+}
+
+solvers
+{
+    "rho.*"
+    {
+        solver          diagonal;
+    }
+
+    p
+    {
+        solver          GAMG;
+        smoother        GaussSeidel;
+        tolerance       1e-6;
+        relTol          0.01;
+    }
+
+    pFinal
+    {
+        $p;
+        relTol          0;
+    }
+
+    "(U|h|nuTilda)"
+    {
+        solver          PBiCGStab;
+        preconditioner  DILU;
+        tolerance       1e-6;
+        relTol          0.1;
+    }
+
+    "(U|h|nuTilda)Final"
+    {
+        $U;
+        relTol          0;
+    }
+
+    "(H2|CH4|Yi)"
+    {
+        solver          PBiCGStab;
+        preconditioner  DILU;
+        tolerance       1e-8;
+        relTol          0;
+    }
+}
+
+// ── PIMPLE (nOuterCorrectors 1 = PISO equivalent) ───────────────────
+PIMPLE
+{
+    nOuterCorrectors    1;      // PISO mode
+    nCorrectors         2;      // pressure corrector steps
+    nNonOrthogonalCorrectors 1;
+    momentumPredictor   yes;
+}
+
+// ── Under-relaxation factors (match Fluent setup) ───────────────────
+relaxationFactors
+{
+    equations
+    {
+        U               0.7;
+        nuTilda         0.8;
+        "H2|CH4|Yi"     0.9;
+        h               1.0;
+    }
+    fields
+    {
+        p               0.3;
+        rho             1.0;
+    }
+}

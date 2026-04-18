@@ -1,4 +1,4 @@
-\begin{thebibliography}{18}
+\begin{thebibliography}{16}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -22,12 +22,11 @@ A.~Laureys, R.~Depraetere, M.~Cauwels, and K.~Verbeken.
   104534, 2022.
 \newblock \doi{10.1016/j.jngse.2022.104534}.
 
-\bibitem[Durst et~al.(2005)Durst, Ray, \"{U}nsal, and Bayoumi]{Durst2005}
-F.~Durst, S.~Ray, B.~\"{U}nsal, and O.~A. Bayoumi.
-\newblock The development lengths of laminar pipe and channel flows.
-\newblock \emph{Journal of Fluids Engineering}, 127\penalty0 (6):\penalty0
-  1154--1160, 2005.
-\newblock \doi{10.1115/1.2063088}.
+\bibitem[Schlichting and Gersten(2017)]{Schlichting2017}
+H.~Schlichting and K.~Gersten.
+\newblock \emph{Boundary-Layer Theory}.
+\newblock Springer, 9th edition, 2017.
+\newblock \doi{10.1007/978-3-662-52919-5}.
 
 \bibitem[{ANSYS Inc.}(2024{\natexlab{a}})]{ANSYSFluentUG2024}
 {ANSYS Inc.}
@@ -57,22 +56,11 @@ P.~R. Spalart, S.~Deck, M.~L. Shur, K.~D. Squires, M.~Kh. Strelets, and
   (3):\penalty0 181--195, 2006.
 \newblock \doi{10.1007/s00162-006-0015-0}.
 
-\bibitem[Schlichting and Gersten(2017)]{Schlichting2017}
-H.~Schlichting and K.~Gersten.
-\newblock \emph{Boundary-Layer Theory}.
-\newblock Springer, 9th edition, 2017.
-\newblock \doi{10.1007/978-3-662-52919-5}.
-
 \bibitem[{National Institute of Standards and Technology}(2023)]{NIST2023}
 {National Institute of Standards and Technology}.
 \newblock {NIST} chemistry {WebBook}, {SRD} 69.
 \newblock \url{https://webbook.nist.gov/chemistry/}, 2023.
 \newblock Accessed 2024.
-
-\bibitem[{ANSYS Inc.}(2024{\natexlab{b}})]{ANSYSFluent2024}
-{ANSYS Inc.}
-\newblock \emph{{ANSYS Fluent Theory Guide}}.
-\newblock ANSYS Inc., Canonsburg, PA, release 24.2 edition, 2024{\natexlab{b}}.
 
 \bibitem[Shur et~al.(2008)Shur, Spalart, Strelets, and Travin]{Shur2008}
 M.~L. Shur, P.~R. Spalart, M.~Kh. Strelets, and A.~K. Travin.
@@ -87,17 +75,16 @@ B.~E. Poling, J.~M. Prausnitz, and J.~P. O'Connell.
 \newblock \emph{The Properties of Gases and Liquids}.
 \newblock McGraw-Hill, 5th edition, 2001.
 
+\bibitem[{ANSYS Inc.}(2024{\natexlab{b}})]{ANSYSFluent2024}
+{ANSYS Inc.}
+\newblock \emph{{ANSYS Fluent Theory Guide}}.
+\newblock ANSYS Inc., Canonsburg, PA, release 24.2 edition, 2024{\natexlab{b}}.
+
 \bibitem[Menter(2012)]{Menter2012}
 F.~R. Menter.
 \newblock Best practice: Scale-resolving simulations in {ANSYS CFD}.
 \newblock Technical report, ANSYS Inc., 2012.
 \newblock Version 1.0, ANSYS Germany GmbH.
-
-\bibitem[Pope(2000)]{Pope2000}
-S.~B. Pope.
-\newblock \emph{Turbulent Flows}.
-\newblock Cambridge University Press, 2000.
-\newblock \doi{10.1017/CBO9780511840531}.
 
 \bibitem[Courant et~al.(1928)Courant, Friedrichs, and Lewy]{Courant1928}
 R.~Courant, K.~Friedrichs, and H.~Lewy.

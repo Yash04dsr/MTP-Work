@@ -1,0 +1,30 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      momentumTransport;
+}
+
+simulationType  LES;
+
+LES
+{
+    // Spalart-Allmaras Delayed Detached Eddy Simulation
+    LESModel        SpalartAllmarasDDES;
+
+    turbulence      on;
+    printCoeffs     on;
+
+    delta           cubeRootVol;
+
+    cubeRootVolCoeffs
+    {
+        deltaCoeff  1;
+    }
+
+    SpalartAllmarasDDESCoeffs
+    {
+        curvatureCorrection yes;
+    }
+}

@@ -1,0 +1,41 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      nuTilda;
+}
+
+dimensions  [0 2 -1 0 0 0 0];
+
+// Estimate: nuTilda ~ 3*nu for moderate turbulence at inlet
+// nu_CH4 ~ mu/rho ~ 1.25e-5 / 48.5 ~ 2.6e-7, so nuTilda ~ 8e-7
+internalField   uniform 8e-7;
+
+boundaryField
+{
+    main_inlet
+    {
+        type    fixedValue;
+        value   uniform 8e-7;
+    }
+
+    branch_inlet
+    {
+        type    fixedValue;
+        value   uniform 8e-7;
+    }
+
+    outlet
+    {
+        type            inletOutlet;
+        inletValue      uniform 8e-7;
+        value           uniform 8e-7;
+    }
+
+    wall
+    {
+        type    fixedValue;
+        value   uniform 0;
+    }
+}

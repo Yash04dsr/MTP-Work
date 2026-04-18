@@ -1,9 +1,9 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.11.16)  14 APR 2026 10:48
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.11.16)  18 APR 2026 09:05
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
-**simulation_guide.tex
-(./simulation_guide.tex
+**openfoam_guide.tex
+(./openfoam_guide.tex
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
 (/usr/local/texlive/2025basic/texmf-dist/tex/latex/base/report.cls
@@ -549,25 +549,18 @@ Package caption Info: longtable package is loaded.
 (/usr/local/texlive/2025basic/texmf-dist/tex/latex/caption/ltcaption.sty
 Package: ltcaption 2021/01/08 v1.4c longtable captions (AR)
 ))
-(/usr/local/texlive/2025basic/texmf-dist/tex/latex/natbib/natbib.sty
-Package: natbib 2010/09/13 8.31b (PWD, AO)
-\bibhang=\skip81
-\bibsep=\skip82
-LaTeX Info: Redefining \cite on input line 694.
-\c@NAT@ctr=\count324
-)
 (/usr/local/texlive/2025basic/texmf-dist/tex/latex/parskip/parskip.sty
 Package: parskip 2021-03-14 v2.0h non-zero parskip adjustments
 )
 (/usr/local/texlive/2025basic/texmf-dist/tex/latex/float/float.sty
 Package: float 2001/11/08 v1.3d Float enhancements (AL)
-\c@float@type=\count325
+\c@float@type=\count324
 \float@exts=\toks34
 \float@box=\box65
 \@float@everytoks=\toks35
 \@floatcapt=\box66
 )
-LaTeX Font Info:    Trying to load font information for T1+lmr on input line 87
+LaTeX Font Info:    Trying to load font information for T1+lmr on input line 84
 .
 
 (/usr/local/texlive/2025basic/texmf-dist/tex/latex/lm/t1lmr.fd
@@ -576,29 +569,29 @@ File: t1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 (/usr/local/texlive/2025basic/texmf-dist/tex/latex/l3backend/l3backend-pdftex.d
 ef
 File: l3backend-pdftex.def 2024-05-08 L3 backend support: PDF output (pdfTeX)
-\l__color_backend_stack_int=\count326
+\l__color_backend_stack_int=\count325
 \l__pdf_internal_box=\box67
-) (./simulation_guide.aux)
-\openout1 = `simulation_guide.aux'.
+) (./openfoam_guide.aux)
+\openout1 = `openfoam_guide.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 87.
-LaTeX Font Info:    ... okay on input line 87.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 87.
-LaTeX Font Info:    ... okay on input line 87.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 87.
-LaTeX Font Info:    ... okay on input line 87.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 87.
-LaTeX Font Info:    ... okay on input line 87.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 87.
-LaTeX Font Info:    ... okay on input line 87.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 87.
-LaTeX Font Info:    ... okay on input line 87.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 87.
-LaTeX Font Info:    ... okay on input line 87.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 87.
-LaTeX Font Info:    ... okay on input line 87.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 87.
-LaTeX Font Info:    ... okay on input line 87.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 84.
+LaTeX Font Info:    ... okay on input line 84.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 84.
+LaTeX Font Info:    ... okay on input line 84.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 84.
+LaTeX Font Info:    ... okay on input line 84.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 84.
+LaTeX Font Info:    ... okay on input line 84.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 84.
+LaTeX Font Info:    ... okay on input line 84.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 84.
+LaTeX Font Info:    ... okay on input line 84.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 84.
+LaTeX Font Info:    ... okay on input line 84.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 84.
+LaTeX Font Info:    ... okay on input line 84.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 84.
+LaTeX Font Info:    ... okay on input line 84.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -636,16 +629,16 @@ LaTeX Font Info:    ... okay on input line 87.
 
 (/usr/local/texlive/2025basic/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count327
+\scratchcounter=\count326
 \scratchdimen=\dimen262
 \scratchbox=\box68
-\nofMPsegments=\count328
-\nofMParguments=\count329
+\nofMPsegments=\count327
+\nofMParguments=\count328
 \everyMPshowfont=\toks36
-\MPscratchCnt=\count330
+\MPscratchCnt=\count329
 \MPscratchDim=\dimen263
-\MPnumerator=\count331
-\makeMPintoPDFobject=\count332
+\MPnumerator=\count330
+\makeMPintoPDFobject=\count331
 \everyMPtoPDFconversion=\toks37
 )
 (/usr/local/texlive/2025basic/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.s
@@ -658,52 +651,52 @@ Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
-\c@lstlisting=\count333
-Package hyperref Info: Link coloring ON on input line 87.
- (./simulation_guide.out) (./simulation_guide.out)
+\c@lstlisting=\count332
+Package hyperref Info: Link coloring ON on input line 84.
+ (./openfoam_guide.out) (./openfoam_guide.out)
 \@outlinefile=\write3
-\openout3 = `simulation_guide.out'.
+\openout3 = `openfoam_guide.out'.
 
 Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: float package is loaded.
 Package caption Info: End \AtBeginDocument code.
-LaTeX Font Info:    Trying to load font information for OT1+lmr on input line 9
-1.
+LaTeX Font Info:    Trying to load font information for OT1+lmr on input line 8
+8.
 
 (/usr/local/texlive/2025basic/texmf-dist/tex/latex/lm/ot1lmr.fd
 File: ot1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
-LaTeX Font Info:    Trying to load font information for OML+lmm on input line 9
-1.
+LaTeX Font Info:    Trying to load font information for OML+lmm on input line 8
+8.
 
 (/usr/local/texlive/2025basic/texmf-dist/tex/latex/lm/omllmm.fd
 File: omllmm.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    Trying to load font information for OMS+lmsy on input line 
-91.
+88.
 
 (/usr/local/texlive/2025basic/texmf-dist/tex/latex/lm/omslmsy.fd
 File: omslmsy.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    Trying to load font information for OMX+lmex on input line 
-91.
+88.
 
 (/usr/local/texlive/2025basic/texmf-dist/tex/latex/lm/omxlmex.fd
 File: omxlmex.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <14.4> on input line 91.
+(Font)              <14.4> on input line 88.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10> on input line 91.
+(Font)              <10> on input line 88.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7> on input line 91.
-LaTeX Font Info:    Trying to load font information for U+msa on input line 91.
+(Font)              <7> on input line 88.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 88.
 
 
 (/usr/local/texlive/2025basic/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 91.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 88.
 
 
 (/usr/local/texlive/2025basic/texmf-dist/tex/latex/amsfonts/umsb.fd
@@ -714,274 +707,234 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 
 {/usr/local/texlive/2025basic/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/us
 r/local/texlive/2025basic/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}]
-(./simulation_guide.toc
+(./openfoam_guide.toc
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <12> on input line 3.
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <8> on input line 3.
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <6> on input line 3.
+LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 9
+.
 
+(/usr/local/texlive/2025basic/texmf-dist/tex/latex/lm/t1lmtt.fd
+File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+)
 
 
 pdfTeX warning (ext4): destination with the same identifier (name{page.1}) has 
 been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.36 ...ine {4.4}Energy Equation}{20}{section.4.4}
+l.33 ...ution Methods and Controls}{15}{chapter.5}
                                                   % [1
 
-]
-LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 4
-5.
-
-(/usr/local/texlive/2025basic/texmf-dist/tex/latex/lm/t1lmtt.fd
-File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
-)
-
-[2{/usr/local/texlive/2025basic/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc}{/u
-sr/local/texlive/2025basic/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc}])
+])
 \tf@toc=\write4
-\openout4 = `simulation_guide.toc'.
+\openout4 = `openfoam_guide.toc'.
 
 
 
-[3]
+[2{/usr/local/texlive/2025basic/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc}{/usr/l
+ocal/texlive/2025basic/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc}]
 Chapter 1.
-
-Overfull \hbox (52.57597pt too wide) in paragraph at lines 139--148
- [][] 
- []
-
-
-
-[4
-
-]
-
-[5{/usr/local/texlive/2025basic/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc}]
-
-[6]
-Chapter 2.
-
-Overfull \hbox (16.40974pt too wide) in paragraph at lines 262--262
-|\T1/lmr/bx/n/24.88 Parameterised Ge-om-e-try (De-sign-Mod-
- []
-
-LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 2
-72.
+LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 1
+11.
 (/usr/local/texlive/2025basic/texmf-dist/tex/latex/lm/ts1lmr.fd
 File: ts1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <10.95> on input line 129.
 
-[7
-
-{/usr/local/texlive/2025basic/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}]
-
-[8]
-
-[9{/usr/local/texlive/2025basic/texmf-dist/fonts/enc/dvips/lm/lm-mathex.enc}]
-
-[10]
-LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <12> not available
-(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 471.
-
-
-[11]
-
-[12]
-Chapter 3.
-
-
-[13
-
-]
-Overfull \hbox (44.08795pt too wide) in paragraph at lines 616--623
-\T1/lmr/m/n/12 Six Named Se-lec-tions were cre-ated in De-sign-Mod-eler (Sec-ti
-on [][]2.6[][]): two body-level (\T1/lmtt/m/n/12 Fluid_Domain\T1/lmr/m/n/12 ,
+Underfull \hbox (badness 10000) in paragraph at lines 150--150
+[]|\T1/lmr/m/n/12 PIMPLE (\T1/lmtt/m/n/12 nOuterCorrectors
  []
 
 
 
-[14]
+[3
 
-[15]
+{/usr/local/texlive/2025basic/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}{/usr/lo
+cal/texlive/2025basic/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc}]
+
+[4]
+Chapter 2.
+(/usr/local/texlive/2025basic/texmf-dist/tex/latex/listings/lstlang1.sty
+File: lstlang1.sty 2024/09/23 1.10c listings language file
+)
+(/usr/local/texlive/2025basic/texmf-dist/tex/latex/listings/lstlang1.sty
+File: lstlang1.sty 2024/09/23 1.10c listings language file
+)
+
+[5
+
+]
+LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <17.28> not available
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 230.
+
+
+[6]
+
+[7]
+Chapter 3.
+
+
+[8
+
+]
+Overfull \hbox (38.26863pt too wide) in paragraph at lines 398--400
+\T1/lmr/m/n/12 This matches the Flu-ent TUI com-mand \T1/lmtt/m/n/12 /define/mo
+dels/viscous/turbulent-schmidt-number
+ []
+
+
+
+[9]
+
+[10]
+
+[11]
+Chapter 4.
+
+Overfull \hbox (5.5794pt too wide) in paragraph at lines 522--525
+\T1/lmr/m/n/12 All bound-ary con-di-tion files re-side in the \T1/lmtt/m/n/12 0
+/ \T1/lmr/m/n/12 di-rec-tory. Each file spec-i-fies an \T1/lmtt/m/n/12 internal
+Field
+ []
+
+
+
+[12
+
+]
+
+[13]
+
+[14]
+Chapter 5.
+
+
+[15
+
+]
 
 [16]
 
 [17]
-Chapter 4.
+Chapter 6.
+
+Overfull \hbox (16.30319pt too wide) in paragraph at lines 840--842
+\T1/lmr/m/n/12 All mon-i-tors are de-fined as func-tion ob-jects in the \T1/lmt
+t/m/n/12 functions \T1/lmr/m/n/12 sub-dictionary of \T1/lmtt/m/n/12 controlDict
+\T1/lmr/m/n/12 . 
+ []
+
 
 
 [18
 
 ]
 
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 888.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `subscript' on input line 888.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 888.
+
+
+Overfull \hbox (0.59573pt too wide) in paragraph at lines 915--919
+\T1/lmr/m/n/12 OpenFOAM's \T1/lmtt/m/n/12 writeInterval 0.1 \T1/lmr/m/n/12 (wit
+h \T1/lmtt/m/n/12 writeControl adjustableRunTime\T1/lmr/m/n/12 ) saves case
+ []
+
+
+
 [19]
+LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <14.4> not available
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 929.
+
 
 [20]
-Chapter 5.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <17.28> on input line 1010.
 
 
-[21
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 1010.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 1010.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\leavevmode@ifvmode' on input line 1010.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                \kern 1.95871pt
+(hyperref)                removed on input line 1010.
+
+
+
+[21]
+Chapter 7.
+
+
+[22
 
 ]
 
-[22]
-
 [23]
-Chapter 6.
-
-Overfull \hbox (9.23708pt too wide) in paragraph at lines 1049--1049
-|\T1/lmr/bx/n/24.88 Boundary Con-di-tions (Pa-ram-e-terised)| 
- []
-
-LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <17.28> not available
-(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 1055.
-
-Overfull \hbox (15.69704pt too wide) in paragraph at lines 1055--1055
-|[]\T1/lmr/bx/n/17.28 Main In-let (\T1/lmtt/b/n/17.28 main_inlet\T1/lmr/bx/n/17
-.28 ) --- The Nat-u-ral Gas Cross-
- []
-
+Chapter 8.
 
 
 [24
 
 ]
 
-[25]
-
-[26]
-Chapter 7.
-
-
-[27
-
-]
-
-[28]
-Chapter 8.
-
-
-[29
-
-]
-LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10.95> on input line 1357.
-
-
-[30]
-
-[31]
-Overfull \hbox (14.23845pt too wide) in paragraph at lines 1424--1436
- [][] 
- []
-
-LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <17.28> on input line 1439.
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 1439.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 1439.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\leavevmode@ifvmode' on input line 1439.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                \kern 1.95871pt
-(hyperref)                removed on input line 1439.
-
-
-
-[32]
-Chapter 9.
-
-Overfull \hbox (1.39264pt too wide) in paragraph at lines 1472--1472
-|\T1/lmr/bx/n/24.88 Workbench Pa-ram-e-ter-i-sa-tion and De-
- []
-
-
-
-[33
-
-]
-Overfull \hbox (23.99286pt too wide) in paragraph at lines 1526--1529
-\T1/lmr/m/n/12 Within each base sys-tem, the design-point ta-ble sweeps \T1/lmt
-t/m/n/12 Branch_Dia \T1/lmr/m/n/12 ($\OML/lmm/m/it/12 ^^L$\T1/lmr/m/n/12 ) and 
-\T1/lmtt/m/n/12 branch_velocity
- []
-
-
-
-[34]
-
-[35]
-Chapter 10.
-
-Overfull \hbox (3.65927pt too wide) in paragraph at lines 1609--1609
-|[]\T1/lmr/bx/n/17.28 Hydrogen Vol-ume Frac-tion (Cus-tom Field Func-
- []
-
-
-
-[36
-
-]
-
-[37]
-
-[38] (./simulation_guide.bbl
-
-[39]
-
-[40
-
-])
-
-[41] (./simulation_guide.aux)
+[25] (./openfoam_guide.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
  ***********
-Package rerunfilecheck Info: File `simulation_guide.out' has not changed.
-(rerunfilecheck)             Checksum: AA7002D16333E2DE16326AE288242F69;15980.
+Package rerunfilecheck Info: File `openfoam_guide.out' has not changed.
+(rerunfilecheck)             Checksum: 76FD568B2520F3F74B51B0CC220C8808;11277.
  ) 
 Here is how much of TeX's memory you used:
- 17795 strings out of 474662
- 277887 string characters out of 5751108
- 713992 words of memory out of 5000000
- 40205 multiletter control sequences out of 15000+600000
- 664676 words of font info for 110 fonts, out of 8000000 for 9000
+ 17476 strings out of 474662
+ 274879 string characters out of 5751108
+ 925694 words of memory out of 5000000
+ 39971 multiletter control sequences out of 15000+600000
+ 641121 words of font info for 102 fonts, out of 8000000 for 9000
  319 hyphenation exceptions out of 8191
- 75i,14n,79p,1205b,1100s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,12n,79p,1203b,1973s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></u
 sr/local/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></usr/lo
-cal/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lmex10.pfb></usr/local/t
-exlive/2025basic/texmf-dist/fonts/type1/public/lm/lmmi10.pfb></usr/local/texliv
-e/2025basic/texmf-dist/fonts/type1/public/lm/lmmi12.pfb></usr/local/texlive/202
-5basic/texmf-dist/fonts/type1/public/lm/lmmi8.pfb></usr/local/texlive/2025basic
-/texmf-dist/fonts/type1/public/lm/lmr10.pfb></usr/local/texlive/2025basic/texmf
--dist/fonts/type1/public/lm/lmr12.pfb></usr/local/texlive/2025basic/texmf-dist/
-fonts/type1/public/lm/lmr17.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/
-type1/public/lm/lmr6.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/type1/p
-ublic/lm/lmr8.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/type1/public/l
-m/lmri12.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lms
-y10.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lmsy8.pf
-b></usr/local/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lmtk10.pfb></u
-sr/local/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lmtt10.pfb></usr/lo
-cal/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lmtt12.pfb></usr/local/t
-exlive/2025basic/texmf-dist/fonts/type1/public/lm/lmtti10.pfb></usr/local/texli
-ve/2025basic/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb>
-Output written on simulation_guide.pdf (42 pages, 461955 bytes).
+cal/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lmmi10.pfb></usr/local/t
+exlive/2025basic/texmf-dist/fonts/type1/public/lm/lmmi12.pfb></usr/local/texliv
+e/2025basic/texmf-dist/fonts/type1/public/lm/lmmi8.pfb></usr/local/texlive/2025
+basic/texmf-dist/fonts/type1/public/lm/lmr10.pfb></usr/local/texlive/2025basic/
+texmf-dist/fonts/type1/public/lm/lmr12.pfb></usr/local/texlive/2025basic/texmf-
+dist/fonts/type1/public/lm/lmr17.pfb></usr/local/texlive/2025basic/texmf-dist/f
+onts/type1/public/lm/lmr6.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/ty
+pe1/public/lm/lmr8.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/type1/pub
+lic/lm/lmri12.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/type1/public/l
+m/lmsy10.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lms
+y8.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lmtk10.pf
+b></usr/local/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lmtt10.pfb></u
+sr/local/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lmtt12.pfb></usr/lo
+cal/texlive/2025basic/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb
+>
+Output written on openfoam_guide.pdf (26 pages, 406180 bytes).
 PDF statistics:
- 1083 PDF objects out of 1200 (max. 8388607)
- 978 compressed objects within 10 object streams
- 355 named destinations out of 1000 (max. 500000)
- 617 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 789 PDF objects out of 1000 (max. 8388607)
+ 714 compressed objects within 8 object streams
+ 279 named destinations out of 1000 (max. 500000)
+ 497 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -1,0 +1,39 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      T;
+}
+
+dimensions  [0 0 0 1 0 0 0];
+
+internalField   uniform 284;
+
+boundaryField
+{
+    main_inlet
+    {
+        type    fixedValue;
+        value   uniform 284;        // K
+    }
+
+    branch_inlet
+    {
+        type    fixedValue;
+        value   uniform 293;        // K
+    }
+
+    outlet
+    {
+        type            inletOutlet;
+        inletValue      uniform 284;
+        value           uniform 284;
+    }
+
+    wall
+    {
+        // Adiabatic wall (zero heat flux)
+        type    zeroGradient;
+    }
+}

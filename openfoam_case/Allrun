@@ -1,0 +1,28 @@
+#!/bin/bash
+cd "${0%/*}" || exit 1
+. ${WM_PROJECT_DIR:?}/bin/tools/RunFunctions
+
+# ── 1.  Generate STL geometry ────────────────────────────────────────
+echo "Generating T-junction STL..."
+python3 generateSTL.py
+
+# ── 2.  Background hex mesh ─────────────────────────────────────────
+runApplication blockMesh
+
+# ── 3.  Extract surface features for snapping ────────────────────────
+runApplication surfaceFeatureExtract
+
+# ── 4.  snappyHexMesh (castellate + snap + layers) ───────────────────
+runApplication snappyHexMesh -overwrite
+
+# ── 5.  Patch branch region with H2 and velocity ────────────────────
+runApplication setFields
+
+# ── 6.  Decompose for parallel run ───────────────────────────────────
+runApplication decomposePar
+
+# ── 7.  Run the solver ──────────────────────────────────────────────
+runParallel reactingFoam
+
+# ── 8.  Reconstruct ─────────────────────────────────────────────────
+runApplication reconstructPar
