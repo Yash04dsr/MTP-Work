@@ -1,0 +1,1584 @@
+\documentclass[12pt,a4paper]{report}
+
+% ── Encoding & Fonts ──
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+
+% ── Page Layout ──
+\usepackage[margin=1in,headheight=15pt]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+
+% ── Language ──
+\usepackage[english]{babel}
+
+% ── Graphics & Colors ──
+\usepackage{graphicx}
+\usepackage[dvipsnames,svgnames,table]{xcolor}
+
+% ── Math ──
+\usepackage{amsmath,amssymb,amsfonts}
+
+% ── Tables ──
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{multirow}
+
+% ── Lists ──
+\usepackage{enumitem}
+
+% ── Code Listings ──
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue}\bfseries,
+  commentstyle=\color{gray},
+  stringstyle=\color{red},
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{gray!5},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=8pt,
+  tabsize=4,
+  showstringspaces=false,
+}
+
+% ── Hyperlinks ──
+\usepackage[colorlinks=true,linkcolor=NavyBlue,citecolor=Green,urlcolor=RoyalBlue]{hyperref}
+
+% ── Headers & Footers ──
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ── Chapter Style ──
+\usepackage{titlesec}
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries}
+  {\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{-20pt}{30pt}
+
+% ── Caption Styling ──
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf}
+
+% ── Bibliography ──
+\usepackage[numbers,sort&compress]{natbib}
+
+% ── Misc ──
+\usepackage{parskip}
+\usepackage{float}
+
+% ════════════════════════════════════════════════
+%  DOCUMENT METADATA
+% ════════════════════════════════════════════════
+\title{\textbf{Parameterised CFD Simulation Guide}\\[6pt]
+       \Large Hydrogen--Methane T-Junction Mixing\\
+       in ANSYS Fluent with Automated Design-Point Sweeps}
+\author{Yash}
+\date{\today}
+
+\begin{document}
+
+% ── Title Page ──
+\maketitle
+\thispagestyle{empty}
+
+% ── Table of Contents ──
+\tableofcontents
+\newpage
+
+
+% ════════════════════════════════════════════════════════════════
+%  CHAPTER 1 — Introduction and Problem Definition
+% ════════════════════════════════════════════════════════════════
+\chapter{Introduction and Problem Definition}
+\label{ch:intro}
+
+\section{Background}
+
+Decarbonising domestic heating is a central pillar of net-zero strategies worldwide.
+A promising transitional approach is to inject \textbf{green hydrogen} into the existing
+natural-gas transmission network at volume fractions of 5--20\,\%, a range within
+which most conventional boilers can operate without modification~\cite{Eames2022}.
+
+The injection is typically performed through a \textbf{T-junction}---a branch pipe
+that meets the main pipeline at an angle.  Because hydrogen is approximately
+\textbf{eight times lighter} than methane (the dominant component of natural gas),
+the injected jet lacks momentum to penetrate the main flow and is simultaneously
+driven upward by buoyancy.  The result is \textit{stratification}: localised
+hydrogen concentrations on the upper pipe wall that can exceed 40\,\% by volume,
+far above the bulk target~\cite{Eames2022}.  Prolonged exposure of carbon-steel
+pipe walls to such concentrations accelerates \textbf{hydrogen embrittlement},
+reducing fracture toughness and enabling crack propagation~\cite{Laureys2022}.
+
+Understanding and controlling the mixing process therefore requires
+high-fidelity computational fluid dynamics (CFD) that resolves the transient
+turbulent structures responsible for scalar transport.  This guide provides a
+complete, literature-backed, step-by-step procedure to set up such a simulation
+in \textbf{ANSYS Fluent}, with full parametric automation so that the influence
+of key geometric and flow variables can be swept systematically.
+
+
+\section{Parametric Variables}
+
+Three independent parameters govern the T-junction mixing problem.
+Their definitions, symbols, and proposed sweep ranges are summarised in
+Table~\ref{tab:params}.
+
+\begin{table}[H]
+\centering
+\caption{Parametric variables and their sweep ranges.}
+\label{tab:params}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Parameter} & \textbf{Symbol} & \textbf{Definition} & \textbf{Sweep Values} \\
+\midrule
+Diameter ratio    & $\beta$   & $d_2 / d_1$   & 0.25,\; 0.50,\; 0.75,\; 1.00 \\
+Injection angle   & $\theta$  & Angle between branch axis and main axis & $30^\circ$,\; $45^\circ$,\; $60^\circ$,\; $90^\circ$ \\
+Velocity ratio    & $R_v$     & $u_2 / u_1$   & 0.5,\; 1.0,\; 2.0,\; 4.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent From these three independent parameters, several derived quantities
+follow directly:
+
+\begin{description}[style=nextline, font=\normalfont\bfseries, leftmargin=1.5em]
+
+  \item[Volumetric dilution ($\mathcal{D}$):]
+  The ratio of the volumetric flow rate through the branch to that through the
+  main pipe~\cite{Eames2022}:
+  \begin{equation}
+    \mathcal{D} = \beta^{2}\, R_v
+    \label{eq:dilution}
+  \end{equation}
+
+  \item[Momentum ratio ($M_R$):]
+  The ratio of the dynamic pressure of the branch jet to that of the main
+  stream, controlling jet penetration depth~\cite{Eames2022}:
+  \begin{equation}
+    M_R = \frac{\rho_2}{\rho_1}\, R_v^{2}
+    \label{eq:momratio}
+  \end{equation}
+  Because $\rho_{\mathrm{H_2}} / \rho_{\mathrm{CH_4}} \approx 1/8$ at equal
+  pressure and similar temperature, a velocity ratio of $R_v = 1$ yields
+  $M_R \approx 0.125$---extremely weak penetration.
+
+\end{description}
+
+
+\section{Base Operating Conditions}
+
+The simulation replicates the UK high-pressure gas transmission network
+conditions used by Eames et al.~\cite{Eames2022}:
+
+\begin{table}[H]
+\centering
+\caption{Base operating conditions (fixed across all design points).}
+\label{tab:opcond}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Quantity} & \textbf{Value} & \textbf{Source} \\
+\midrule
+Main-pipe diameter, $d_1$            & 460\,mm (18\,in)     & \cite{Eames2022} \\
+Operating pressure, $p_{\text{op}}$  & 6.9\,MPa             & \cite{Eames2022} \\
+Main-flow velocity, $u_1$            & 10\,m\,s$^{-1}$      & \cite{Eames2022} \\
+Methane temperature, $T_1$           & 284\,K               & \cite{Eames2022} \\
+Hydrogen temperature, $T_2$          & 293\,K               & \cite{Eames2022} \\
+Main-flow species                    & Pure CH$_4$           & \cite{Eames2022} \\
+Branch-flow species                  & Pure H$_2$            & \cite{Eames2022} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\section{Simulation Strategy Overview}
+
+The workflow proceeds through five major stages, each detailed in a dedicated
+chapter:
+
+\begin{enumerate}
+  \item \textbf{Geometry} (Chapter~\ref{ch:geom}): Build a parameterised
+        T-junction fluid domain in DesignModeler.
+  \item \textbf{Meshing} (Chapter~\ref{ch:mesh}): Generate a hybrid mesh with
+        a parameterised Body of Influence and inflation layers targeting
+        $y^+ \approx 1$.
+  \item \textbf{Fluent Physics Setup} (Chapters~\ref{ch:models}--\ref{ch:bc}):
+        Configure the solver, turbulence model (SA-DDES), species transport,
+        material properties, and boundary conditions.
+  \item \textbf{Solution and Execution} (Chapters~\ref{ch:solution}--\ref{ch:run}):
+        Set numerical schemes, initialise via a RANS precursor, and run the
+        transient DDES.
+  \item \textbf{Parameterisation and Post-Processing}
+        (Chapters~\ref{ch:param}--\ref{ch:post}): Link all parameters in the
+        Workbench Parameter Set and define output metrics.
+\end{enumerate}
+
+
+% ════════════════════════════════════════════════════════════════
+%  CHAPTER 2 — Parameterised Geometry
+% ════════════════════════════════════════════════════════════════
+\chapter{Parameterised Geometry (DesignModeler)}
+\label{ch:geom}
+
+\section{Design Rationale}
+
+The computational domain is a straight circular main pipe with a single
+circular branch intersecting it.  Two key length scales are fixed by the
+literature:
+
+\begin{itemize}
+  \item \textbf{Main-pipe length} $= 20\,d_1 = 9200$\,mm.
+        A minimum of 10\,$d_1$ upstream of the junction is required for the
+        turbulent velocity profile to become fully developed at
+        $\mathrm{Re} \sim 10^7$~\cite{Durst2005}, and 10\,$d_1$ downstream
+        provides sufficient mixing length for concentration measurements.
+        Eames et al.\ showed that stratification persists for at least
+        8\,$d_1$ downstream~\cite{Eames2022}.
+  \item \textbf{Branch length} must provide at least 10 branch diameters of
+        straight run for flow development, plus enough extra length to clear
+        the main pipe at the shallowest planned angle.
+\end{itemize}
+
+
+\section{Setup}
+
+\begin{enumerate}
+  \item In Workbench, drag a \textbf{Fluid Flow (Fluent)} system onto the
+        project schematic.  Rename it \texttt{T\_Junction\_Parametric}.
+  \item Double-click the \textbf{Geometry} cell to open DesignModeler.
+  \item Set \textbf{Units} to \textbf{Millimeter}.
+\end{enumerate}
+
+
+\section{Main Pipeline}
+
+\begin{enumerate}
+  \item In the Tree Outline, click \textbf{XYPlane} $\rightarrow$
+        \textbf{New Sketch} (creates \texttt{Sketch1}).
+  \item Switch to the \textbf{Sketching} tab $\rightarrow$ \textbf{Draw}
+        $\rightarrow$ \textbf{Circle}.  Click the origin and drag outward.
+  \item \textbf{Dimensions} $\rightarrow$ \textbf{General}: click the circle
+        edge and set the diameter to \textbf{460}.
+  \item Switch back to \textbf{Modeling}, click \textbf{Extrude}:
+  \begin{itemize}
+    \item \textbf{Operation:} Add Material
+    \item \textbf{Direction:} Normal
+    \item \textbf{Extent Type:} Fixed
+    \item \textbf{Depth:} \textbf{9200}
+  \end{itemize}
+  \item Click \textbf{Generate}.
+\end{enumerate}
+
+\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{Result:} A 9200\,mm cylinder along the Z-axis representing the
+main pipeline fluid domain.}}
+
+
+\section{Adjustable Injection Plane}
+\label{sec:injplane}
+
+This plane controls the injection angle $\theta$.
+
+\begin{enumerate}
+  \item In the Tree Outline, click \textbf{ZXPlane} $\rightarrow$
+        \textbf{New Plane}.
+  \item In the Details View, apply:
+  \begin{itemize}
+    \item \textbf{Transform 1 (RMB):} \textbf{Offset Z} $= 4600$.
+    \item \textbf{Transform 2 (RMB):} \textbf{Rotate about X} $= 90^\circ$.
+          \emph{(For bottom injection, set $-90^\circ$ or $270^\circ$.)}
+  \end{itemize}
+  \item \textbf{Parameterise} the rotation value: click the small blank
+        square beside the $90^\circ$ field.  A blue ``P'' appears.  Name the
+        parameter \texttt{Inj\_Angle}.
+  \item Click \textbf{Generate}.
+\end{enumerate}
+
+\medskip
+\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{Why 4600\,mm?}  The branch is placed at 10\,$d_1$ from the main
+inlet, providing sufficient development length for the turbulent profile to
+establish before reaching the junction~\cite{Durst2005}.}}
+
+
+\section{Parameterised Branch Pipe}
+
+\begin{enumerate}
+  \item Select the new plane in the tree $\rightarrow$ \textbf{New Sketch}
+        (creates \texttt{Sketch2}).
+  \item \textbf{Sketching} $\rightarrow$ \textbf{Draw} $\rightarrow$
+        \textbf{Circle}.  Click the origin of the new plane and draw a circle.
+  \item \textbf{Dimensions} $\rightarrow$ \textbf{General}: set diameter to
+        \textbf{115} (the $\beta = 0.25$ baseline, i.e.\ $0.25 \times 460$).
+  \item \textbf{Parameterise} this dimension: click the blank square beside
+        the value.  Name the parameter \texttt{Branch\_Dia}.
+  \item Switch to \textbf{Modeling}, select \texttt{Sketch2}, click
+        \textbf{Extrude}:
+  \begin{itemize}
+    \item \textbf{Operation:} \textbf{Add Material}
+    \item \textbf{Direction:} Normal
+    \item \textbf{Depth:} \textbf{1500}
+  \end{itemize}
+  \item \textbf{Parameterise} the depth: click the blank square beside the
+        value.  Name the parameter \texttt{Branch\_Extrude\_Depth}.
+  \item Click \textbf{Generate}.
+\end{enumerate}
+
+\subsection{Branch Extrude Depth Expression}
+
+In the Workbench \textbf{Parameter Set}, define
+\texttt{Branch\_Extrude\_Depth} with the expression:
+
+\begin{equation}
+  \texttt{Branch\_Extrude\_Depth}
+  = 10 \times \texttt{Branch\_Dia}
+  + \frac{d_1 / 2}{\sin(\texttt{Inj\_Angle})}
+  \label{eq:branchdepth}
+\end{equation}
+
+The two terms serve distinct purposes:
+
+\begin{itemize}
+  \item $10 \times \texttt{Branch\_Dia}$: ensures a minimum of \textbf{10
+        branch diameters} of straight pipe for turbulent flow
+        development~\cite{Durst2005}.
+  \item $\dfrac{d_1/2}{\sin(\texttt{Inj\_Angle})}$: the geometric clearance
+        required for the branch centreline to exit the main pipe.  At
+        $\theta = 90^\circ$ ($\sin = 1$), this equals half the main-pipe
+        diameter (230\,mm).  At $\theta = 30^\circ$ ($\sin = 0.5$), it
+        doubles to 460\,mm, accounting for the shallow entry.
+\end{itemize}
+
+\medskip
+\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{Correction note:} The clearance term uses the \emph{main-pipe}
+radius $d_1/2$, not the branch radius $d_2/2$, because it is the main pipe's
+cylindrical wall that the extrusion must fully penetrate regardless of
+branch size.}}
+
+
+\section{Material Assignment and Cleanup}
+
+\begin{enumerate}
+  \item Expand \textbf{1 Part, 1 Body} in the Tree Outline.
+  \item Right-click the Solid $\rightarrow$ \textbf{Rename} to
+        \texttt{T\_Junction\_Fluid}.
+  \item Click \texttt{T\_Junction\_Fluid}.  In the Details View, change
+        \textbf{Fluid/Solid} from \texttt{Solid} to \textbf{Fluid}.
+  \item Save the project and close DesignModeler.
+\end{enumerate}
+
+
+% ════════════════════════════════════════════════════════════════
+%  CHAPTER 3 — Parameterised Meshing
+% ════════════════════════════════════════════════════════════════
+\chapter{Parameterised Mesh Generation}
+\label{ch:mesh}
+
+\section{Pre-Requisite: Body of Influence in DesignModeler}
+
+A Body of Influence (BOI) provides localised mesh refinement in the mixing
+zone without refining the entire domain.  Before entering the Meshing
+application, create this zone in DesignModeler:
+
+\begin{enumerate}
+  \item \textbf{Create} $\rightarrow$ \textbf{Primitives} $\rightarrow$
+        \textbf{Sphere}.
+  \item Set \textbf{Origin Z} to \textbf{4600\,mm} (centred on the junction).
+  \item Set \textbf{Operation} to \textbf{Add Frozen} (prevents merging with
+        the pipe body).
+  \item Set the baseline \textbf{Radius} to \textbf{690\,mm} ($= 1.5\,d_1$).
+  \item \textbf{Parameterise} the radius: click the blank square beside the
+        value and name the parameter \texttt{BOI\_Radius}.
+  \item Click \textbf{Generate}.  Rename the new body to \texttt{BOI\_Zone}
+        and set its material to \textbf{Fluid}.
+\end{enumerate}
+
+\subsection{BOI Radius Expression}
+
+In the Parameter Set, define:
+
+\begin{equation}
+  \texttt{BOI\_Radius}
+  = \max\!\bigl(1.5\,d_1,\;\; 8 \times \texttt{Branch\_Dia}\bigr)
+  \label{eq:boiradius}
+\end{equation}
+
+\noindent\textbf{Justification:} Eames et al.~\cite{Eames2022} demonstrated
+that hydrogen stratification persists for up to 8 main-pipe diameters
+downstream of the injection point.  The refinement sphere must enclose this
+region.  The $\max$ function ensures adequate coverage for both small and large
+branch diameters.
+
+\medskip
+\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{Workbench expression syntax:}
+If \texttt{Branch\_Dia} is parameter \texttt{P2} and $d_1 = 460$\,mm, type:\\
+\texttt{max(690, P2 * 8)}}}
+
+
+\section{Global Mesh Settings}
+
+\begin{enumerate}
+  \item In Workbench, double-click the \textbf{Mesh} cell.
+  \item Click \textbf{Mesh} in the Outline tree.  In the Details panel:
+  \begin{itemize}
+    \item \textbf{Physics Preference:} CFD
+    \item \textbf{Solver Preference:} Fluent
+  \end{itemize}
+  \item Under \textbf{Sizing}:
+  \begin{itemize}
+    \item \textbf{Element Size:} 15\,mm \quad ($\approx d_1/30$; provides a
+          coarse far-field mesh that keeps cell count manageable)
+    \item \textbf{Growth Rate:} 1.15 \quad (industry standard for smooth
+          transitions~\cite{ANSYSFluentUG2024})
+    \item \textbf{Capture Curvature:} Yes
+    \item \textbf{Curvature Normal Angle:} $15^\circ$ \quad (ensures circular
+          cross-sections are geometrically faithful)
+  \end{itemize}
+  \item Under \textbf{Advanced}: set \textbf{Element Order} to \textbf{Linear}.
+\end{enumerate}
+
+
+\section{Named Selections (Boundary Labels)}
+
+These labels map directly to the boundary conditions in Fluent.
+
+\begin{enumerate}
+  \item \textbf{\texttt{main\_inlet}}: Select the circular face at $Z = 0$
+        $\rightarrow$ Right-click $\rightarrow$ \textbf{Create Named
+        Selection}.
+  \item \textbf{\texttt{branch\_inlet}}: Select the top circular face of
+        the branch pipe $\rightarrow$ \textbf{Create Named Selection}.
+  \item \textbf{\texttt{outlet}}: Select the circular face at
+        $Z = 9200$\,mm $\rightarrow$ \textbf{Create Named Selection}.
+  \item \textbf{\texttt{wall}}: Select \emph{all} remaining outer faces
+        (main-pipe cylinder, branch-pipe cylinder, intersection fillet)
+        $\rightarrow$ \textbf{Create Named Selection}.
+\end{enumerate}
+
+
+\section{Mesh Method}
+
+\begin{enumerate}
+  \item Right-click \textbf{Mesh} $\rightarrow$ \textbf{Insert}
+        $\rightarrow$ \textbf{Method}.
+  \item \textbf{Geometry:} Select \texttt{T\_Junction\_Fluid}, click
+        \textbf{Apply}.
+  \item \textbf{Method:} \textbf{MultiZone}.
+  \item \textbf{Src/Trg Selection:} Automatic.
+  \item \textbf{Free Mesh Type:} \textbf{Hexa Core}.
+\end{enumerate}
+
+\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{Fallback for extreme angles:} If MultiZone fails for $\theta <
+45^\circ$ during automated updates, switch the Method to
+\textbf{Tetrahedrons} and convert to polyhedra inside Fluent
+(\texttt{Mesh} $\rightarrow$ \texttt{Polyhedra} $\rightarrow$
+\texttt{Convert}).  Polyhedral cells reduce cell count by $\sim$4$\times$
+while maintaining accuracy~\cite{ANSYSFluentUG2024}.}}
+
+
+\section{Body-of-Influence Sizing}
+
+\begin{enumerate}
+  \item Right-click \textbf{Mesh} $\rightarrow$ \textbf{Insert}
+        $\rightarrow$ \textbf{Sizing}.
+  \item \textbf{Geometry:} Select \texttt{T\_Junction\_Fluid}, click
+        \textbf{Apply}.
+  \item \textbf{Type:} \textbf{Body of Influence}.
+  \item \textbf{Bodies of Influence:} Select \texttt{BOI\_Zone}, click
+        \textbf{Apply}.
+  \item \textbf{Element Size:} \textbf{5\,mm}.
+\end{enumerate}
+
+\noindent\textbf{Justification:} For the baseline case ($\beta = 0.25$,
+$d_2 = 115$\,mm), this gives $\sim$23 cells across the branch diameter,
+sufficient to resolve the jet shear layer.  Gritskevich et
+al.~\cite{Gritskevich2012} demonstrated adequate resolution of T-junction
+mixing with comparable cell-per-diameter ratios in their OECD benchmark.
+
+
+\section{Inflation Layer (Boundary Layer Mesh)}
+\label{sec:inflation}
+
+A resolved boundary layer ($y^+ \approx 1$) is mandatory for the
+Spalart--Allmaras DDES model, which does not use wall
+functions~\cite{SpalartAllmaras1994, Spalart2006}.
+
+\subsection{First-Layer Height Derivation}
+
+The first cell height $\Delta y_1$ for a target $y^+ = 1$ is derived as
+follows~\cite{Schlichting2017}:
+
+\begin{enumerate}
+  \item \textbf{Reynolds number} based on main-pipe diameter and
+        methane properties at $p = 6.9$\,MPa, $T = 284$\,K:
+  \begin{align}
+    \rho_1 &= \frac{M_{\mathrm{CH_4}}\, p}{R_g\, T_1}
+            = \frac{0.01604 \times 6.9 \times 10^6}{8.314 \times 284}
+            \approx 46.9\;\text{kg\,m}^{-3}
+    \label{eq:rho1} \\[4pt]
+    \mu_1  &\approx 1.25 \times 10^{-5}\;\text{Pa\,s}
+            \qquad\text{(NIST~\cite{NIST2023} at 6.9\,MPa, 284\,K)}
+    \label{eq:mu1} \\[4pt]
+    \mathrm{Re}_{d_1}
+           &= \frac{\rho_1\, u_1\, d_1}{\mu_1}
+            = \frac{46.9 \times 10 \times 0.46}{1.25 \times 10^{-5}}
+            \approx 1.73 \times 10^{7}
+    \label{eq:Re}
+  \end{align}
+
+  \item \textbf{Skin-friction coefficient} via the Schlichting
+        correlation for turbulent pipe flow~\cite{Schlichting2017}:
+  \begin{equation}
+    C_f = 0.058\;\mathrm{Re}_{d_1}^{\;-0.2}
+        = 0.058 \times (1.73 \times 10^7)^{-0.2}
+        \approx 2.11 \times 10^{-3}
+    \label{eq:Cf}
+  \end{equation}
+
+  \item \textbf{Wall shear stress} and \textbf{friction velocity}:
+  \begin{align}
+    \tau_w &= \tfrac{1}{2}\, C_f\, \rho_1\, u_1^2
+            = \tfrac{1}{2} \times 2.11 \times 10^{-3} \times 46.9 \times 100
+            \approx 4.95\;\text{Pa}
+    \label{eq:tauw} \\[4pt]
+    u_\tau &= \sqrt{\tau_w / \rho_1}
+            = \sqrt{4.95 / 46.9}
+            \approx 0.325\;\text{m\,s}^{-1}
+    \label{eq:utau}
+  \end{align}
+
+  \item \textbf{First cell height} for $y^+ = 1$:
+  \begin{equation}
+    \Delta y_1 = \frac{y^+\, \mu_1}{\rho_1\, u_\tau}
+               = \frac{1 \times 1.25 \times 10^{-5}}{46.9 \times 0.325}
+               \approx 8.2 \times 10^{-7}\;\text{m}
+               \approx \boxed{0.001\;\text{mm}}
+    \label{eq:dy1}
+  \end{equation}
+\end{enumerate}
+
+\medskip
+\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{Result:} At 6.9\,MPa operating pressure, a first-layer height of
+\textbf{0.001\,mm (1\,$\mu$m)} achieves $y^+ \approx 1$ for the methane
+main flow.  The high gas density at this pressure ($\sim$47\,kg\,m$^{-3}$
+versus $\sim$0.66\,kg\,m$^{-3}$ at atmospheric) is the dominant factor
+requiring such a thin first cell.  This value should be verified against
+the post-processed $y^+$ field after the first simulation run.}}
+
+\subsection{Inflation Settings}
+
+\begin{enumerate}
+  \item Right-click \textbf{Mesh} $\rightarrow$ \textbf{Insert}
+        $\rightarrow$ \textbf{Inflation}.
+  \item \textbf{Geometry:} Select \texttt{T\_Junction\_Fluid}, click
+        \textbf{Apply}.
+  \item \textbf{Boundary Scoping Method:} \textbf{Named Selections}.
+  \item \textbf{Boundary:} Select the \texttt{wall} named selection.
+  \item \textbf{Inflation Option:} \textbf{First Layer Thickness}.
+  \item \textbf{First Layer Height:} \textbf{0.001\,mm}.
+  \item \textbf{Maximum Layers:} \textbf{20}.
+  \item \textbf{Growth Rate:} \textbf{1.2}.
+\end{enumerate}
+
+\noindent\textbf{Layer count justification:} With 20 layers and a growth
+rate of 1.2, the inflation stack spans approximately
+$\Delta y_1 \times (1.2^{20} - 1)/(1.2 - 1) \approx 0.001 \times 186.7
+\approx 0.19$\,mm from the wall.  The turbulent boundary-layer thickness
+$\delta$ for the main pipe can be estimated as
+$\delta \approx 0.37\,d_1\,\mathrm{Re}_{d_1}^{-0.2}
+\approx 0.37 \times 460 \times (1.73 \times 10^7)^{-0.2}
+\approx 6.2$\,mm~\cite{Schlichting2017}.
+The inflation stack covers the viscous sublayer and buffer layer; the
+outer boundary layer is resolved by the BOI cells (5\,mm).
+
+
+\section{Mesh Quality Targets}
+
+After generating the mesh (\textbf{Mesh} $\rightarrow$ \textbf{Generate}),
+verify the following quality metrics in the \textbf{Statistics} panel:
+
+\begin{table}[H]
+\centering
+\caption{Mesh quality acceptance criteria.}
+\label{tab:meshqual}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Metric} & \textbf{Target} & \textbf{Reference} \\
+\midrule
+Minimum Orthogonal Quality & $> 0.10$ & \cite{ANSYSFluentUG2024} \\
+Maximum Skewness           & $< 0.95$ & \cite{ANSYSFluentUG2024} \\
+Maximum Aspect Ratio       & $< 100$  & \cite{ANSYSFluentUG2024} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ════════════════════════════════════════════════════════════════
+%  CHAPTER 4 — Fluent Setup: General and Models
+% ════════════════════════════════════════════════════════════════
+\chapter{Fluent Setup --- General and Physical Models}
+\label{ch:models}
+
+Double-click the \textbf{Setup} cell in Workbench to launch Fluent.
+When prompted, select \textbf{Double Precision} and set the number of
+\textbf{Solver Processes} appropriate for your hardware.
+
+\section{General Settings}
+
+Navigate to \textbf{Setup} $\rightarrow$ \textbf{General}:
+
+\begin{enumerate}
+  \item \textbf{Type:} Pressure-Based.
+  \item \textbf{Velocity Formulation:} Absolute.
+  \item \textbf{Time:} \textbf{Steady} \emph{(initially---we run a RANS
+        precursor first; this will be switched to Transient later in
+        Chapter~\ref{ch:run})}.
+  \item \textbf{Gravity:} \textbf{Enabled}.  Set:
+  \begin{itemize}
+    \item $g_x = 0$,\quad $g_z = 0$
+    \item $g_y = -9.81$\,m\,s$^{-2}$ \quad\emph{(for top injection)}
+  \end{itemize}
+\end{enumerate}
+
+\medskip
+\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{Why gravity is essential:} Buoyancy is the primary mechanism
+driving hydrogen stratification in horizontal pipes~\cite{Eames2022}.
+The density difference between CH$_4$ ($\approx$47\,kg\,m$^{-3}$) and
+H$_2$ ($\approx$5.7\,kg\,m$^{-3}$) at 6.9\,MPa creates a
+gravitational body force that pushes hydrogen upward.  Omitting gravity
+removes the dominant physics.}}
+
+\medskip
+\noindent\textbf{Note on bottom injection:} For design points where
+injection is from below, the geometry is constructed with a $-90^\circ$
+rotation in DesignModeler (Section~\ref{sec:injplane}).  The gravity
+vector remains $g_y = -9.81$\,m\,s$^{-2}$; it is the geometry
+orientation that changes, not the gravity direction.
+
+
+\section{Viscous Model (Turbulence)}
+
+Navigate to \textbf{Setup} $\rightarrow$ \textbf{Models} $\rightarrow$
+\textbf{Viscous}:
+
+\begin{enumerate}
+  \item \textbf{Model:} \textbf{Spalart--Allmaras (1\,eqn)}.
+  \item Under \textbf{Spalart--Allmaras Options}, ensure
+        \textbf{Vorticity-Based Production} is selected (the default).
+  \item In the left-hand list, the option \textbf{DES} will now be
+        visible.  Select it.
+  \item \textbf{DES Option:} Ensure \textbf{Delayed DES (DDES)} is
+        selected.  This is the default in Fluent~\cite{ANSYSFluent2024}.
+  \item Click \textbf{OK}.
+\end{enumerate}
+
+\noindent\textbf{Rationale:}
+\begin{itemize}
+  \item The Spalart--Allmaras (SA) model was chosen by Eames et
+        al.~\cite{Eames2022} for their OpenFOAM simulations of this
+        problem, making it the natural choice for validation comparisons.
+  \item DDES improves upon standard DES by introducing a shielding
+        function that prevents premature activation of LES mode inside
+        the boundary layer, even on ambiguous grids where the
+        wall-parallel spacing exceeds the boundary-layer
+        thickness~\cite{Spalart2006, Shur2008}.
+  \item The SA-DDES combination solves only one additional transport
+        equation (for modified turbulent viscosity $\tilde{\nu}$),
+        minimising the computational overhead per time
+        step~\cite{SpalartAllmaras1994}.
+\end{itemize}
+
+\medskip
+\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{Important:} During the steady-state RANS precursor phase
+(Chapter~\ref{ch:run}), you will initially run with the standard SA
+model.  The DES option is enabled \emph{now} so that Fluent allocates
+the correct data structures, but the actual LES content will only
+develop once the solver is switched to Transient mode.}}
+
+
+\section{Species Transport}
+
+Navigate to \textbf{Setup} $\rightarrow$ \textbf{Models} $\rightarrow$
+\textbf{Species}:
+
+\begin{enumerate}
+  \item Select \textbf{Species Transport}.
+  \item \textbf{Reactions:} Disabled (no combustion).
+  \item \textbf{Diffusion Energy Source:} Enabled.
+  \item \textbf{Full Multicomponent Diffusion:} Disabled
+        (Fickian diffusion is adequate for a binary
+        system~\cite{Poling2001}).
+  \item Click \textbf{OK}.
+\end{enumerate}
+
+
+\section{Energy Equation}
+
+Navigate to \textbf{Setup} $\rightarrow$ \textbf{Models} $\rightarrow$
+\textbf{Energy}:
+
+\begin{enumerate}
+  \item \textbf{Enable} the Energy Equation.
+\end{enumerate}
+
+\noindent The energy equation is required because density is computed via
+the ideal gas law ($\rho = p\,M / R_g\,T$), which depends on
+temperature.  Although the temperature difference between the two streams
+is small (284\,K vs.\ 293\,K), disabling energy would force Fluent to use
+a constant reference temperature for density, introducing
+error~\cite{ANSYSFluent2024}.
+
+
+% ════════════════════════════════════════════════════════════════
+%  CHAPTER 5 — Materials and Operating Conditions
+% ════════════════════════════════════════════════════════════════
+\chapter{Materials and Operating Conditions}
+\label{ch:materials}
+
+\section{Creating the Gas Mixture}
+
+Navigate to \textbf{Setup} $\rightarrow$ \textbf{Materials}:
+
+\begin{enumerate}
+  \item Click \textbf{Create/Edit} next to \textbf{Mixture}.
+  \item Click \textbf{ANSYS Fluent Database\ldots}.
+  \item From the database, add both \textbf{methane (ch4)} and
+        \textbf{hydrogen (h2)} to the \textit{Selected Species} list.
+  \item Name the mixture \texttt{ch4-h2-mixture}.
+  \item Click \textbf{OK} to close the database, then \textbf{OK}
+        again in the Create/Edit dialog.
+\end{enumerate}
+
+
+\section{Species Material Properties}
+
+For each species, set the following properties.  Values are from the
+NIST Chemistry WebBook~\cite{NIST2023} at 6.9\,MPa and the respective
+inlet temperatures.
+
+\begin{table}[H]
+\centering
+\caption{Species thermophysical properties.}
+\label{tab:matprops}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Property} & \textbf{CH$_4$} & \textbf{H$_2$} & \textbf{Setting} \\
+\midrule
+Molecular weight (kg\,kmol$^{-1}$) & 16.043 & 2.016 & Constant \\
+Density                             & \multicolumn{2}{c}{---} & \textbf{Ideal Gas} \\
+$c_p$ (J\,kg$^{-1}$\,K$^{-1}$)    & 2580 & 14\,500 & Constant \\
+Thermal conductivity (W\,m$^{-1}$\,K$^{-1}$) & 0.038 & 0.185 & Constant \\
+Dynamic viscosity (Pa\,s)           & $1.25 \times 10^{-5}$ & $9.0 \times 10^{-6}$ & Constant \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\medskip
+\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{Why constant properties?} At 6.9\,MPa and temperatures between
+284--293\,K, the gases are well above their critical points (CH$_4$:
+$T_c = 190.6$\,K; H$_2$: $T_c = 33.2$\,K) and behave as ideal gases.
+The temperature variation across the domain is small ($\Delta T < 10$\,K),
+so temperature-dependent polynomials offer negligible improvement over
+constants evaluated at the mean temperature~\cite{Poling2001}.}}
+
+
+\section{Mass Diffusivity}
+
+In the mixture material properties, set:
+
+\begin{itemize}
+  \item \textbf{Mass Diffusivity:} Constant.
+  \item \textbf{Value:} $D_{\mathrm{H_2\text{-}CH_4}}
+        = 7.6 \times 10^{-7}$\,m$^2$\,s$^{-1}$.
+\end{itemize}
+
+\noindent\textbf{Derivation:} The binary diffusion coefficient at atmospheric
+pressure and 293\,K is $D_{12}^0 \approx 7.26 \times 10^{-5}$\,m$^2$\,s$^{-1}$
+from the Chapman--Enskog kinetic theory~\cite{Poling2001}.  At elevated
+pressure, the diffusion coefficient scales approximately inversely with
+pressure:
+
+\begin{equation}
+  D_{12}(p) \approx D_{12}^0 \times \frac{p_0}{p}
+  = 7.26 \times 10^{-5} \times \frac{0.1013}{6.9}
+  \approx 1.07 \times 10^{-6}\;\text{m}^2\,\text{s}^{-1}
+  \label{eq:diffcoeff}
+\end{equation}
+
+\noindent A value of $7.6 \times 10^{-7}$\,m$^2$\,s$^{-1}$ accounts for
+additional high-pressure departure from ideal
+behaviour~\cite{Poling2001}.  In a DDES simulation, the resolved turbulent
+transport dominates molecular diffusion by orders of magnitude in the
+mixing zone, so moderate uncertainty in $D_{12}$ has minimal impact on
+the predicted concentration field.
+
+\medskip
+\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{Alternative:} Set the diffusivity method to \textbf{Kinetic
+Theory} in Fluent.  This uses the Chapman--Enskog formula directly,
+with Lennard-Jones parameters from the Fluent database.  The result
+is similar but automatically accounts for local temperature
+variations.}}
+
+
+\section{Operating Conditions}
+
+Navigate to \textbf{Setup} $\rightarrow$ \textbf{Cell Zone Conditions}
+$\rightarrow$ \textbf{Operating Conditions}:
+
+\begin{enumerate}
+  \item \textbf{Operating Pressure:} \textbf{6\,900\,000\,Pa}
+        (6.9\,MPa).
+  \item \textbf{Reference Pressure Location:} Leave at default
+        (will be near the outlet).
+  \item \textbf{Gravity:} Already set in General; verify the values
+        display correctly here.
+  \item \textbf{Operating Density Method:} Leave as default.
+\end{enumerate}
+
+\medskip
+\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{Why this matters:} In the pressure-based solver, Fluent
+computes density as $\rho = (p_{\text{op}} + p_{\text{gauge}}) M / (R_g T)$.
+If $p_{\text{op}}$ is left at the default 101\,325\,Pa, the computed
+gas density will be 68$\times$ too low, producing entirely wrong
+flow physics.  Setting the correct operating pressure is the single
+most critical numerical parameter in this simulation.}}
+
+
+% ════════════════════════════════════════════════════════════════
+%  CHAPTER 6 — Boundary Conditions
+% ════════════════════════════════════════════════════════════════
+\chapter{Boundary Conditions (Parameterised)}
+\label{ch:bc}
+
+Navigate to \textbf{Setup} $\rightarrow$ \textbf{Boundary Conditions}.
+Each named selection created in the meshing stage appears automatically.
+
+\section{Main Inlet (\texttt{main\_inlet})}
+
+\begin{enumerate}
+  \item \textbf{Type:} Velocity Inlet.
+  \item \textbf{Velocity Specification Method:} Magnitude, Normal to
+        Boundary.
+  \item \textbf{Velocity Magnitude:} \textbf{10\,m\,s$^{-1}$} (fixed).
+  \item \textbf{Turbulence Specification Method:}
+        \textbf{Modified Turbulent Viscosity}.
+  \item \textbf{Modified Turbulent Viscosity:}
+        $\tilde{\nu} = 3 \times \nu$, where
+        $\nu = \mu_1/\rho_1 = 1.25 \times 10^{-5} / 46.9
+        \approx 2.66 \times 10^{-7}$\,m$^2$\,s$^{-1}$.
+        Enter: $8.0 \times 10^{-7}$\,m$^2$\,s$^{-1}$.
+  \item \textbf{Temperature:} 284\,K.
+  \item \textbf{Species --- Mass Fraction of h2:} 0 \quad
+        (pure methane).
+\end{enumerate}
+
+\noindent\textbf{Turbulence level rationale:} For DDES, the inlet
+turbulence level should be low ($\tilde{\nu}/\nu \approx 3$--5) because
+the resolved LES content develops naturally within the domain.  Excessive
+inlet turbulent viscosity suppresses the growth of instabilities in the
+LES region~\cite{Menter2012}.
+
+
+\section{Branch Inlet (\texttt{branch\_inlet})}
+
+\begin{enumerate}
+  \item \textbf{Type:} Velocity Inlet.
+  \item \textbf{Velocity Specification Method:} Magnitude, Normal to
+        Boundary.
+  \item \textbf{Velocity Magnitude:} Enter the baseline value
+        corresponding to $R_v = 1.0$, i.e.\ \textbf{10\,m\,s$^{-1}$}.
+  \item \textbf{Parameterise this value:} Click the small ``P'' icon
+        (or the blank checkbox) next to the Velocity Magnitude field.
+        Name the parameter \texttt{branch\_velocity}.
+  \item \textbf{Modified Turbulent Viscosity:}
+        $8.0 \times 10^{-7}$\,m$^2$\,s$^{-1}$ (same reasoning as
+        the main inlet).
+  \item \textbf{Temperature:} 293\,K.
+  \item \textbf{Species --- Mass Fraction of h2:} 1.0 \quad
+        (pure hydrogen).
+\end{enumerate}
+
+\medskip
+\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{Parameterisation note:} By exposing \texttt{branch\_velocity}
+as a Workbench input parameter, the velocity ratio $R_v$ can be swept
+by setting \texttt{branch\_velocity} $= R_v \times 10$ in the
+Parameter Set (Chapter~\ref{ch:param}).  This is the mechanism by which
+$R_v$ is parameterised without modifying the Fluent case file
+manually.}}
+
+
+\section{Outlet (\texttt{outlet})}
+
+\begin{enumerate}
+  \item \textbf{Type:} Pressure Outlet.
+  \item \textbf{Gauge Pressure:} \textbf{0\,Pa}
+        (absolute pressure = operating pressure = 6.9\,MPa).
+  \item \textbf{Backflow Temperature:} 284\,K.
+  \item \textbf{Backflow Species (h2):} 0 (pure methane backflow).
+  \item \textbf{Backflow Turbulent Viscosity:} Same as inlet.
+\end{enumerate}
+
+
+\section{Walls (\texttt{wall})}
+
+\begin{enumerate}
+  \item \textbf{Type:} Wall (default).
+  \item \textbf{Wall Motion:} Stationary.
+  \item \textbf{Shear Condition:} No Slip.
+  \item \textbf{Thermal Condition:} \textbf{Adiabatic}
+        (zero heat flux).
+\end{enumerate}
+
+\noindent\textbf{Rationale:} The pipe is buried underground with
+negligible heat exchange over the short simulation
+domain~\cite{Eames2022}.  Adiabatic walls simplify the energy equation
+and are consistent with the reference study.
+
+
+\section{Regarding the 1/7th Power-Law Inlet Profile}
+\label{sec:powerlaw}
+
+Eames et al.~\cite{Eames2022} applied a 1/7th power-law velocity
+profile at the inlets to represent fully developed turbulent pipe flow.
+In ANSYS Fluent, there are two approaches:
+
+\begin{description}[style=nextline, font=\normalfont\bfseries,
+                     leftmargin=1.5em]
+
+  \item[Option A --- Uniform inlet with long upstream length
+        (recommended for parametric sweeps):]
+  Specify a uniform velocity at the inlet and rely on the
+  10\,$d_1$ upstream length to let the flow develop naturally.
+  This is the simplest option and is fully compatible with
+  Workbench parameterisation.  At $\mathrm{Re} \sim 10^7$, the
+  turbulent development length is approximately
+  $4.4\,d\,\mathrm{Re}^{1/6} \approx 4.4 \times 0.46 \times
+  (1.73 \times 10^7)^{1/6} \approx 32\,d$~\cite{Pope2000}.
+  With 10\,$d_1$ upstream, the profile will be partially developed.
+  This is acceptable if consistent across all design points.
+
+  \item[Option B --- UDF-imposed profile:]
+  Write a \texttt{DEFINE\_PROFILE} UDF implementing:
+  \begin{equation}
+    u(r) = u_{\max} \left(1 - \frac{r}{R}\right)^{1/7}
+    \label{eq:powerlaw}
+  \end{equation}
+  where $u_{\max} \approx 1.224\,u_{\text{avg}}$ for $n = 7$.
+  This approach is more physically accurate but complicates
+  parameterisation (the UDF must be recompiled when the branch
+  diameter changes).
+
+\end{description}
+
+\noindent For this parametric study, \textbf{Option A} is recommended.
+The 10\,$d_1$ development length is sufficient for practical purposes,
+and the approach maintains full compatibility with automated design-point
+updates.
+
+
+% ════════════════════════════════════════════════════════════════
+%  CHAPTER 7 — Solution Methods and Controls
+% ════════════════════════════════════════════════════════════════
+\chapter{Solution Methods and Controls}
+\label{ch:solution}
+
+Navigate to \textbf{Solution} $\rightarrow$ \textbf{Methods}.
+
+\section{Pressure--Velocity Coupling}
+
+\begin{itemize}
+  \item \textbf{Scheme:} \textbf{Coupled}.
+\end{itemize}
+
+\noindent\textbf{Rationale:} The Coupled algorithm solves the momentum
+and pressure-correction equations simultaneously, offering superior
+stability and convergence for transient scale-resolving simulations
+compared to segregated schemes (SIMPLE, SIMPLEC).  This is the
+recommended setting in the ANSYS Best Practice Guide for
+SRS~\cite{Menter2012}.
+
+
+\section{Spatial Discretisation}
+
+\begin{table}[H]
+\centering
+\caption{Spatial discretisation schemes.}
+\label{tab:schemes}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Variable} & \textbf{Scheme} & \textbf{Justification} \\
+\midrule
+Gradient               & Least Squares Cell Based & Default; second-order accurate \\
+Pressure               & Second Order             & Avoids checker-boarding \\
+\textbf{Momentum}      & \textbf{Bounded Central Differencing} & \textbf{Critical for DDES} \\
+Modified Turb.\ Visc.  & Second Order Upwind      & Transport equation is RANS-like \\
+\textbf{Species (h2)}  & \textbf{Bounded Central Differencing} & Preserves scalar resolution \\
+Energy                  & Second Order Upwind      & Small temperature gradients \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\medskip
+\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{Why Bounded Central Differencing (BCD) for momentum and
+species?}  Standard upwind schemes introduce excessive numerical
+dissipation that damps the resolved turbulent eddies in the LES
+region of a DDES simulation, effectively converting it back into a
+RANS calculation.  BCD provides low dissipation (like pure central
+differencing) while maintaining boundedness to prevent unphysical
+oscillations.  This is the scheme recommended by Menter~\cite{Menter2012}
+and is the default selection in Fluent when DES/DDES is
+enabled~\cite{ANSYSFluent2024}.}}
+
+
+\section{Transient Formulation}
+
+\begin{itemize}
+  \item \textbf{Scheme:} \textbf{Second Order Implicit} (Bounded).
+\end{itemize}
+
+\noindent Second-order temporal accuracy is mandatory for scale-resolving
+simulations to avoid excessive time-step dissipation that smears
+transient structures~\cite{Menter2012}.  The ``Bounded'' variant limits
+the temporal discretisation to prevent overshoots.
+
+
+\section{Under-Relaxation Factors}
+
+For the Coupled solver, the default under-relaxation factors in Fluent
+are appropriate:
+
+\begin{table}[H]
+\centering
+\caption{Under-relaxation factors (Coupled solver defaults).}
+\label{tab:urf}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Variable} & \textbf{Factor} \\
+\midrule
+Momentum                    & 0.75 (implicit via Coupled CFL) \\
+Pressure                    & 0.75 (implicit via Coupled CFL) \\
+Modified Turbulent Viscosity & 0.8 \\
+Species                     & 1.0 \\
+Energy                      & 1.0 \\
+Density                     & 1.0 \\
+Body Forces                 & 1.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent For the RANS precursor (steady state), the \textbf{Courant
+Number} for the Coupled solver should be set to \textbf{200} (aggressive
+for faster convergence).  It will be reduced when switching to transient
+mode.
+
+
+% ════════════════════════════════════════════════════════════════
+%  CHAPTER 8 — Monitors, Initialisation, and Running
+% ════════════════════════════════════════════════════════════════
+\chapter{Monitors, Initialisation, and Transient Execution}
+\label{ch:run}
+
+\section{Residual Monitors}
+
+Navigate to \textbf{Solution} $\rightarrow$ \textbf{Monitors}
+$\rightarrow$ \textbf{Residuals}:
+
+\begin{itemize}
+  \item Set \textbf{Convergence Criterion} for all equations to
+        $1 \times 10^{-5}$.
+  \item Monitored residuals: Continuity, X-Velocity, Y-Velocity,
+        Z-Velocity, Modified Turbulent Viscosity ($\tilde{\nu}$),
+        h2 (species), Energy.
+\end{itemize}
+
+\noindent For the \textbf{transient} phase, residual convergence is
+checked \emph{per time step} (i.e.\ within the inner iterations).
+A drop of 2--3 orders of magnitude per time step is acceptable for
+DDES~\cite{Menter2012}.
+
+
+\section{Surface Monitors}
+
+Create the following surface monitors to track mixing behaviour over
+time.  Navigate to \textbf{Solution} $\rightarrow$ \textbf{Monitors}
+$\rightarrow$ \textbf{Surface Monitors}:
+
+\begin{enumerate}
+  \item \textbf{H2 mass fraction at outlet:}
+  \begin{itemize}
+    \item \textbf{Report Type:} Area-Weighted Average
+    \item \textbf{Field Variable:} Species $\rightarrow$ Mass Fraction
+          of h2
+    \item \textbf{Surface:} \texttt{outlet}
+    \item \textbf{Write to File:} Yes
+  \end{itemize}
+
+  \item \textbf{H2 mass fraction at downstream cross-sections:}
+        Create \textbf{Iso-Surfaces} (under \textbf{Surface}
+        $\rightarrow$ \textbf{Iso-Surface}) at
+        $Z = 6900$\,mm ($= 5\,d_1$ downstream),
+        $Z = 7820$\,mm ($= 7\,d_1$ downstream), and
+        $Z = 9200$\,mm (outlet).
+        Create an area-weighted-average surface monitor for H2 mass
+        fraction on each.
+
+  \item \textbf{Velocity magnitude at junction centre:}
+  \begin{itemize}
+    \item Create a \textbf{Point} at coordinates $(0, 0, 4600)$\,mm.
+    \item \textbf{Report Type:} Vertex Value
+    \item \textbf{Field Variable:} Velocity Magnitude
+    \item \textbf{Write to File:} Yes
+  \end{itemize}
+\end{enumerate}
+
+
+\section{RANS Precursor Initialisation}
+\label{sec:ransprecursor}
+
+Running a steady-state RANS simulation before switching to transient
+DDES is essential.  It provides a physically realistic initial flow field
+that dramatically reduces the transient wash-out period and prevents
+divergence~\cite{Menter2012}.
+
+\subsection{Step 1: Hybrid Initialisation}
+
+\begin{enumerate}
+  \item Navigate to \textbf{Solution} $\rightarrow$
+        \textbf{Initialisation}.
+  \item Select \textbf{Hybrid Initialisation}.
+  \item Click \textbf{Initialise}.
+\end{enumerate}
+
+\subsection{Step 2: Steady-State RANS Run}
+
+\begin{enumerate}
+  \item Verify that \textbf{General} $\rightarrow$ \textbf{Time} is
+        set to \textbf{Steady}.
+  \item Verify that the turbulence model is \textbf{Spalart--Allmaras}
+        (without DES---for the RANS precursor, temporarily disable DES
+        in the Viscous Model panel if it was enabled, or simply leave it
+        enabled; in steady state the DES length scale has no
+        effect~\cite{ANSYSFluent2024}).
+  \item Navigate to \textbf{Solution} $\rightarrow$
+        \textbf{Run Calculation}.
+  \item Set \textbf{Number of Iterations:} \textbf{2000}.
+  \item Click \textbf{Calculate} and let it run until residuals plateau
+        (typically 500--1500 iterations).
+\end{enumerate}
+
+\noindent\textbf{Expected behaviour:} Residuals should drop 3--4 orders
+of magnitude and stabilise.  The velocity monitor at the junction centre
+should reach a constant value.  Absolute convergence to machine precision
+is \emph{not} required---the RANS field serves only as a starting point.
+
+
+\subsection{Step 3: Switch to Transient DDES}
+
+After the RANS precursor has converged:
+
+\begin{enumerate}
+  \item \textbf{General} $\rightarrow$ \textbf{Time:} Change to
+        \textbf{Transient}.
+  \item \textbf{Models} $\rightarrow$ \textbf{Viscous:} Confirm that
+        \textbf{DES} and \textbf{DDES} are enabled.
+  \item \textbf{Solution} $\rightarrow$ \textbf{Methods:}
+  \begin{itemize}
+    \item Verify \textbf{Momentum} is set to \textbf{Bounded Central
+          Differencing}.
+    \item Verify \textbf{Transient Formulation} is \textbf{Second Order
+          Implicit (Bounded)}.
+  \end{itemize}
+\end{enumerate}
+
+
+\section{Time-Step Selection}
+\label{sec:timestep}
+
+The time step $\Delta t$ for DDES must satisfy a Courant--Friedrichs--Lewy
+(CFL) number $\lesssim 1$ in the LES region~\cite{Courant1928, Menter2012}:
+
+\begin{equation}
+  \mathrm{CFL} = \frac{u\,\Delta t}{\Delta x} \lesssim 1
+  \label{eq:CFL}
+\end{equation}
+
+For the BOI region ($\Delta x = 5$\,mm, $u \approx 10$\,m\,s$^{-1}$):
+
+\begin{equation}
+  \Delta t = \frac{\Delta x}{u}
+           = \frac{0.005}{10}
+           = 5 \times 10^{-4}\;\text{s}
+  \label{eq:dt}
+\end{equation}
+
+\subsection{Transient Run Settings}
+
+Navigate to \textbf{Solution} $\rightarrow$ \textbf{Run Calculation}:
+
+\begin{table}[H]
+\centering
+\caption{Transient run parameters.}
+\label{tab:transient}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Parameter} & \textbf{Value} & \textbf{Rationale} \\
+\midrule
+Time Step Size ($\Delta t$) & $5 \times 10^{-4}$\,s & CFL $\approx 1$ in BOI \\
+Max Iterations/Time Step   & 20 & \cite{Menter2012} \\
+Number of Time Steps       & 6000 & 3.0\,s of physical time \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textbf{Physical time rationale:} One flow-through time is
+$\tau_{\text{ft}} = L_{\text{main}} / u_1 = 9.2 / 10 = 0.92$\,s.
+The total simulation time of 3.0\,s spans approximately 3.3
+flow-through times.
+
+\begin{itemize}
+  \item The first flow-through ($\sim$0.92\,s, $\sim$1840 time steps)
+        is the \textbf{wash-out period}: the RANS initial field is
+        flushed out and turbulent structures develop.
+        \textbf{Do not collect statistics during this period.}
+  \item The remaining $\sim$2.1\,s ($\sim$4160 time steps) provide
+        time-averaged statistics.  Eames et al.~\cite{Eames2022} used
+        comparable averaging windows for their DES simulations.
+\end{itemize}
+
+\medskip
+\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{Data sampling for time-averaged statistics:} In Fluent,
+enable \textbf{Data Sampling for Time Statistics} under
+\textbf{Run Calculation}.  Set the ``Sampling Interval'' to 1
+(every time step) and the ``Sampling Start'' to time step
+\textbf{1840} (or equivalently, at $t = 0.92$\,s).  This will
+compute running means and RMS values of all field variables
+automatically.}}
+
+
+% ════════════════════════════════════════════════════════════════
+%  CHAPTER 9 — Workbench Parameterisation
+% ════════════════════════════════════════════════════════════════
+\chapter{Workbench Parameterisation and Design Points}
+\label{ch:param}
+
+\section{Parameter Summary}
+
+After completing the Geometry, Mesh, and Fluent setup, the following
+parameters should be visible when you double-click the
+\textbf{Parameter Set} bar in Workbench:
+
+\begin{table}[H]
+\centering
+\caption{Complete list of Workbench parameters.}
+\label{tab:allparams}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Parameter Name} & \textbf{Source} & \textbf{Type} & \textbf{Baseline} \\
+\midrule
+\texttt{Inj\_Angle}             & DesignModeler (Plane rotation) & Input  & 90\textdegree \\
+\texttt{Branch\_Dia}            & DesignModeler (Sketch dim.)    & Input  & 115\,mm \\
+\texttt{Branch\_Extrude\_Depth} & DesignModeler (Extrude depth)  & Output & (expression) \\
+\texttt{BOI\_Radius}            & DesignModeler (Sphere radius)  & Output & (expression) \\
+\texttt{branch\_velocity}       & Fluent (BC velocity mag.)      & Input  & 10\,m\,s$^{-1}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textbf{Note:} ``Output'' parameters here means they are
+\emph{driven} by expressions linked to the input parameters.  They
+update automatically.
+
+
+\section{Defining Expressions}
+
+In the Parameter Set table, click on the \textbf{Expression} cell for
+each driven parameter and enter:
+
+\begin{enumerate}
+  \item \texttt{Branch\_Extrude\_Depth}: \quad
+        \texttt{10 * Branch\_Dia + 230 / sin(Inj\_Angle)}
+
+        \emph{(Here 230 $= d_1/2$ in mm.  Use the actual parameter name
+        syntax for your Workbench version.)}
+
+  \item \texttt{BOI\_Radius}: \quad
+        \texttt{max(690, Branch\_Dia * 8)}
+
+        \emph{(690\,mm $= 1.5 \times d_1$.)}
+\end{enumerate}
+
+
+\section{Creating the Design-Point Table}
+
+\begin{enumerate}
+  \item In the Parameter Set, click \textbf{Design Points} (bottom panel).
+  \item Each row represents a unique combination of $\beta$, $\theta$,
+        and $R_v$.  For three input parameters with 4 levels each,
+        the full factorial yields $4 \times 4 \times 4 = 64$ design
+        points.
+
+  \item Populate the table using the mapping:
+  \begin{align}
+    \texttt{Branch\_Dia} &= \beta \times 460 \notag \\
+    \texttt{Inj\_Angle}  &= \theta \notag \\
+    \texttt{branch\_velocity} &= R_v \times 10 \notag
+  \end{align}
+
+  \item A representative subset of the 64 design points is shown in
+        Table~\ref{tab:designpoints}.
+\end{enumerate}
+
+\begin{table}[H]
+\centering
+\caption{Example design points (subset of 64).}
+\label{tab:designpoints}
+\begin{tabular}{@{}ccccccc@{}}
+\toprule
+\textbf{DP} & $\beta$ & $\theta$ & $R_v$ &
+\texttt{Branch\_Dia} & \texttt{Inj\_Angle} &
+\texttt{branch\_velocity} \\
+\midrule
+1  & 0.25 & 90\textdegree  & 1.0 & 115\,mm & 90\textdegree  & 10\,m/s \\
+2  & 0.25 & 90\textdegree  & 2.0 & 115\,mm & 90\textdegree  & 20\,m/s \\
+3  & 0.25 & 45\textdegree  & 1.0 & 115\,mm & 45\textdegree  & 10\,m/s \\
+4  & 0.50 & 90\textdegree  & 1.0 & 230\,mm & 90\textdegree  & 10\,m/s \\
+5  & 0.50 & 60\textdegree  & 2.0 & 230\,mm & 60\textdegree  & 20\,m/s \\
+6  & 0.75 & 90\textdegree  & 4.0 & 345\,mm & 90\textdegree  & 40\,m/s \\
+7  & 1.00 & 30\textdegree  & 0.5 & 460\,mm & 30\textdegree  & 5\,m/s \\
+\multicolumn{7}{c}{$\vdots$} \\
+64 & 1.00 & 90\textdegree  & 4.0 & 460\,mm & 90\textdegree  & 40\,m/s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\section{Update Configuration}
+
+\begin{enumerate}
+  \item Right-click the \textbf{Parameter Set} bar $\rightarrow$
+        \textbf{Properties}.
+  \item Set \textbf{Design Point Update} to \textbf{Update Sequentially}
+        (most stable for transient DDES).
+  \item Set \textbf{Update Action} to \textbf{Update Full Project}
+        (ensures geometry, mesh, and solver all update for each design
+        point).
+  \item Click \textbf{Update All Design Points} to begin the automated
+        sweep.
+\end{enumerate}
+
+\medskip
+\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{Computation time estimate:} Each transient DDES simulation
+of 6000 time steps with 20 iterations each requires $\sim$120\,000
+solver iterations.  On an 8-core workstation, expect $\sim$4--8
+hours per design point (depending on mesh size).  The full 64-point
+sweep therefore requires 250--500 core-hours.  Consider running a
+reduced factorial (e.g.\ Latin Hypercube with 16--20 points) if
+resources are constrained.}}
+
+
+% ════════════════════════════════════════════════════════════════
+%  CHAPTER 10 — Post-Processing and Validation
+% ════════════════════════════════════════════════════════════════
+\chapter{Post-Processing and Validation}
+\label{ch:post}
+
+\section{Key Output Metrics}
+
+For each design point, extract and record the following quantities from
+the time-averaged fields:
+
+\subsection{Coefficient of Variation (COV)}
+
+The COV quantifies mixing uniformity on a cross-sectional
+plane~\cite{Kukukova2009}:
+
+\begin{equation}
+  \text{COV} = \frac{\sigma_Y}{\bar{Y}}
+  \label{eq:COV}
+\end{equation}
+
+where $\bar{Y}$ is the area-weighted mean H$_2$ mass fraction on the
+plane and $\sigma_Y$ is the standard deviation.
+A fully mixed flow has $\text{COV} = 0$.
+
+\noindent In Fluent, compute the COV using:
+\begin{enumerate}
+  \item Navigate to \textbf{Results} $\rightarrow$ \textbf{Surface
+        Integrals}.
+  \item Select the downstream iso-surface (e.g.\ $Z = 9200$\,mm).
+  \item Report both \textbf{Area-Weighted Average} and
+        \textbf{Standard Deviation} of the H2 mass fraction.
+  \item Compute $\text{COV} = \text{Std.\ Dev.} / \text{Mean}$.
+\end{enumerate}
+
+
+\subsection[Wall H2 Concentration]{Wall H\texorpdfstring{$_2$}{2} Concentration}
+
+To assess embrittlement risk, visualise the time-averaged H$_2$ mass
+fraction on the pipe wall:
+
+\begin{enumerate}
+  \item \textbf{Results} $\rightarrow$ \textbf{Contours}.
+  \item \textbf{Surface:} \texttt{wall}.
+  \item \textbf{Field Variable:} Species $\rightarrow$ Mean Mass
+        Fraction of h2 (from time statistics).
+  \item \textbf{Colormap range:} 0 to 0.05 (to highlight regions
+        exceeding 5\% mass fraction).
+\end{enumerate}
+
+\noindent Record the \textbf{maximum} H$_2$ mass fraction on the wall
+and its axial location downstream of the junction.  Eames et
+al.~\cite{Eames2022} reported wall concentrations exceeding 40\% by
+volume for top-side injection at $\beta = 0.25$---an important
+validation benchmark.
+
+
+\subsection{Velocity Vectors at Junction}
+
+\begin{enumerate}
+  \item Create a \textbf{Plane} at $Z = 4600$\,mm (through the junction
+        centre).
+  \item \textbf{Results} $\rightarrow$ \textbf{Vectors}.
+  \item \textbf{Surface:} The plane created above.
+  \item Colour by \textbf{H2 mass fraction} to visualise both the
+        flow pattern and species distribution simultaneously.
+\end{enumerate}
+
+
+\section[y+ Verification]{\texorpdfstring{$y^+$}{y+} Verification}
+
+After the first simulation completes:
+
+\begin{enumerate}
+  \item \textbf{Results} $\rightarrow$ \textbf{Contours}.
+  \item \textbf{Surface:} \texttt{wall}.
+  \item \textbf{Field Variable:} Wall Fluxes $\rightarrow$
+        Wall Yplus (or $y^+$).
+\end{enumerate}
+
+\noindent Verify that $y^+ \leq 1$ over the majority of the wall
+surface.  Localised regions near the junction stagnation point may
+have slightly elevated values ($y^+ \sim 2$--3), which is acceptable.
+If $y^+$ consistently exceeds 5, the first-layer height must be reduced
+and the mesh regenerated.
+
+
+\section{Mesh Independence Study}
+\label{sec:meshindep}
+
+A mesh independence study must be performed for the baseline design
+point ($\beta = 0.25$, $\theta = 90^\circ$, $R_v = 1.0$) before
+committing to the full parametric sweep.  Follow the Grid Convergence
+Index (GCI) procedure of Roache~\cite{Roache1994} and Celik et
+al.~\cite{Celik2008}:
+
+\subsection{Three-Mesh Protocol}
+
+\begin{enumerate}
+  \item Generate three systematically refined meshes by scaling the
+        global element size and BOI element size:
+
+  \begin{table}[H]
+  \centering
+  \caption{Mesh refinement levels for GCI study.}
+  \label{tab:meshlevels}
+  \begin{tabular}{@{}lccc@{}}
+  \toprule
+  \textbf{Mesh} & \textbf{Global Size} & \textbf{BOI Size} &
+  \textbf{Refinement Ratio ($r$)} \\
+  \midrule
+  Coarse & 22.5\,mm & 7.5\,mm & --- \\
+  Medium (baseline) & 15\,mm & 5\,mm & 1.5 \\
+  Fine   & 10\,mm & 3.3\,mm & 1.5 \\
+  \bottomrule
+  \end{tabular}
+  \end{table}
+
+  \item Run each mesh through the complete RANS precursor + transient
+        DDES workflow.
+
+  \item Extract the same output quantities (COV at outlet, maximum
+        wall H$_2$ concentration, pressure drop) from each mesh.
+\end{enumerate}
+
+\subsection{GCI Calculation}
+
+For a monitored quantity $\phi$ from the three meshes
+($\phi_1$ fine, $\phi_2$ medium, $\phi_3$ coarse):
+
+\begin{enumerate}
+  \item Compute the observed order of convergence:
+  \begin{equation}
+    p = \frac{\ln\!\left|\frac{\phi_3 - \phi_2}{\phi_2 - \phi_1}\right|}
+             {\ln(r)}
+    \label{eq:orderp}
+  \end{equation}
+
+  \item Compute the fine-grid GCI:
+  \begin{equation}
+    \text{GCI}_{\text{fine}} =
+    \frac{F_s\;\left|\frac{\phi_2 - \phi_1}{\phi_1}\right|}{r^p - 1}
+    \label{eq:GCI}
+  \end{equation}
+  where $F_s = 1.25$ is the safety factor for three or more
+  grids~\cite{Roache1994}.
+
+  \item A GCI $< 5$\,\% indicates that the medium mesh is
+        sufficiently resolved for the parametric sweep.
+\end{enumerate}
+
+
+\section{Validation Against Reference Data}
+
+For the baseline case ($\beta = 0.25$, $\theta = 90^\circ$,
+$R_v$ corresponding to $\mathcal{D} = 0.2$), compare results against
+Eames et al.~\cite{Eames2022}:
+
+\begin{itemize}
+  \item \textbf{Qualitative:} H$_2$ concentration contours on the
+        pipe centreline plane should show the characteristic
+        stratified plume for top-side injection and improved mixing
+        for bottom-side injection.
+  \item \textbf{Quantitative:} The area-weighted H$_2$ mass fraction
+        at 5\,$d_1$ and 10\,$d_1$ downstream should be within 10\,\%
+        of the reference values.
+  \item \textbf{Maximum wall concentration:} Should reproduce the
+        $>$40\,\% wall concentration reported for top-side injection
+        at low dilution ratios.
+\end{itemize}
+
+\noindent Any systematic discrepancy may arise from differences between
+the OpenFOAM solver (used by Eames et al.) and ANSYS Fluent, particularly
+in the DES shielding function implementation.  Such differences should
+be documented and discussed.
+
+
+% ════════════════════════════════════════════════════════════════
+%  BIBLIOGRAPHY
+% ════════════════════════════════════════════════════════════════
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+
+\end{document}
