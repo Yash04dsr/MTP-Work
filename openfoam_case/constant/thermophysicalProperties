@@ -54,8 +54,9 @@ H2
     }
     transport
     {
-        // Sutherland model fitted to NIST mu = 9.0e-6 Pa.s at ~284 K, 6.9 MPa
-        As      6.362e-07;
+        // Sutherland coeffs fitted to NIST target mu_H2 = 9.0e-6 Pa.s
+        // at T = 284 K (gives mu(284) = 9.00e-6 exactly).
+        As      6.69e-07;
         Ts      72.0;
     }
 }
@@ -87,8 +88,9 @@ CH4
     }
     transport
     {
-        // Sutherland model fitted to NIST mu = 1.25e-5 Pa.s at ~284 K, 6.9 MPa
-        As      1.009e-06;
+        // Sutherland coeffs fitted to NIST target mu_CH4 = 1.25e-5 Pa.s
+        // at T = 284 K (gives mu(284) = 1.250e-5 exactly).
+        As      1.17e-06;
         Ts      164.0;
     }
 }

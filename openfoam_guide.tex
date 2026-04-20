@@ -77,7 +77,7 @@
 % ════════════════════════════════════════════════
 \title{\textbf{OpenFOAM Simulation Guide}\\[6pt]
        \Large Hydrogen--Methane T-Junction DDES\\
-       Equivalent Setup to ANSYS Fluent}
+       Reproducing Eames et al.\ (2022) in OpenFOAM}
 \author{Yash}
 \date{\today}
 
@@ -98,109 +98,240 @@
 \chapter{Introduction}
 \label{ch:intro}
 
-This guide documents the complete OpenFOAM setup for a transient
-Delayed Detached Eddy Simulation (DDES) of hydrogen injection into a
-methane-filled T-junction pipeline.  Every dictionary file, boundary
-condition, and solver setting is a direct translation of the validated
-ANSYS Fluent configuration described in the companion
-\emph{Parameterised CFD Simulation Guide}.
+This guide documents a \emph{reference} OpenFOAM setup that reproduces
+the transient DDES simulation of hydrogen injection into a
+methane-filled T-junction reported by
+\textbf{Eames, Austin \& Wojcik} (\emph{International Journal of
+Hydrogen Energy}, 47:25745--25754, 2022).  Every dictionary file,
+boundary condition and solver setting has been chosen to match
+either the paper directly or the companion Fluent configuration
+(where the Fluent and OpenFOAM setups are intended to be
+numerically equivalent).
 
-\section{Simulation Overview}
+\section{Physical Problem}
+
+Pure hydrogen is injected at high pressure into a methane natural-gas
+pipeline through a $90^{\circ}$ T-junction.  Two aspects make the
+flow unusual:
+
+\begin{enumerate}
+  \item The density ratio $\rho_{\mathrm{CH_4}}/\rho_{\mathrm{H_2}}
+        \approx 8$ at 6.9\,MPa --- far larger than typical single-phase
+        flows --- generates strong \textbf{buoyancy-driven
+        stratification}.
+  \item The low inertia of the H$_2$ branch stream leads to weak jet
+        penetration, concentrating hydrogen against the pipe wall
+        rather than mixing into the bulk.
+\end{enumerate}
+
+The engineering consequence is \textbf{hydrogen embrittlement}:
+localised, near-wall H$_2$ concentrations much higher than the
+nominal blend fraction can accelerate fatigue crack growth in high
+tensile carbon steels.
+
+\section{Objectives of the Simulation}
+
+Following the paper, the simulation must resolve:
 
 \begin{itemize}
-  \item \textbf{Physics:} Compressible binary-species mixing
-        (H$_2$\,/\,CH$_4$), no combustion.
-  \item \textbf{Turbulence:} Spalart--Allmaras DDES with curvature
-        correction.
-  \item \textbf{Operating pressure:} 6.9\,MPa.
-  \item \textbf{Solver:} \texttt{reactingFoam} (compressible,
-        multi-species, transient).
-  \item \textbf{Time step:} $\Delta t = 2\times10^{-4}$\,s,
-        25\,000 steps (5\,s physical time).
+  \item The \textbf{time-averaged wall H$_2$ volume fraction}
+        $\overline{V_R}$ as a function of downstream distance
+        $z/d_1$, for multiple dilution factors.
+  \item The \textbf{maximum vertical-plane H$_2$ concentration}
+        $V_{Rm}$ and its decay with $z$.
+  \item The \textbf{stratification asymmetry} between the upper and
+        lower pipe walls.
+  \item Ultimately, the ratio
+        $\mathcal{R} = \overline{V_{Rm}}/V_{R,T}$
+        at $z/d_1 = 8$, which the paper shows varies from 4.4 to 1.6
+        across the blend-fraction targets of 5--20\,\%.
 \end{itemize}
 
-\section{Fluent-to-OpenFOAM Equivalence}
-
-Table~\ref{tab:equiv} summarises the top-level mapping between the
-Fluent and OpenFOAM configurations.
+\section{Fluent $\leftrightarrow$ Paper $\leftrightarrow$ OpenFOAM}
 
 \begin{table}[H]
 \centering
-\caption{Fluent $\leftrightarrow$ OpenFOAM equivalence summary.}
-\label{tab:equiv}
-\begin{tabularx}{\textwidth}{@{}lXX@{}}
+\caption{Cross-reference of the three equivalent setups.}
+\label{tab:triequiv}
+\small
+\begin{tabularx}{\textwidth}{@{}lXXX@{}}
 \toprule
-\textbf{Setting} & \textbf{Fluent} & \textbf{OpenFOAM} \\
+\textbf{Setting} & \textbf{Fluent (companion guide)} &
+\textbf{Eames 2022} & \textbf{OpenFOAM (this guide)} \\
 \midrule
-Solver          & Pressure-Based, Transient
-                & \texttt{reactingFoam} \\
-Turbulence      & SA-DDES
-                & \texttt{SpalartAllmarasDDES} \\
-P--V coupling   & PISO
-                & PIMPLE (\texttt{nOuterCorrectors 1}) \\
-Momentum scheme & Bounded Central Differencing
-                & LUST \\
-Transient scheme& Bounded Second Order Implicit
-                & \texttt{backward} \\
-Species         & Species Transport (no reactions)
-                & \texttt{reactingMixture}, chemistry off \\
-Meshing         & ANSYS Meshing / Workbench
-                & \texttt{blockMesh} + \texttt{snappyHexMesh} \\
+Solver
+  & Pressure-based transient
+  & \texttt{rhoReactingBuoyantFoam}
+  & \texttt{rhoReactingBuoyantFoam} \\
+Turbulence
+  & SA-DDES + curv.\ corr.
+  & SA-DDES
+  & \texttt{SpalartAllmarasDDES} + curv.\ corr. \\
+P--V coupling
+  & PISO
+  & (OpenFOAM PIMPLE)
+  & PIMPLE, \texttt{nOuterCorrectors 1} \\
+Momentum scheme
+  & Bounded Central Differencing
+  & Low-dissipation central
+  & \texttt{Gauss LUST} \\
+Transient
+  & Bounded 2nd-order implicit
+  & 2nd-order
+  & \texttt{backward} \\
+Inlet profile
+  & Uniform (implicit)
+  & \textbf{Power-law $u_r \!=\! u^{\!*}(1{-}(2r/d^{\!*})^2)^{1/7}$}
+  & \textbf{\texttt{codedFixedValue} power-law, $n{=}7$} \\
+Gravity / buoyancy
+  & Enabled, $g_y\!=\!-9.81$
+  & Enabled
+  & \texttt{constant/g}, $g_y\!=\!-9.81$ \\
+Mesh
+  & ANSYS Meshing (2.8--4.8\,M cells)
+  & \texttt{snappyHexMesh} (2.8--4.8\,M)
+  & \texttt{blockMesh} + \texttt{snappyHexMesh} \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-\section{Case Directory Structure}
+\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{Why this solver?}  Eames et al.\ use
+\texttt{rhoReactingBuoyantFoam} \emph{specifically} because it
+solves for $p_{\mathrm{rgh}} = p - \rho\,\mathbf{g}\!\cdot\!\mathbf{h}$
+rather than $p$ directly.  Removing the hydrostatic component from
+the momentum equation is essential for a flow where buoyancy is the
+dominant driver of the key physical result (stratification).  Using
+the simpler \texttt{reactingFoam} would introduce spurious numerical
+noise in the pressure field and degrade the stratification
+prediction.}}
 
-The complete case follows the standard OpenFOAM three-directory layout:
+
+\section{Case Directory Layout}
 
 \begin{lstlisting}[language={},numbers=none,frame=none,
   backgroundcolor=\color{white}]
 openfoam_case/
   0/                  Initial & boundary conditions
-    U  p  T  H2  CH4  nuTilda  nut  alphat
-  constant/           Physical properties & mesh
-    g  momentumTransport  turbulenceProperties
-    thermophysicalProperties  chemistryProperties
-    combustionProperties  reactions
-    triSurface/       STL geometry files
-  system/             Solver & mesh controls
-    controlDict  fvSchemes  fvSolution
-    blockMeshDict  snappyHexMeshDict
-    surfaceFeatureExtractDict  setFieldsDict
-    decomposeParDict
-  Allrun              Full workflow script
-  Allclean            Clean script
-  generateSTL.py      Geometry generator
+    U  p  p_rgh  T  H2  CH4  nuTilda  nut  alphat
+  constant/
+    g                              gravity vector
+    momentumTransport              turbulence (SA-DDES)
+    turbulenceProperties           Schmidt number
+    thermophysicalProperties       mixture/species
+    chemistryProperties            chemistry OFF
+    combustionProperties           combustion OFF
+    reactions                      empty
+    triSurface/                    STL geometry
+  system/
+    controlDict                    run control + monitors
+    fvSchemes                      discretisation
+    fvSolution                     linear solvers, PIMPLE
+    blockMeshDict                  background mesh
+    snappyHexMeshDict              conformal mesh
+    surfaceFeatureExtractDict      feature extraction
+    setFieldsDict                  branch H2 patching
+    decomposeParDict               parallel decomposition
+  Allrun                           end-to-end pipeline
+  Allclean                         cleanup
+  generateSTL.py                   STL generator
 \end{lstlisting}
 
 
 % ════════════════════════════════════════════════════════════════
-%  CHAPTER 2 — Geometry and Meshing
+%  CHAPTER 2 — Governing Equations
+% ════════════════════════════════════════════════════════════════
+\chapter{Governing Equations}
+\label{ch:goveq}
+
+These are the equations actually solved by
+\texttt{rhoReactingBuoyantFoam}, identical to those of the paper.
+
+\section{Continuity}
+
+\[
+  \frac{\partial \rho}{\partial t}
+  + \nabla \!\cdot\! (\rho \mathbf{u}) = 0
+\]
+
+\section{Momentum (with Buoyant Pressure Decomposition)}
+
+The solver writes $p = p_{\mathrm{rgh}} + \rho\,\mathbf{g}\!\cdot\!
+\mathbf{h}$ and advances
+$p_{\mathrm{rgh}}$ instead of $p$:
+
+\[
+  \frac{\partial (\rho u_i)}{\partial t}
+  + \frac{\partial (\rho u_i u_j)}{\partial x_j}
+  = -\frac{\partial p_{\mathrm{rgh}}}{\partial x_i}
+    - (\mathbf{g}\!\cdot\!\mathbf{h}) \frac{\partial \rho}{\partial x_i}
+    + \frac{\partial}{\partial x_j}\!
+      \left[\mu_e\!\left(\frac{\partial u_i}{\partial x_j}
+      + \frac{\partial u_j}{\partial x_i}\right)\right]
+    + \rho g_i
+\]
+
+\noindent The second term on the right absorbs the hydrostatic
+gradient, so $p_{\mathrm{rgh}}$ has only the dynamic contribution.
+
+\section{Species Transport}
+
+For each species $k \in \{\mathrm{H_2},\mathrm{CH_4}\}$:
+
+\[
+  \frac{\partial (\rho Y_k)}{\partial t}
+  + \nabla\!\cdot\!(\rho Y_k \mathbf{u})
+  = \nabla\!\cdot\!(\mu_e \nabla Y_k)
+\]
+
+\noindent CH$_4$ is the \textbf{inert (balance) species}, so
+$Y_{\mathrm{CH_4}} = 1 - Y_{\mathrm{H_2}}$ everywhere.
+
+\section{Sensible Enthalpy}
+
+\[
+  \frac{\partial (\rho h)}{\partial t}
+  + \nabla\!\cdot\!(\rho \mathbf{u} h)
+  + \frac{\partial (\rho K)}{\partial t}
+  + \nabla\!\cdot\!(\rho \mathbf{u} K)
+  - \frac{\partial p}{\partial t}
+  = \nabla\!\cdot\!(\mu_e \nabla h)
+\]
+
+\noindent with $K = \tfrac{1}{2}|\mathbf{u}|^2$ the specific kinetic
+energy.  This matches equation (11) of the paper verbatim.
+
+\section{Closure: Turbulence Model}
+
+The modified turbulent viscosity $\tilde{\nu}$ obeys the
+Spalart--Allmaras equation with the DDES length-scale modification,
+closed by \texttt{SpalartAllmarasDDES} in OpenFOAM.
+
+
+% ════════════════════════════════════════════════════════════════
+%  CHAPTER 3 — Geometry and Meshing
 % ════════════════════════════════════════════════════════════════
 \chapter{Geometry and Meshing}
 \label{ch:mesh}
 
 \section{Geometry Definition}
 
-The T-junction consists of two intersecting cylinders:
-
 \begin{table}[H]
 \centering
-\caption{Geometry dimensions.}
+\caption{Geometry dimensions (matches Eames 2022 Fig.\ 1).}
 \label{tab:geom}
 \begin{tabular}{@{}llr@{}}
 \toprule
 \textbf{Component} & \textbf{Parameter} & \textbf{Value} \\
 \midrule
 Main pipe   & Diameter $d_1$       & 460\,mm \\
-            & Length               & 9200\,mm \\
+            & Length               & 9200\,mm ($= 20\,d_1$) \\
             & Axis                 & $Z$-direction \\
 Branch pipe & Diameter $d_2$       & 115\,mm ($\beta=0.25$) \\
             & Length               & 1380\,mm ($\geq 10\,d_2$) \\
             & Axis                 & $+Y$-direction \\
-            & Junction location    & $Z = 4600$\,mm \\
-            & Injection angle      & $90^{\circ}$ \\
+            & Junction             & $Z = 4600$\,mm ($= 10\,d_1$) \\
+            & Injection angle      & $90^{\circ}$ (top-side) \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -208,33 +339,27 @@ Branch pipe & Diameter $d_2$       & 115\,mm ($\beta=0.25$) \\
 
 \section{Step 1: Generate the STL}
 
-A Python script (\texttt{generateSTL.py}) creates the T-junction
-surface as four separate STL files in \texttt{constant/triSurface/}:
+The Python script \texttt{generateSTL.py} creates four named STL
+surfaces in \texttt{constant/triSurface/}:
 
 \begin{enumerate}
-  \item \texttt{wall.stl} --- combined wall surfaces of both pipes.
+  \item \texttt{wall.stl} --- combined pipe wall surfaces.
   \item \texttt{main\_inlet.stl} --- cap at $Z = 0$.
   \item \texttt{outlet.stl} --- cap at $Z = 9.2$\,m.
   \item \texttt{branch\_inlet.stl} --- cap at the branch tip.
 \end{enumerate}
 
-\noindent Run:
 \begin{lstlisting}[language=bash,numbers=none]
+pip install numpy numpy-stl
 python3 generateSTL.py
 \end{lstlisting}
-
-\noindent\textbf{Dependency:} \texttt{numpy} and \texttt{numpy-stl}
-(\texttt{pip install numpy-stl}).
 
 
 \section{Step 2: Background Mesh (\texttt{blockMesh})}
 
-The \texttt{blockMeshDict} creates a single hexahedral block enclosing
-the entire domain:
-
 \begin{table}[H]
 \centering
-\caption{\texttt{blockMeshDict} extents.}
+\caption{\texttt{blockMeshDict} extents (background hex mesh).}
 \begin{tabular}{@{}lrr@{}}
 \toprule
 \textbf{Direction} & \textbf{Min (m)} & \textbf{Max (m)} \\
@@ -246,90 +371,44 @@ $Z$ & $-0.10$ & $+9.30$ \\
 \end{tabular}
 \end{table}
 
-Cell count: $30 \times 90 \times 470$ (background cell size $\approx 20$\,mm).
+Cell count $30\times90\times470$ gives a background size
+$\sim 20$\,mm.  \texttt{snappyHexMesh} then refines to level 3 inside
+the junction BOI (a 690\,mm-radius sphere centred on the branch).
+
+
+\section{Steps 3--4: Features + \texttt{snappyHexMesh}}
 
 \begin{lstlisting}[language=bash,numbers=none]
 blockMesh
-\end{lstlisting}
-
-
-\section{Step 3: Feature Extraction}
-
-Extract sharp edges from the STL files so that \texttt{snappyHexMesh}
-can snap mesh vertices accurately to geometric features:
-
-\begin{lstlisting}[language=bash,numbers=none]
 surfaceFeatureExtract
-\end{lstlisting}
-
-\noindent This reads \texttt{surfaceFeatureExtractDict} and produces
-\texttt{.eMesh} files for each STL surface.
-
-
-\section{Step 4: \texttt{snappyHexMesh}}
-
-The \texttt{snappyHexMeshDict} performs three operations:
-
-\subsection{Castellated Mesh}
-
-\begin{itemize}
-  \item Refines cells intersecting the STL surfaces to \textbf{level 2--3}.
-  \item Applies \textbf{level 3} refinement inside a sphere of radius
-        690\,mm centred at the junction $(0, 0, 4.6)$ --- matching the
-        Fluent BOI region ($1.5 \times d_1$).
-  \item Removes cells outside the pipe geometry.
-  \item \texttt{locationInMesh}: $(0, 0, 2.0)$ --- a point guaranteed
-        to be inside the main pipe.
-\end{itemize}
-
-\subsection{Snapping}
-
-Mesh vertices are iteratively moved onto the STL surface.  The feature
-edges (\texttt{.eMesh} files) ensure clean resolution of the pipe--branch
-intersection.
-
-\subsection{Boundary Layers}
-
-Five prismatic layers are added to the \texttt{wall} patch:
-
-\begin{table}[H]
-\centering
-\caption{Layer insertion parameters.}
-\begin{tabular}{@{}lr@{}}
-\toprule
-\textbf{Parameter}     & \textbf{Value} \\
-\midrule
-Surface layers          & 5 \\
-Expansion ratio         & 1.2 \\
-Final layer thickness   & 0.3 (relative) \\
-Min thickness           & 0.1 (relative) \\
-Feature angle           & $60^{\circ}$ \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{lstlisting}[language=bash,numbers=none]
 snappyHexMesh -overwrite
 \end{lstlisting}
 
-\noindent The \texttt{-overwrite} flag writes the final mesh directly
-into \texttt{constant/polyMesh/} rather than creating time directories.
+\noindent The \texttt{snappyHexMeshDict} performs:
+
+\begin{itemize}
+  \item \textbf{Castellate:} cell splitting at refinement levels
+        $(2,3)$ on pipe walls, plus uniform level 3 inside the
+        junction BOI.
+  \item \textbf{Snap:} implicit + explicit feature snap (10 iterations).
+  \item \textbf{Layers:} 5 prismatic layers at the wall, expansion
+        ratio 1.2, final layer 30\,\% of the cell size.
+\end{itemize}
+
+\noindent Target cell count: \textbf{2.8--4.8\,M}, matching the paper.
 
 \subsection{Boundary Patches}
 
-\texttt{snappyHexMesh} automatically creates the following patches from
-the named STL regions:
-
 \begin{table}[H]
 \centering
-\caption{Boundary patches.}
+\caption{Patches created by \texttt{snappyHexMesh}.}
 \begin{tabular}{@{}lll@{}}
 \toprule
-\textbf{Patch name} & \textbf{Type} & \textbf{Description} \\
+\textbf{Patch} & \textbf{Type} & \textbf{Description} \\
 \midrule
-\texttt{main\_inlet}   & \texttt{patch} & Main pipe inlet ($Z = 0$) \\
-\texttt{branch\_inlet}  & \texttt{patch} & Branch pipe inlet \\
-\texttt{outlet}         & \texttt{patch} & Main pipe outlet ($Z = 9.2$\,m) \\
+\texttt{main\_inlet}   & \texttt{patch} & $Z = 0$ cap \\
+\texttt{branch\_inlet}  & \texttt{patch} & Branch tip \\
+\texttt{outlet}         & \texttt{patch} & $Z = 9.2$\,m cap \\
 \texttt{wall}           & \texttt{wall}  & All pipe walls \\
 \bottomrule
 \end{tabular}
@@ -337,15 +416,12 @@ the named STL regions:
 
 
 % ════════════════════════════════════════════════════════════════
-%  CHAPTER 3 — Physical Models and Turbulence
+%  CHAPTER 4 — Physical Models and Properties
 % ════════════════════════════════════════════════════════════════
-\chapter{Physical Models and Turbulence}
+\chapter{Physical Models and Properties}
 \label{ch:models}
 
-\section{Turbulence Model (\texttt{momentumTransport})}
-
-The turbulence model is configured in
-\texttt{constant/momentumTransport}:
+\section{Turbulence Model (\texttt{constant/momentumTransport})}
 
 \begin{lstlisting}[language={},title=constant/momentumTransport]
 simulationType  LES;
@@ -357,11 +433,6 @@ LES
     printCoeffs     on;
     delta           cubeRootVol;
 
-    cubeRootVolCoeffs
-    {
-        deltaCoeff  1;
-    }
-
     SpalartAllmarasDDESCoeffs
     {
         curvatureCorrection yes;
@@ -369,44 +440,28 @@ LES
 }
 \end{lstlisting}
 
-\subsection{Key Settings}
-
-\begin{itemize}
-  \item \textbf{simulationType LES:}  In OpenFOAM, DES/DDES models
-        are classified under the LES framework.  The
-        \texttt{SpalartAllmarasDDES} model automatically switches
-        between RANS behaviour in attached boundary layers and LES
-        behaviour in separated regions.
-  \item \textbf{Curvature correction:}  Enabled to improve prediction
-        accuracy in the curved flow region near the T-junction.
-        Equivalent to the ``Curvature Correction'' checkbox in
-        Fluent's viscous model panel.
-  \item \textbf{delta cubeRootVol:}  The LES filter width is taken as
-        the cube root of the cell volume ($\Delta = V^{1/3}$), which
-        is the standard choice for unstructured meshes.
-\end{itemize}
+\noindent DES/DDES models are classified as LES in OpenFOAM.  The
+\texttt{SpalartAllmarasDDES} closure automatically switches between
+RANS (in attached boundary layers) and LES (in separated, shedding
+regions of the junction wake).
 
 \subsection{Turbulent Schmidt Number}
-
-The turbulent Schmidt number is set in
-\texttt{constant/turbulenceProperties}:
 
 \begin{lstlisting}[language={},title=constant/turbulenceProperties]
 Sct     0.5;
 \end{lstlisting}
 
-\noindent This matches the Fluent TUI command
-\texttt{/define/models/viscous/turbulent-schmidt-number 0.5}.
+\noindent $Sc_t = 0.5$ (versus the OpenFOAM default of 0.7) aligns
+with the companion Fluent case.
 
 
-\section{Species Transport (\texttt{thermophysicalProperties})}
+\section{Thermophysical Properties}
 \label{sec:thermo}
 
-The binary H$_2$/CH$_4$ mixture is defined in
-\texttt{constant/thermophysicalProperties}:
+The binary H$_2$/CH$_4$ mixture is defined via JANAF thermodynamics
++ Sutherland transport + perfect-gas equation of state:
 
-\begin{lstlisting}[language={},title=constant/thermophysicalProperties
-  (header)]
+\begin{lstlisting}[language={},title=constant/thermophysicalProperties (header)]
 thermoType
 {
     type            heRhoThermo;
@@ -419,69 +474,42 @@ thermoType
 }
 
 inertSpecie CH4;
-species ( H2 CH4 );
+species     ( H2 CH4 );
 \end{lstlisting}
 
-\subsection{Thermo-type Breakdown}
+\subsection{Species Properties (NIST / Paper Verification)}
 
 \begin{table}[H]
 \centering
-\caption{\texttt{thermoType} entries and their Fluent equivalents.}
-\label{tab:thermotype}
-\begin{tabularx}{\textwidth}{@{}lXX@{}}
-\toprule
-\textbf{Entry} & \textbf{OpenFOAM} & \textbf{Fluent Equivalent} \\
-\midrule
-\texttt{type}            & \texttt{heRhoThermo}
-  & Pressure-based energy with density \\
-\texttt{mixture}         & \texttt{reactingMixture}
-  & Species Transport model \\
-\texttt{transport}       & \texttt{sutherland}
-  & Kinetic Theory / Sutherland viscosity \\
-\texttt{thermo}          & \texttt{janaf}
-  & Polynomial $c_p$ (piecewise) \\
-\texttt{equationOfState} & \texttt{perfectGas}
-  & Ideal Gas density law \\
-\texttt{energy}          & \texttt{sensibleEnthalpy}
-  & Energy Equation enabled \\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-\subsection{Species Properties (NIST Reference Data)}
-
-Each species entry contains molecular weight, JANAF thermodynamic
-coefficients, and Sutherland transport coefficients fitted to NIST
-data at 6.9\,MPa:
-
-\begin{table}[H]
-\centering
-\caption{Species properties (NIST verification values at 284\,K, 6.9\,MPa).}
+\caption{Species properties.  The JANAF coefficients reproduce the
+         paper's constant-$c_p$ values to within 2\,\% at $T=284$\,K.}
 \label{tab:nist}
-\begin{tabular}{@{}lrrl@{}}
+\small
+\begin{tabular}{@{}lrrr@{}}
 \toprule
 \textbf{Property} & \textbf{CH$_4$} & \textbf{H$_2$} & \textbf{Source} \\
 \midrule
-Molecular weight (kg\,kmol$^{-1}$) & 16.043  & 2.016   & NIST \\
-$c_p$ (J\,kg$^{-1}$\,K$^{-1}$)    & 2580    & 14\,500 & NIST \\
-Thermal conductivity (W\,m$^{-1}$\,K$^{-1}$) & 0.038 & 0.185 & NIST \\
-Dynamic viscosity (Pa\,s) & $1.25\times10^{-5}$ & $9.0\times10^{-6}$ & NIST \\
+Molecular weight (kg/kmol) & 16.043  & 2.016 & NIST \\
+$c_p$ at 284\,K (J/kg/K) (JANAF)   & 2193  & 14\,244 & this work \\
+$c_p$ at 284\,K (J/kg/K) (paper)   & 2231.5 & 14\,320 & Eames 2022 \\
+Dynamic viscosity at 284\,K (Pa\,s) & $1.25\!\times\!10^{-5}$ & $9.0\!\times\!10^{-6}$ & NIST \\
+Sutherland $A_s$ (Pa\,s/K$^{1/2}$)  & $1.17\!\times\!10^{-6}$ & $6.69\!\times\!10^{-7}$ & fitted \\
+Sutherland $T_s$ (K)                & 164   & 72 & standard \\
 \bottomrule
 \end{tabular}
 \end{table}
 
+\noindent The JANAF polynomials are marginally \emph{more accurate}
+than the paper's constant-$c_p$ assumption because they capture the
+weak temperature dependence of $c_p$ across the 284--293\,K inlet
+temperature difference.
 
-\section{Chemistry and Combustion (Disabled)}
 
-Since this is a mechanical mixing study (no combustion), the chemistry
-and combustion models are explicitly disabled:
+\section{Chemistry \& Combustion (Disabled)}
 
 \begin{lstlisting}[language={},title=constant/chemistryProperties]
-chemistryType
-{
-    chemistrySolver none;
-}
-chemistry       off;
+chemistryType { chemistrySolver none; }
+chemistry     off;
 \end{lstlisting}
 
 \begin{lstlisting}[language={},title=constant/combustionProperties]
@@ -489,447 +517,155 @@ combustionModel none;
 \end{lstlisting}
 
 \begin{lstlisting}[language={},title=constant/reactions]
-species ( H2 CH4 );
+species   ( H2 CH4 );
 reactions ();
 \end{lstlisting}
 
-\noindent This is equivalent to setting \textbf{Reactions: Disabled}
-in Fluent's Species Transport panel.
+\noindent This is the ``both combustion and reactions switched off''
+configuration stated in the paper.
 
 
 \section{Gravity}
-
-Gravity is set in \texttt{constant/g}:
 
 \begin{lstlisting}[language={},title=constant/g]
 dimensions  [0 1 -2 0 0 0 0];
 value       (0 -9.81 0);
 \end{lstlisting}
 
-\noindent Combined with the \texttt{perfectGas} equation of state,
-the solver fully resolves buoyancy-driven stratification (density
-ratio CH$_4$:H$_2$ $\approx 8$ at 6.9\,MPa).  This is equivalent
-to Fluent's gravity enablement with \emph{Specified Operating
-Density = 0}.
+\noindent With top-side injection, the pipe axis is along $Z$ and
+gravity acts along $-Y$.  The $\rho\!:\!8$ density contrast between
+CH$_4$ and H$_2$ generates the stratification that dominates the
+wall-concentration map.
 
 
 % ════════════════════════════════════════════════════════════════
-%  CHAPTER 4 — Boundary Conditions
+%  CHAPTER 5 — Boundary and Initial Conditions
 % ════════════════════════════════════════════════════════════════
-\chapter{Boundary Conditions}
+\chapter{Boundary and Initial Conditions}
 \label{ch:bc}
 
-All boundary condition files reside in the \texttt{0/} directory.
-Each file specifies an \texttt{internalField} (initial value) and
-a \texttt{boundaryField} with entries for every patch.
+\section{Power-Law Inlet Velocity Profile}
 
-\section{Velocity (\texttt{0/U})}
+Eames et al.\ impose a fully-developed turbulent pipe profile at
+both inlets:
 
-\begin{table}[H]
-\centering
-\caption{Velocity boundary conditions.}
-\begin{tabularx}{\textwidth}{@{}lllX@{}}
-\toprule
-\textbf{Patch} & \textbf{Type} & \textbf{Value} & \textbf{Notes} \\
-\midrule
-\texttt{main\_inlet}
-  & \texttt{fixedValue}
-  & $(0,\; 0,\; 10)$\,m/s
-  & 10\,m/s along $+Z$ \\
-\texttt{branch\_inlet}
-  & \texttt{fixedValue}
-  & $(0,\; {-32},\; 0)$\,m/s
-  & 32\,m/s along $-Y$ (into main pipe) \\
-\texttt{outlet}
-  & \texttt{inletOutlet}
-  & \texttt{inletValue} $(0,0,0)$
-  & Prevents backflow \\
-\texttt{wall}
-  & \texttt{noSlip}
-  & ---
-  & Stationary, no-slip \\
-\bottomrule
-\end{tabularx}
-\end{table}
+\begin{equation}
+  u_r = u^{\!*}\left[1 - \left(\frac{2r}{d^{\!*}}\right)^{\!2}\right]^{1/n},
+  \qquad n = 7
+  \label{eq:powerlaw}
+\end{equation}
+
+\noindent where $r$ is the radial distance from the pipe centreline
+and $d^{\!*}$, $u^{\!*}$ are the pipe diameter and centreline speed.
+In OpenFOAM this is implemented with a \texttt{codedFixedValue} BC
+whose kernel is compiled at the first run:
+
+\begin{lstlisting}[language={},title=0/U (main\_inlet excerpt)]
+main_inlet
+{
+    type    codedFixedValue;
+    value   uniform (0 0 10);
+    name    mainInletPowerLaw;
+    code
+    #{
+        const vectorField& Cf = this->patch().Cf();
+        vectorField& field = *this;
+        const scalar d    = 0.46,  uMax = 10.0,  n = 7.0;
+        forAll(Cf, i)
+        {
+            const scalar r   = Foam::sqrt(sqr(Cf[i].x())
+                                        + sqr(Cf[i].y()));
+            const scalar arg = Foam::max(1.0 - sqr(2*r/d), scalar(0));
+            field[i] = vector(0, 0, uMax*Foam::pow(arg, 1.0/n));
+        }
+    #};
+}
+\end{lstlisting}
+
+The branch inlet uses the same formula with
+$d^{\!*} = 0.115$\,m, $u^{\!*} = 32$\,m/s along $-Y$, and radius
+measured from the branch axis (which passes through
+$(0,\,y,\,4.6)$).
 
 \subsection{Branch Velocity Derivation}
 
-The branch velocity of 32\,m/s is derived from the volumetric
-dilution factor $\mathcal{D} = 0.2$:
+Using the paper's definition of the volumetric dilution factor:
 \[
-  \mathcal{D} = \beta^2 \frac{u_2}{u_1}
-  \quad\Rightarrow\quad
-  0.2 = (0.25)^2 \times \frac{u_2}{10}
-  \quad\Rightarrow\quad
-  u_2 = 32\;\text{m/s}
+  \mathcal{D}
+  = \left(\frac{d_2}{d_1}\right)^{\!2} \frac{u_2}{u_1}
+  = (0.25)^2 \frac{u_2}{10}
 \]
+For $\mathcal{D} = 0.2$ this gives $u_2 = 32$\,m/s, matching
+equations (2)--(7) of the paper.
 
 
-\section{Pressure (\texttt{0/p})}
+\section{Pressure (\texttt{0/p} and \texttt{0/p\_rgh})}
+
+\texttt{rhoReactingBuoyantFoam} solves for
+$p_{\mathrm{rgh}} = p - \rho\,\mathbf{g}\!\cdot\!\mathbf{h}$ and
+reconstructs $p$ internally.  All physically meaningful pressure
+BCs therefore live in \texttt{0/p\_rgh}:
 
 \begin{table}[H]
 \centering
 \caption{Pressure boundary conditions.}
 \begin{tabularx}{\textwidth}{@{}lllX@{}}
 \toprule
-\textbf{Patch} & \textbf{Type} & \textbf{Value (Pa)} & \textbf{Notes} \\
+\textbf{Patch} & \textbf{\texttt{p\_rgh} type} & \textbf{Value (Pa)} & \textbf{Notes} \\
 \midrule
 \texttt{main\_inlet}
-  & \texttt{zeroGradient} & --- & Extrapolated from interior \\
+  & \texttt{fixedFluxPressure} & --- & Balances body force \\
 \texttt{branch\_inlet}
-  & \texttt{zeroGradient} & --- & Extrapolated from interior \\
+  & \texttt{fixedFluxPressure} & --- & Balances body force \\
 \texttt{outlet}
-  & \texttt{fixedValue} & 6\,900\,000
-  & Operating pressure (gauge 0 relative) \\
+  & \texttt{prghPressure}      & $6\,900\,000$ & Hydrostatic removed \\
 \texttt{wall}
-  & \texttt{fixedFluxPressure} & ---
-  & Adjusts pressure gradient for body forces \\
+  & \texttt{fixedFluxPressure} & --- & Balances body force \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
-\textbf{Note:}  In OpenFOAM's compressible solvers, \texttt{p} is the
-absolute pressure (not gauge).  The \texttt{fixedValue} at the outlet
-is therefore set to the full operating pressure of 6.9\,MPa.  This is
-equivalent to Fluent's gauge pressure of 0\,Pa with operating pressure
-6.9\,MPa.}}
+\noindent The \texttt{prghPressure} BC at the outlet takes the
+\emph{absolute} outlet pressure ($6.9$\,MPa) and automatically
+subtracts $\rho\,\mathbf{g}\!\cdot\!\mathbf{h}$, so the stored
+$p_{\mathrm{rgh}}$ field is what the solver actually works with.
+
+\texttt{0/p} is stored with \texttt{type calculated} everywhere
+because it is purely derived from $p_{\mathrm{rgh}}$.
 
 
-\section{Temperature (\texttt{0/T})}
-
-\begin{table}[H]
-\centering
-\caption{Temperature boundary conditions.}
-\begin{tabular}{@{}llr@{}}
-\toprule
-\textbf{Patch} & \textbf{Type} & \textbf{Value (K)} \\
-\midrule
-\texttt{main\_inlet}   & \texttt{fixedValue}  & 284 \\
-\texttt{branch\_inlet}  & \texttt{fixedValue}  & 293 \\
-\texttt{outlet}         & \texttt{inletOutlet} & 284 (backflow) \\
-\texttt{wall}           & \texttt{zeroGradient}& --- (adiabatic) \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-
-\section{Species Mass Fractions (\texttt{0/H2}, \texttt{0/CH4})}
+\section{Temperature, Species, Turbulence}
 
 \begin{table}[H]
 \centering
-\caption{H$_2$ mass fraction boundary conditions.}
-\begin{tabular}{@{}llr@{}}
+\caption{Scalar boundary conditions.}
+\small
+\begin{tabularx}{\textwidth}{@{}llXllX@{}}
 \toprule
-\textbf{Patch} & \textbf{Type} & $Y_{\mathrm{H_2}}$ \\
+\textbf{Patch} &
+\multicolumn{2}{c}{\textbf{$T$}} &
+\multicolumn{2}{c}{\textbf{$Y_{\mathrm{H_2}}$}} &
+\textbf{$\tilde{\nu}$} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+& type & value (K) & type & value & \\
 \midrule
-\texttt{main\_inlet}   & \texttt{fixedValue}  & 0 (pure CH$_4$) \\
-\texttt{branch\_inlet}  & \texttt{fixedValue}  & 1 (pure H$_2$) \\
-\texttt{outlet}         & \texttt{inletOutlet} & 0 (backflow) \\
-\texttt{wall}           & \texttt{zeroGradient}& --- \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\noindent CH$_4$ is the \textbf{inert (balance) species}:
-$Y_{\mathrm{CH_4}} = 1 - Y_{\mathrm{H_2}}$.  Its boundary values
-mirror H$_2$ accordingly.
-
-
-\section{Turbulence Fields (\texttt{0/nuTilda}, \texttt{0/nut})}
-
-\begin{table}[H]
-\centering
-\caption{Turbulence boundary conditions.}
-\begin{tabularx}{\textwidth}{@{}llrX@{}}
-\toprule
-\textbf{Patch} & \textbf{Type} & \textbf{Value} & \textbf{Notes} \\
-\midrule
-\multicolumn{4}{@{}l}{\textbf{\texttt{nuTilda}} (SA working variable)} \\
-\midrule
-\texttt{main\_inlet}   & \texttt{fixedValue}  & $8\times10^{-7}$ & $\approx 3\nu$ \\
-\texttt{branch\_inlet}  & \texttt{fixedValue}  & $8\times10^{-7}$ & \\
-\texttt{outlet}         & \texttt{inletOutlet} & $8\times10^{-7}$ & \\
-\texttt{wall}           & \texttt{fixedValue}  & 0                & \\
-\midrule
-\multicolumn{4}{@{}l}{\textbf{\texttt{nut}} (turbulent viscosity)} \\
-\midrule
-Inlets / outlet & \texttt{calculated} & $10^{-6}$ & Derived from \texttt{nuTilda} \\
-\texttt{wall}   & \texttt{nutUSpaldingWallFunction} & 0 & All-$y^+$ wall function \\
+\texttt{main\_inlet}  & \texttt{fixedValue}  & 284 & \texttt{fixedValue} & 0 & $8\!\times\!10^{-7}$ \\
+\texttt{branch\_inlet} & \texttt{fixedValue}  & 293 & \texttt{fixedValue} & 1 & $8\!\times\!10^{-7}$ \\
+\texttt{outlet}        & \texttt{inletOutlet} & 284 & \texttt{inletOutlet} & 0 & \texttt{inletOutlet} \\
+\texttt{wall}          & \texttt{zeroGradient}& --- & \texttt{zeroGradient} & --- & \texttt{fixedValue 0} \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-
-\section{Thermal Diffusivity (\texttt{0/alphat})}
-
-\begin{table}[H]
-\centering
-\caption{Turbulent thermal diffusivity BCs.}
-\begin{tabular}{@{}ll@{}}
-\toprule
-\textbf{Patch} & \textbf{Type} \\
-\midrule
-Inlets / outlet & \texttt{calculated} \\
-\texttt{wall}   & \texttt{compressible::alphatWallFunction} ($Pr_t = 0.85$) \\
-\bottomrule
-\end{tabular}
-\end{table}
+\noindent The walls are \textbf{adiabatic} (\texttt{zeroGradient} on
+$T$) to match the paper, which does not discuss wall heat transfer.
 
 
-% ════════════════════════════════════════════════════════════════
-%  CHAPTER 5 — Solution Methods and Controls
-% ════════════════════════════════════════════════════════════════
-\chapter{Solution Methods and Controls}
-\label{ch:solution}
+\section{Initialisation (\texttt{setFieldsDict})}
 
-\section{Pressure--Velocity Coupling (\texttt{fvSolution})}
-
-The PIMPLE algorithm with \texttt{nOuterCorrectors = 1} is used,
-which reduces to the PISO algorithm --- matching the Fluent setup
-exactly.
-
-\begin{lstlisting}[language={},title=system/fvSolution (PIMPLE block)]
-PIMPLE
-{
-    nOuterCorrectors    1;      // = PISO
-    nCorrectors         2;
-    nNonOrthogonalCorrectors 1;
-    momentumPredictor   yes;
-}
-\end{lstlisting}
-
-\subsection{Linear Solvers}
-
-\begin{table}[H]
-\centering
-\caption{Linear solver configuration.}
-\begin{tabular}{@{}llll@{}}
-\toprule
-\textbf{Field} & \textbf{Solver} & \textbf{Preconditioner} & \textbf{Tolerance} \\
-\midrule
-\texttt{p}      & GAMG         & Gauss-Seidel & $10^{-6}$ \\
-\texttt{U, h, nuTilda} & PBiCGStab & DILU     & $10^{-6}$ \\
-\texttt{H2, CH4}& PBiCGStab    & DILU         & $10^{-8}$ \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-
-\section{Discretisation Schemes (\texttt{fvSchemes})}
-
-\subsection{Temporal}
-
-\begin{lstlisting}[language={},numbers=none]
-ddtSchemes { default  backward; }
-\end{lstlisting}
-
-\noindent \texttt{backward} is second-order implicit and unbounded.
-It is the OpenFOAM equivalent of Fluent's \textbf{Bounded Second
-Order Implicit} transient formulation.
-
-\subsection{Gradient}
-
-\begin{lstlisting}[language={},numbers=none]
-gradSchemes { default  Gauss linear; }
-\end{lstlisting}
-
-\noindent Equivalent to Fluent's \textbf{Least Squares Cell Based}
-gradient.
-
-\subsection{Convection (Divergence)}
-
-\begin{table}[H]
-\centering
-\caption{Convection scheme mapping.}
-\label{tab:divschemes}
-\begin{tabularx}{\textwidth}{@{}llX@{}}
-\toprule
-\textbf{Term} & \textbf{OpenFOAM Scheme} & \textbf{Fluent Equivalent} \\
-\midrule
-\texttt{div(phi,U)}
-  & \texttt{Gauss LUST grad(U)}
-  & Bounded Central Differencing \\
-\texttt{div(phi,H2)} etc.
-  & \texttt{Gauss limitedLinear 1}
-  & Second Order Upwind \\
-\texttt{div(phi,nuTilda)}
-  & \texttt{Gauss limitedLinear 1}
-  & Second Order Upwind \\
-\texttt{div(phi,h)}
-  & \texttt{Gauss limitedLinear 1}
-  & Second Order Upwind \\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
-\textbf{Why LUST for momentum?}  LUST (Linear-Upwind Stabilised
-Transport) is a blend of 75\,\% linear (central) and 25\,\% upwind.
-It provides the low numerical dissipation needed for resolving
-turbulent structures in DES regions while maintaining stability.
-This is the closest OpenFOAM equivalent to Fluent's Bounded Central
-Differencing.}}
-
-\subsection{Laplacian and Surface-Normal Gradient}
-
-\begin{lstlisting}[language={},numbers=none]
-laplacianSchemes { default  Gauss linear corrected; }
-snGradSchemes    { default  corrected; }
-\end{lstlisting}
-
-\noindent The \texttt{corrected} scheme provides second-order accuracy
-on non-orthogonal meshes.  This handles the equivalent of Fluent's
-\textbf{PRESTO!} pressure interpolation via the corrected Laplacian.
-
-
-\section{Under-Relaxation Factors}
-
-\begin{table}[H]
-\centering
-\caption{Under-relaxation factors (matching Fluent).}
-\label{tab:urf}
-\begin{tabular}{@{}lr@{}}
-\toprule
-\textbf{Variable} & \textbf{Factor} \\
-\midrule
-Pressure (\texttt{p})            & 0.3 \\
-Momentum (\texttt{U})            & 0.7 \\
-Modified turbulent viscosity (\texttt{nuTilda}) & 0.8 \\
-Species (\texttt{H2}, \texttt{CH4}) & 0.9 \\
-Energy (\texttt{h})              & 1.0 \\
-Density (\texttt{rho})           & 1.0 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-
-% ════════════════════════════════════════════════════════════════
-%  CHAPTER 6 — Run Setup, Monitors, and Execution
-% ════════════════════════════════════════════════════════════════
-\chapter{Run Setup, Monitors, and Execution}
-\label{ch:run}
-
-\section{Step 1: Time-Stepping Parameters}
-
-Set in \texttt{system/controlDict}:
-
-\begin{table}[H]
-\centering
-\caption{Run calculation parameters.}
-\label{tab:runparams}
-\begin{tabular}{@{}lr@{}}
-\toprule
-\textbf{Parameter} & \textbf{Value} \\
-\midrule
-Time step size, $\Delta t$ & $2\times10^{-4}$\,s \\
-End time                   & 5\,s (= 25\,000 steps) \\
-Write interval             & 0.1\,s (= 500 steps) \\
-Write format               & binary \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\noindent The time step gives $\text{CFL} \approx 1.3$ based on
-the branch velocity (32\,m/s) and a representative cell size of
-$\sim 5$\,mm in the junction region.
-
-
-\section{Step 2: Monitors (Function Objects)}
-
-All monitors are defined as function objects in the
-\texttt{functions} sub-dictionary of \texttt{controlDict}.
-
-\subsection{Residuals}
-
-\begin{lstlisting}[language={},title=Residual monitor]
-residuals
-{
-    type            solverInfo;
-    libs            (utilityFunctionObjects);
-    writeControl    timeStep;
-    writeInterval   1;
-    fields          (U p h nuTilda H2);
-}
-\end{lstlisting}
-
-\noindent Output is written to \texttt{postProcessing/residuals/}.
-
-
-\subsection{Surface Monitors}
-
-Three surface monitors track mixing at the outlet and mass
-conservation:
-
-\begin{table}[H]
-\centering
-\caption{Surface monitors.}
-\begin{tabular}{@{}lllr@{}}
-\toprule
-\textbf{Name} & \textbf{Quantity} & \textbf{Patch} & \textbf{Operation} \\
-\midrule
-\texttt{outletH2}
-  & H$_2$ mass fraction & \texttt{outlet}
-  & Weighted average (\texttt{phi}) \\
-\texttt{outletMassFlow}
-  & Mass flow rate & \texttt{outlet}
-  & Sum (\texttt{phi}) \\
-\texttt{mainInletMassFlow}
-  & Mass flow rate & \texttt{main\_inlet}
-  & Sum (\texttt{phi}) \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\noindent Expected outlet H$_2$ mass fraction
-$\rightarrow \sim 0.149$ for $\mathcal{D} = 0.2$.
-
-
-\subsection{Point Monitors (Wall H$_2$ Probes)}
-
-Four probes monitor H$_2$ mass fraction at the pipe-top wall
-($y = +0.23$\,m) at downstream distances of $z/d_1 = 2, 4, 6, 8$
-from the junction:
-
-\begin{table}[H]
-\centering
-\caption{Probe locations ($d_1 = 0.46$\,m, junction at $Z = 4.6$\,m).}
-\begin{tabular}{@{}lrrrl@{}}
-\toprule
-\textbf{Name} & $X$ (m) & $Y$ (m) & $Z$ (m) & $z/d_1$ \\
-\midrule
-\texttt{wall\_h2\_z2d} & 0 & 0.23 & 5.52 & 2 \\
-\texttt{wall\_h2\_z4d} & 0 & 0.23 & 6.44 & 4 \\
-\texttt{wall\_h2\_z6d} & 0 & 0.23 & 7.36 & 6 \\
-\texttt{wall\_h2\_z8d} & 0 & 0.23 & 8.28 & 8 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\noindent Output is written to
-\texttt{postProcessing/wallH2Probes/}.
-
-
-\section{Step 3: Autosave}
-
-OpenFOAM's \texttt{writeInterval 0.1} (with
-\texttt{writeControl adjustableRunTime}) saves case data every
-0.1\,s of simulation time, equivalent to Fluent's autosave every
-500 time steps.
-
-
-\section{Step 4: Initialisation}
-
-\subsection{Default Fields}
-
-The \texttt{internalField} entries in each \texttt{0/} file provide
-the baseline initialisation (pure CH$_4$ at 284\,K flowing at
-10\,m/s along $+Z$).
-
-\subsection{Patch Branch Region (\texttt{setFields})}
-
-The \texttt{setFieldsDict} patches a cylindrical region around the
-branch with pure H$_2$ and the branch velocity:
+A cylindrical region around the branch is patched with pure H$_2$
+and the branch velocity, to give the solver a warm start and avoid
+spending many time steps filling the branch from pure methane:
 
 \begin{lstlisting}[language={},title=system/setFieldsDict (region)]
 cylinderToCell
@@ -947,264 +683,478 @@ cylinderToCell
 }
 \end{lstlisting}
 
-\noindent This is equivalent to Fluent's \textbf{Hybrid Initialisation}
-followed by \textbf{Patch} on the branch cell register.
 
-\begin{lstlisting}[language=bash,numbers=none]
-setFields
+% ════════════════════════════════════════════════════════════════
+%  CHAPTER 6 — Solution Methods and Controls
+% ════════════════════════════════════════════════════════════════
+\chapter{Solution Methods and Controls}
+\label{ch:solution}
+
+\section{Pressure--Velocity Coupling}
+
+\begin{lstlisting}[language={},title=system/fvSolution (PIMPLE block)]
+PIMPLE
+{
+    nOuterCorrectors    1;      // = PISO
+    nCorrectors         2;
+    nNonOrthogonalCorrectors 1;
+    momentumPredictor   yes;
+}
 \end{lstlisting}
 
+\noindent Setting \texttt{nOuterCorrectors=1} reduces PIMPLE to the
+PISO algorithm, matching the companion Fluent case exactly.
 
-\section{Step 5: Decompose and Run}
 
-\subsection{Domain Decomposition}
+\section{Discretisation Schemes (\texttt{system/fvSchemes})}
 
-\begin{lstlisting}[language=bash,numbers=none]
-decomposePar
+\begin{table}[H]
+\centering
+\caption{Convection scheme mapping (Fluent $\leftrightarrow$ OpenFOAM).}
+\label{tab:divschemes}
+\begin{tabularx}{\textwidth}{@{}llX@{}}
+\toprule
+\textbf{Term} & \textbf{OpenFOAM} & \textbf{Fluent Equivalent} \\
+\midrule
+\texttt{div(phi,U)}   & \texttt{Gauss LUST grad(U)} & Bounded Central Differencing \\
+\texttt{div(phi,H2)}  & \texttt{Gauss limitedLinear 1} & Second Order Upwind \\
+\texttt{div(phi,h)}   & \texttt{Gauss limitedLinear 1} & Second Order Upwind \\
+\texttt{div(phi,nuTilda)} & \texttt{Gauss limitedLinear 1} & Second Order Upwind \\
+\texttt{div(phiv,p)}  & \texttt{Gauss limitedLinear 1} & (not exposed in Fluent) \\
+Time (\texttt{ddtSchemes}) & \texttt{backward} & Bounded 2nd-order implicit \\
+Gradient (\texttt{gradSchemes}) & \texttt{Gauss linear} & Least Squares Cell Based \\
+Laplacian & \texttt{Gauss linear corrected} & (non-orthogonality correction) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{Why LUST?}  LUST blends 75\,\% linear central difference
+with 25\,\% linearUpwind.  It is the low-dissipation scheme that
+OpenFOAM developers specifically recommend for LES/DES momentum
+convection, and is the closest equivalent to Fluent's Bounded
+Central Differencing.}}
+
+
+\section{Under-Relaxation Factors}
+
+\begin{table}[H]
+\centering
+\caption{Under-relaxation factors (matching Fluent).}
+\begin{tabular}{@{}lr@{}}
+\toprule
+\textbf{Variable} & \textbf{Factor} \\
+\midrule
+Pressure (\texttt{p\_rgh})              & 0.3 \\
+Momentum (\texttt{U})                   & 0.7 \\
+Turbulent viscosity (\texttt{nuTilda})  & 0.8 \\
+Species (\texttt{H2}, \texttt{CH4})     & 0.9 \\
+Enthalpy (\texttt{h})                   & 1.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ════════════════════════════════════════════════════════════════
+%  CHAPTER 7 — Run Setup and Monitors
+% ════════════════════════════════════════════════════════════════
+\chapter{Run Setup and Monitors}
+\label{ch:run}
+
+\section{Time-Stepping}
+
+\begin{table}[H]
+\centering
+\caption{Run calculation parameters.}
+\label{tab:runparams}
+\begin{tabular}{@{}lr@{}}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Application            & \texttt{rhoReactingBuoyantFoam} \\
+Time step, $\Delta t$  & $2\!\times\!10^{-4}$\,s \\
+End time               & 5\,s (= 25\,000 steps) \\
+Time statistics start  & 4\,s (paper averages $t = 4\!-\!5$\,s) \\
+Write interval         & 0.1\,s (every 500 steps) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent $\text{CFL}\approx 1.3$ at the junction (based on
+$u_2 = 32$\,m/s and the refined cell size $\sim 5$\,mm).
+
+
+\section{Monitors (Function Objects)}
+
+All monitors are declared in \texttt{controlDict} under
+\texttt{functions}; output lands in \texttt{postProcessing/}.
+
+\subsection{Residuals, Courant Number, y+}
+
+Automatic diagnostic function objects:
+\begin{itemize}
+  \item \texttt{residuals} --- per-timestep residuals for
+        $U,\ p_{\mathrm{rgh}},\ h,\ \tilde{\nu},\ H_2$.
+  \item \texttt{Co} --- maximum Courant number at every write.
+  \item \texttt{yPlus} --- wall $y^+$ at every write, for mesh
+        quality verification.
+\end{itemize}
+
+\subsection{Mass Balance}
+
+Three \texttt{surfaceFieldValue} monitors summing $\phi$ (mass flux)
+over \texttt{main\_inlet}, \texttt{branch\_inlet} and \texttt{outlet}:
+\[
+  \text{imbalance} = \dot{m}_{\text{out}}
+                   - \dot{m}_{\text{main}}
+                   - \dot{m}_{\text{branch}}
+\]
+which should remain below 1\,\% of either inlet.
+
+\subsection{Mixing Statistics}
+
+\begin{itemize}
+  \item \texttt{outletH2} --- mass-weighted average
+        $Y_{\mathrm{H_2}}$ at the outlet.  Should approach
+        $V_R \!\cdot\! M_{\mathrm{H_2}}/M_{\mathrm{CH_4}}$ (e.g.\
+        $\sim 0.0187$ for $\mathcal{D}\!=\!0.2$).
+  \item \texttt{wallH2} --- maximum $Y_{\mathrm{H_2}}$ on the
+        \texttt{wall} patch (reproduces Eames Fig.\ 5).
+  \item \texttt{wallH2Mean} --- area-averaged
+        $Y_{\mathrm{H_2}}$ on the \texttt{wall} patch.
+\end{itemize}
+
+\subsection{Wall Probes (Top + Bottom + Sides)}
+
+\begin{table}[H]
+\centering
+\caption{Wall probes (reproduces Eames Fig.\ 5, Fig.\ 7).}
+\small
+\begin{tabular}{@{}llrrr@{}}
+\toprule
+\textbf{Position} & \textbf{Locus} & $x$ (m) & $y$ (m) & $z$ (m) \\
+\midrule
+$z/d_1 = 2$  & top    & 0    & $+0.23$ & 5.52 \\
+$z/d_1 = 4$  & top    & 0    & $+0.23$ & 6.44 \\
+$z/d_1 = 6$  & top    & 0    & $+0.23$ & 7.36 \\
+$z/d_1 = 8$  & top    & 0    & $+0.23$ & 8.28 \\
+$z/d_1 = 2$  & bottom & 0    & $-0.23$ & 5.52 \\
+$z/d_1 = 4$  & bottom & 0    & $-0.23$ & 6.44 \\
+$z/d_1 = 6$  & bottom & 0    & $-0.23$ & 7.36 \\
+$z/d_1 = 8$  & bottom & 0    & $-0.23$ & 8.28 \\
+$z/d_1 = 2$  & side(+) & $+0.23$ & 0 & 5.52 \\
+$z/d_1 = 2$  & side(-) & $-0.23$ & 0 & 5.52 \\
+$z/d_1 = 4$  & side(+) & $+0.23$ & 0 & 6.44 \\
+$z/d_1 = 4$  & side(-) & $-0.23$ & 0 & 6.44 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent The \textbf{top vs.\ bottom} comparison is the central
+asymmetry predicted by the paper and must be resolved by the
+probes.
+
+\subsection{Hydrogen Volume Fraction (Coded Field)}
+
+A \texttt{coded} function object computes and writes $\phi_{H_2}$
+at every write step:
+
+\begin{equation}
+  \phi_{H_2}
+  = \frac{Y_{H_2}/M_{H_2}}
+         {Y_{H_2}/M_{H_2} + (1-Y_{H_2})/M_{CH_4}}
+  \qquad (M \text{ in kg/kmol})
+\end{equation}
+
+\begin{lstlisting}[language={},numbers=none]
+phiH2
+{
+    type  coded;
+    name  phiH2Compute;
+    writeControl writeTime;
+    codeExecute
+    #{
+        const volScalarField& Y_H2 =
+            mesh().lookupObject<volScalarField>("H2");
+        volScalarField phiH2( ..., (Y_H2/2.016)
+              / (Y_H2/2.016 + (1.0-Y_H2)/16.043) );
+        phiH2.write();
+    #};
+}
 \end{lstlisting}
 
-\noindent The \texttt{decomposeParDict} uses \texttt{scotch}
-partitioning with 8 subdomains (matching the Fluent setup of 8
-solver processes).
+\subsection{Time-Averaged Fields}
 
-\subsection{Run the Solver}
+\begin{itemize}
+  \item \texttt{UMean}, \texttt{UPrime2Mean} --- mean velocity and
+        Reynolds stresses.
+  \item \texttt{pMean} --- mean absolute pressure.
+  \item \texttt{H2Mean}, \texttt{H2Prime2Mean} --- mean H$_2$ mass
+        fraction and its variance (for COV calculation).
+  \item \texttt{TMean} --- mean temperature.
+\end{itemize}
 
-\begin{lstlisting}[language=bash,numbers=none]
-mpirun -np 8 reactingFoam -parallel
-\end{lstlisting}
 
-\noindent Or simply use the provided \texttt{Allrun} script which
-executes the full workflow automatically:
+\section{Full Workflow}
 
 \begin{lstlisting}[language=bash,numbers=none]
 ./Allrun
 \end{lstlisting}
 
-\subsection{Reconstruct}
-
-After the run completes, reconstruct the decomposed data for
-post-processing:
-
-\begin{lstlisting}[language=bash,numbers=none]
-reconstructPar
-\end{lstlisting}
-
-
-\section{Step 6: During the Run --- What to Watch}
+\noindent Executes the full pipeline:
 
 \begin{enumerate}
-  \item \textbf{Residuals:}  Check
-        \texttt{postProcessing/residuals/} --- all residuals should
-        drop by at least 1--2 orders of magnitude within each time
-        step.
-  \item \textbf{Mass balance:}  Compare inlet and outlet mass flow
-        rates.  Imbalance $> 1\,\%$ indicates a problem.
-  \item \textbf{Outlet H$_2$:}  Should stabilise near $\sim 0.149$
-        for $\mathcal{D} = 0.2$.
-  \item \textbf{Courant number:}  The solver prints the maximum
-        Courant number each time step.  Target: $\text{Co} < 2$.
-        If consistently higher, reduce $\Delta t$ to $1\times10^{-4}$\,s.
+  \item \texttt{python3 generateSTL.py} --- build STLs.
+  \item \texttt{blockMesh} --- background mesh.
+  \item \texttt{surfaceFeatureExtract} --- feature edges.
+  \item \texttt{snappyHexMesh -overwrite} --- conformal mesh.
+  \item \texttt{setFields} --- patch branch with pure H$_2$.
+  \item \texttt{decomposePar} --- 8-way scotch decomposition.
+  \item \texttt{mpirun -np 8 rhoReactingBuoyantFoam -parallel}.
+  \item \texttt{reconstructPar} --- gather for post-processing.
 \end{enumerate}
 
 
-\section{Step 7: Enable Time Statistics (After $t = 4$\,s)}
+% ════════════════════════════════════════════════════════════════
+%  CHAPTER 8 — Validation and Expected Results
+% ════════════════════════════════════════════════════════════════
+\chapter{Validation and Expected Results}
+\label{ch:validation}
 
-The \texttt{fieldAverage1} function object in \texttt{controlDict}
-is pre-configured to begin time-averaging at $t = 4$\,s
-(\texttt{timeStart 4.0}).  The first 20\,000 steps (4\,s) are
-treated as the initial transient; the final 5\,000 steps (1\,s)
-are used for time-averaged statistics.
+\section{Validation Strategy}
 
-Fields averaged:
-\begin{itemize}
-  \item \texttt{UMean}, \texttt{UPrime2Mean} ---
-        mean velocity and Reynolds stresses.
-  \item \texttt{pMean} --- mean pressure.
-  \item \texttt{H2Mean}, \texttt{H2Prime2Mean} ---
-        mean H$_2$ concentration and its variance (for COV calculation).
-  \item \texttt{TMean} --- mean temperature.
-\end{itemize}
+Eames et al.\ validate their OpenFOAM setup against the
+\textbf{OECD/NEA--V\"attenfall T-junction benchmark}~\cite{Braillard2018},
+characterised by $Q_1/Q_2 = 1,\ d_1/d_2 = 1$ and a matched-Froude
+cold/hot water mixing experiment.
+
+For consistency, the same benchmark should be used for OpenFOAM
+validation here:
+
+\begin{enumerate}
+  \item Rebuild the case with \textbf{isothermal water-like
+        properties} using the same T-junction geometry but at
+        $d_1/d_2 = 1$ and $Q_1/Q_2 = 1$.
+  \item Match the \textbf{Froude number}
+        $Fr = u_2 / \sqrt{|\rho_1-\rho_2|\,g/\rho_1}$
+        reported in~\cite{Braillard2018}.
+  \item Compare the mean and RMS streamwise velocity in the
+        centreline vertical plane at $z = 1.86\,d_1$ to experimental
+        profiles.
+\end{enumerate}
+
+\noindent Paper Fig.\ 2(b) confirms good agreement at
+2\,M cells; finer meshes are unnecessary.
+
+
+\section{Expected Behaviour (Production Run, $\mathcal{D} = 0.2$)}
+
+Table~\ref{tab:expected} summarises the \emph{target values} that
+the converged simulation should reproduce.
+
+\begin{table}[H]
+\centering
+\caption{Expected results for the baseline case
+         ($\mathcal{D} = 0.2$, $\beta = 0.25$, top-side injection).}
+\label{tab:expected}
+\begin{tabularx}{\textwidth}{@{}Xr@{}}
+\toprule
+\textbf{Quantity} & \textbf{Target} \\
+\midrule
+Outlet H$_2$ volume fraction $V_R$
+  & $\approx 0.149$ (paper Eqs.\ 2,6) \\
+Outlet H$_2$ mass fraction $Y_{H_2}$
+  & $\approx 0.0187$ \\
+Mass-balance residual $|\dot{m}_{\text{out}}
+   - \dot{m}_{\text{main}} - \dot{m}_{\text{branch}}|$
+  & $< 1\,\%$ of either inlet \\
+Max wall $y^+$                      & $< 100$ (all-$y^+$ wall fn.) \\
+Max Courant number                  & $\approx 1.3$ \\
+Momentum ratio $\mathcal{M}_R$      & $\sim 0.3$ (weak penetration) \\
+Max wall $V_{Rm}$ at $z/d_1 = 8$    & $\approx 1.6 \cdot V_{R,T}$ (Fig.\ 7b) \\
+Shedding frequency $f_s \sim u_1 \cdot St / d_2$
+  & $\approx 17$\,Hz (St $\sim 0.2$) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+
+\section{Paper Physical Findings to Reproduce}
+
+The simulation should, qualitatively and quantitatively, reveal:
+
+\begin{enumerate}
+  \item \textbf{Stratification.}  For $\mathcal{D} < 0.3$, H$_2$
+        is confined to the upper portion of the pipe by buoyancy.
+        Top-wall H$_2$ concentration $>$ 40\,\% for up to
+        $8\,d_1$ downstream.
+  \item \textbf{Weak jet penetration.}  The low-inertia H$_2$ jet
+        is deflected by the main flow and fails to traverse the
+        main pipe for $\mathcal{D} \lesssim 0.2$.
+  \item \textbf{Periodic shedding.}  At $\mathcal{D} = 0.1$ puffs
+        separated by $\sim 0.8$\,m ($St \sim 0.2$).
+  \item \textbf{Asymmetric wall exposure.}  The lower pipe wall
+        sees much less H$_2$ than the upper wall for
+        $\mathcal{D} \leq 0.2$.  This is the stratification signal
+        that should appear clearly in the wall-probe time series.
+\end{enumerate}
+
+\begin{thebibliography}{9}
+\bibitem{Braillard2018}
+O.\ Braillard, R.\ Howard, K.\ Angele, A.\ Shams, N.\ Edh.
+``Thermal mixing in a T-junction: novel CFD-grade measurements of
+the fluctuating temperature in the solid wall.''
+\emph{Nuclear Engineering and Design}, 330:377--390, 2018.
+\end{thebibliography}
 
 
 % ════════════════════════════════════════════════════════════════
-%  CHAPTER 7 — Post-Processing
+%  CHAPTER 9 — Post-Processing
 % ════════════════════════════════════════════════════════════════
 \chapter{Post-Processing}
 \label{ch:post}
 
-\section{Hydrogen Volume Fraction}
+\section{In-Run Outputs}
 
-Fluent solves for mass fraction $Y_{\mathrm{H_2}}$, while the
-reference paper reports volume fraction $\phi_{\mathrm{H_2}}$.
-The conversion is:
+All function-object outputs land in \texttt{postProcessing/}:
 
-\begin{equation}
-  \phi_{\mathrm{H_2}}
-  = \frac{Y_{\mathrm{H_2}} / M_{\mathrm{H_2}}}
-         {Y_{\mathrm{H_2}} / M_{\mathrm{H_2}}
-          + (1 - Y_{\mathrm{H_2}}) / M_{\mathrm{CH_4}}}
-  \label{eq:volfrac}
-\end{equation}
+\begin{table}[H]
+\centering
+\caption{Runtime output directories.}
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{Directory} & \textbf{Contents} \\
+\midrule
+\texttt{residuals/}          & Solver residual history. \\
+\texttt{Co/}, \texttt{yPlus/}& Courant number, wall $y^+$ snapshots. \\
+\texttt{outletH2/}           & Mass-weighted $Y_{H_2}$ at outlet. \\
+\texttt{outletMassFlow/}     & Outlet mass-flow time series. \\
+\texttt{mainInletMassFlow/}  & Main-inlet mass-flow time series. \\
+\texttt{branchInletMassFlow/}& Branch mass-flow time series. \\
+\texttt{wallH2/}             & Max $Y_{H_2}$ on pipe wall vs.\ time. \\
+\texttt{wallH2Mean/}         & Area-averaged $Y_{H_2}$ on wall. \\
+\texttt{wallH2Probes/}       & Point values at all 12 probes. \\
+\texttt{fieldAverage1/}      & \texttt{UMean, H2Mean, H2Prime2Mean, \dots} \\
+\bottomrule
+\end{tabularx}
+\end{table}
 
-\noindent where $M_{\mathrm{H_2}} = 2.016$\,kg/kmol and
-$M_{\mathrm{CH_4}} = 16.043$\,kg/kmol.
-
-In OpenFOAM, compute this in ParaView using a \textbf{Calculator}
-filter:
-
-\begin{lstlisting}[language={},numbers=none]
-(H2/2.016) / (H2/2.016 + (1-H2)/16.043)
-\end{lstlisting}
-
-\noindent Alternatively, add a \texttt{coded} function object to
-\texttt{controlDict} for automatic computation during the run.
+All are plain-text CSV-like columns (time + value) that can be
+plotted directly with \texttt{gnuplot}, Python or Excel.
 
 
-\section{Visualisation in ParaView}
-
-Open the reconstructed case:
+\section{Paraview Workflow}
 
 \begin{lstlisting}[language=bash,numbers=none]
+reconstructPar
 paraFoam
 \end{lstlisting}
 
-\noindent Key visualisations:
+\subsection{Reproducing Paper Figures}
 
 \begin{enumerate}
-  \item \textbf{Contour plots:}  H$_2$ mass/volume fraction on
-        cross-sectional planes downstream of the junction.
-  \item \textbf{Streamlines:}  Coloured by H$_2$ to visualise
-        mixing patterns.
-  \item \textbf{Time-averaged fields:}  Use \texttt{H2Mean} for
-        time-averaged concentration, \texttt{UMean} for mean
-        velocity.
-  \item \textbf{Wall $y^+$:}  Plot \texttt{yPlus} (requires the
-        \texttt{yPlus} function object or post-processing utility).
+  \item \textbf{Fig.\ 3a (Instantaneous $V_R$, vertical slice):}
+        In Paraview, load the case $\rightarrow$ apply \texttt{Slice}
+        filter, origin $(0,0,4.6)$, normal $(1,0,0)$ (i.e.\ the
+        $YZ$-plane). Colour by \texttt{phi\_H2} at late snapshot.
+  \item \textbf{Fig.\ 3b (Time-averaged $\overline{V_R}$):}  Same
+        slice, but colour by \texttt{H2Mean} then apply the same
+        volume-fraction formula in a \texttt{Calculator} filter.
+  \item \textbf{Fig.\ 3c (Max $V_{Rm}$ vs.\ $z$):}  Use the
+        \texttt{Plot Over Line} filter along the upper-wall line
+        $(x=0,\ y=0.23,\ z\in[4.6, 9.2])$ colouring by
+        \texttt{H2Mean} $\Rightarrow$ \texttt{phi\_H2}.
+  \item \textbf{Fig.\ 4 (Wall map):}  Apply \texttt{Extract Surface}
+        filter on the wall boundary, then colour by the coded
+        \texttt{phi\_H2} field.
+  \item \textbf{Fig.\ 5 (Unwrapped wall):}
+        Apply \texttt{Extract Surface} $\rightarrow$
+        \texttt{Clip} $\rightarrow$ unwrap using custom
+        cylindrical-to-cartesian transform filter.
 \end{enumerate}
 
 
 \section{Coefficient of Variation (COV)}
 
-The COV quantifies mixing uniformity on a cross-section:
+COV quantifies mixing uniformity on a cross-section:
 \[
-  \text{COV} = \frac{\sigma_{\phi}}{\bar{\phi}}
+  \text{COV} = \frac{\sigma_{\phi}}{\bar{\phi}},
+  \quad
+  \sigma_{\phi} = \sqrt{\texttt{H2Prime2Mean}},
+  \quad
+  \bar{\phi} = \texttt{H2Mean}.
 \]
 
-\noindent Compute from time-averaged fields:
-\begin{itemize}
-  \item $\bar{\phi}$ from \texttt{H2Mean}.
-  \item $\sigma_{\phi}$ from
-        $\sqrt{\texttt{H2Prime2Mean}}$.
-\end{itemize}
-
-\noindent $\text{COV} = 0$ indicates perfect mixing;
-$\text{COV} = 1$ indicates complete segregation.
+\noindent $\text{COV} = 0$ denotes perfect mixing,
+$\text{COV} = 1$ denotes complete segregation.
 
 
-\section{Monitoring Data}
+\section{Mesh Independence (GCI)}
 
-All function-object output is in \texttt{postProcessing/}:
+Per the paper, run three mesh refinement levels
+(1.0, 2.0, 4.0\,M cells) and compute the \textbf{Grid Convergence
+Index} (Roache 1994) on the converged outlet $V_R$:
+\[
+  p = \frac{\ln\!\left|\tfrac{\phi_3 - \phi_2}{\phi_2 - \phi_1}\right|}
+           {\ln r},
+  \qquad
+  \text{GCI}_{\text{fine}}
+  = F_s \frac{|(\phi_2-\phi_1)/\phi_1|}{r^p - 1},
+  \quad F_s = 1.25.
+\]
 
-\begin{table}[H]
-\centering
-\caption{Post-processing output directories.}
-\begin{tabularx}{\textwidth}{@{}lX@{}}
-\toprule
-\textbf{Directory} & \textbf{Contents} \\
-\midrule
-\texttt{residuals/}        & Solver residual history \\
-\texttt{outletH2/}         & Mass-weighted H$_2$ at outlet vs.\ time \\
-\texttt{outletMassFlow/}   & Outlet mass flow rate vs.\ time \\
-\texttt{mainInletMassFlow/}& Main-inlet mass flow rate vs.\ time \\
-\texttt{wallH2Probes/}     & H$_2$ at four wall probe locations \\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-\noindent All files are plain-text columns (time + value) that can
-be plotted directly with \texttt{gnuplot}, Python, or imported into
-Excel.
+\noindent A GCI $< 2\,\%$ at the finest level confirms mesh
+independence.
 
 
 % ════════════════════════════════════════════════════════════════
-%  CHAPTER 8 — Quick-Start Summary
+%  CHAPTER 10 — Quick-Start Summary
 % ════════════════════════════════════════════════════════════════
 \chapter{Quick-Start Summary}
 \label{ch:quickstart}
 
-\noindent The complete workflow from a clean directory to a running
-simulation:
+\noindent The complete workflow from a clean directory:
 
 \begin{enumerate}
-  \item \textbf{Install dependencies:}
+  \item \textbf{Install Python deps:}
 \begin{lstlisting}[language=bash,numbers=none]
 pip install numpy numpy-stl
 \end{lstlisting}
 
-  \item \textbf{Generate STL geometry:}
+  \item \textbf{Run the full pipeline:}
 \begin{lstlisting}[language=bash,numbers=none]
-python3 generateSTL.py
+./Allrun
 \end{lstlisting}
 
-  \item \textbf{Create background mesh:}
+  \item \textbf{Monitor the run:}
 \begin{lstlisting}[language=bash,numbers=none]
-blockMesh
+tail -f log.rhoReactingBuoyantFoam
 \end{lstlisting}
 
-  \item \textbf{Extract surface features:}
-\begin{lstlisting}[language=bash,numbers=none]
-surfaceFeatureExtract
-\end{lstlisting}
-
-  \item \textbf{Generate the final mesh:}
-\begin{lstlisting}[language=bash,numbers=none]
-snappyHexMesh -overwrite
-\end{lstlisting}
-
-  \item \textbf{Patch initial conditions:}
-\begin{lstlisting}[language=bash,numbers=none]
-setFields
-\end{lstlisting}
-
-  \item \textbf{Decompose for parallel run:}
-\begin{lstlisting}[language=bash,numbers=none]
-decomposePar
-\end{lstlisting}
-
-  \item \textbf{Run the simulation:}
-\begin{lstlisting}[language=bash,numbers=none]
-mpirun -np 8 reactingFoam -parallel
-\end{lstlisting}
-
-  \item \textbf{Reconstruct and post-process:}
+  \item \textbf{Post-process:}
 \begin{lstlisting}[language=bash,numbers=none]
 reconstructPar
 paraFoam
 \end{lstlisting}
 \end{enumerate}
 
-\noindent Or simply run everything with:
-
-\begin{lstlisting}[language=bash,numbers=none]
-./Allrun
-\end{lstlisting}
-
 
 \vfill
 \noindent\fbox{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
-\textbf{Checklist before running:}
+\textbf{Pre-flight checklist:}
 \begin{itemize}[nosep]
-  \item[\checkmark] STL files present in \texttt{constant/triSurface/}
-  \item[\checkmark] \texttt{thermophysicalProperties} species match
-        \texttt{0/H2} and \texttt{0/CH4}
-  \item[\checkmark] Boundary patch names in all \texttt{0/} files
-        match \texttt{snappyHexMeshDict} surface names
+  \item[\checkmark] \texttt{WM\_PROJECT\_DIR} set
+        (i.e.\ OpenFOAM environment sourced).
+  \item[\checkmark] STLs present in \texttt{constant/triSurface/}.
+  \item[\checkmark] \texttt{thermophysicalProperties} species list
+        matches \texttt{0/H2} and \texttt{0/CH4}.
+  \item[\checkmark] Patch names in all \texttt{0/} files match the
+        \texttt{snappyHexMeshDict} surface names.
   \item[\checkmark] \texttt{decomposeParDict} \texttt{numberOfSubdomains}
-        matches \texttt{mpirun -np} count
-  \item[\checkmark] \texttt{controlDict} \texttt{endTime} and
-        \texttt{deltaT} give desired physical time
-  \item[\checkmark] \texttt{fieldAverage1} \texttt{timeStart} set to
-        4.0\,s (skip initial transient)
+        = \texttt{mpirun -np} count.
+  \item[\checkmark] \texttt{controlDict} \texttt{application}
+        = \texttt{rhoReactingBuoyantFoam}.
+  \item[\checkmark] \texttt{fieldAverage1} \texttt{timeStart} = 4.0\,s.
 \end{itemize}}}
 
 \end{document}
