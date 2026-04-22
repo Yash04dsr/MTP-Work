@@ -21,7 +21,16 @@
 #       case in a slice builds the mesh; subsequent cases in that slice
 #       import the polyMesh + decomposed processor dirs via $REUSE_MESH_FROM.
 #    4. Metrics + figures computed per-case via all_metrics.py + make_figures
-#       scripts from the doe tools dir (../tools/ by default).
+#       + make_distance_figures.py scripts from the doe tools dir.
+#
+#  Live progress tracking
+#  ----------------------
+#    - STATUS.md is refreshed every HEARTBEAT_SEC seconds (default 60)
+#      in ${RESULTS_DIR}.  It is also refreshed at case start + case end.
+#    - From any shell on the host you can watch live progress with:
+#          cat   ${RESULTS_DIR}/STATUS.md
+#          bash  ~/openfoam_case_rans_doe_base/tools/doe_status.sh
+#          bash  ~/openfoam_case_rans_doe_base/tools/doe_watch.sh 10
 # ---------------------------------------------------------------------------
 set -euo pipefail
 
@@ -30,6 +39,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CASES_DIR="${CASES_DIR:-$(cd "${HERE}/../../doe_cases" 2>/dev/null && pwd || echo "${HOME}/openfoam_case_rans_doe/doe_cases")}"
 RESULTS_DIR="${RESULTS_DIR:-${CASES_DIR}/../doe_results}"
 TOOLS_DIR="${TOOLS_DIR:-${HERE}/../../tools}"
+HEARTBEAT_SEC="${HEARTBEAT_SEC:-60}"
 
 mkdir -p "${RESULTS_DIR}"
 
@@ -50,6 +60,53 @@ done
 
 log()  { echo "[run_doe] $(date +%FT%T) $*"; }
 die()  { echo "[run_doe] ERROR: $*" >&2; exit 1; }
+
+# Refresh RESULTS_DIR/STATUS.md (silent, best-effort).
+refresh_status() {
+    if [[ -x "${TOOLS_DIR}/doe_status.sh" ]]; then
+        bash "${TOOLS_DIR}/doe_status.sh" "$(dirname "${CASES_DIR}")" \
+             >/dev/null 2>&1 || true
+    fi
+}
+
+# Update wall_seconds + status inside case_info.json.
+stamp_wall_seconds() {
+    local case_info="$1" sec="$2" status="$3"
+    python3 - "$case_info" "$sec" "$status" <<'PY' 2>/dev/null || true
+import json, sys
+from pathlib import Path
+p = Path(sys.argv[1])
+try:
+    data = json.loads(p.read_text())
+except Exception:
+    data = {}
+data["wall_seconds"] = float(sys.argv[2])
+data["sim_status"]   = sys.argv[3]
+p.write_text(json.dumps(data, indent=2) + "\n")
+PY
+}
+
+# Start a background heartbeat that refreshes STATUS.md every N seconds.
+# Returns PID (stored in $HEARTBEAT_PID) so main loop can stop it.
+start_heartbeat() {
+    (
+        trap 'exit 0' TERM INT
+        while :; do
+            refresh_status
+            sleep "${HEARTBEAT_SEC}"
+        done
+    ) &
+    HEARTBEAT_PID=$!
+    disown "${HEARTBEAT_PID}" 2>/dev/null || true
+}
+stop_heartbeat() {
+    if [[ -n "${HEARTBEAT_PID:-}" ]]; then
+        kill "${HEARTBEAT_PID}" 2>/dev/null || true
+        wait "${HEARTBEAT_PID}" 2>/dev/null || true
+        unset HEARTBEAT_PID
+    fi
+}
+trap 'stop_heartbeat' EXIT
 
 # ---- select cases ----------------------------------------------------
 mapfile -t ALL_CASES < <(
@@ -132,12 +189,21 @@ post_process() {
             || log "[warn] all_metrics.py failed for ${cname} (see ${out}/all_metrics.log)"
     fi
 
-    # Optional figure pack (skipped if pvbatch/pyvista not installed).
+    # Standard figure pack (XZ slice, outlet, streamlines, geometry, mesh).
     if [[ -x "${TOOLS_DIR}/make_figures.py" ]]; then
         python3 "${TOOLS_DIR}/make_figures.py" \
             --case "${cdir}" --outdir "${out}/figures" \
             > "${out}/make_figures.log" 2>&1 \
             || log "[warn] make_figures.py failed for ${cname}"
+    fi
+
+    # Distance-station figures : H2 and |U| cross-sections at z=3,4,5,6 m
+    # + outlet + longitudinal slice with sampling lines overlaid.
+    if [[ -x "${TOOLS_DIR}/make_distance_figures.py" ]]; then
+        python3 "${TOOLS_DIR}/make_distance_figures.py" \
+            --case "${cdir}" --outdir "${out}/figures" \
+            > "${out}/make_distance_figures.log" 2>&1 \
+            || log "[warn] make_distance_figures.py failed for ${cname}"
     fi
 
     # Tiny provenance file : git-like commit info for results.
@@ -182,16 +248,25 @@ for cname in "${SELECTED[@]}"; do
         continue
     fi
 
+    refresh_status
+    start_heartbeat
+
     start_ts="$(date +%s)"
     if bash "${cdir}/Allrun" >> "${cdir}/log.run_doe" 2>&1; then
         elapsed=$(( $(date +%s) - start_ts ))
         log "[${cname}] SIM OK  (${elapsed}s wall)"
+        stop_heartbeat
+        stamp_wall_seconds "${cdir}/case_info.json" "${elapsed}" "ok"
         post_process "${cdir}"
+        refresh_status
     else
         elapsed=$(( $(date +%s) - start_ts ))
         log "[${cname}] SIM FAILED  (${elapsed}s wall)"
+        stop_heartbeat
         tail -n 200 "${cdir}/log.run_doe" > "${cdir}/SIM_FAILED" || true
+        stamp_wall_seconds "${cdir}/case_info.json" "${elapsed}" "failed"
         post_process "${cdir}"
+        refresh_status
         log "[${cname}] continuing with next case"
     fi
 done
@@ -200,3 +275,14 @@ RUN_END="$(date +%s)"
 TOTAL=$(( RUN_END - RUN_START ))
 log "DoE loop finished in ${TOTAL}s (= $(( TOTAL / 60 )) min)"
 log "Results archive : ${RESULTS_DIR}"
+
+# ---- post-DoE summary pack ------------------------------------------
+if [[ -x "${TOOLS_DIR}/make_doe_summary.py" ]]; then
+    log "building DoE summary pack (CoV/Δp scatter + heatmaps)"
+    python3 "${TOOLS_DIR}/make_doe_summary.py" \
+        --results "${RESULTS_DIR}" \
+        > "${RESULTS_DIR}/make_doe_summary.log" 2>&1 \
+        || log "[warn] make_doe_summary.py failed (see make_doe_summary.log)"
+fi
+refresh_status
+log "final STATUS.md at ${RESULTS_DIR}/STATUS.md"
