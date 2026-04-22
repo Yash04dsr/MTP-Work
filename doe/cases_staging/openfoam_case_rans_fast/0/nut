@@ -1,0 +1,22 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      nut;
+}
+dimensions  [0 2 -1 0 0 0 0];
+internalField   uniform 1e-5;
+
+boundaryField
+{
+    main_inlet   { type calculated; value uniform 1e-5; }
+    branch_inlet { type calculated; value uniform 1e-5; }
+    outlet       { type calculated; value uniform 1e-5; }
+
+    // nutkWallFunction uses k (always >=0 after bounding) rather than
+    // U to compute u_tau. This avoids the Newton iteration divergence
+    // seen with nutUSpaldingWallFunction when omega transiently
+    // goes negative during startup (bounded but causes log(0) FPE).
+    wall         { type nutkWallFunction; value uniform 0; }
+}

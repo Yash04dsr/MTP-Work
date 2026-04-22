@@ -1,0 +1,108 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+
+application         rhoReactingBuoyantFoam;
+
+startFrom           startTime;
+startTime           0;
+stopAt              endTime;
+
+// Physical time: need ~2-3 flow-through times for quasi-steady mean.
+// Flow-through = pipe length / mean velocity = 9.4 / 10 = 0.94 s.
+// endTime = 2.5 s gives ~2.6 flow-throughs, enough for mean-flow
+// convergence and stable mixing statistics.
+endTime             1.5;
+
+// Initial dt: very small to absorb the injection transient.
+// adjustTimeStep will ramp this up based on Courant.
+deltaT              1e-5;
+
+writeControl        adjustable;
+writeInterval       0.1;
+purgeWrite          3;
+writeFormat         ascii;
+writePrecision      10;
+writeCompression    off;
+timeFormat          general;
+timePrecision       8;
+runTimeModifiable   true;
+
+// Courant-based adaptive time stepping. maxCo=1.0 is the conservative
+// choice for compressible mixing; max dt capped so we always resolve
+// the branch injection time scale (d/U = 0.115/32 ~= 3.6 ms).
+adjustTimeStep      yes;
+maxCo               2.0;
+maxDeltaT           0.01;
+
+functions
+{
+    residuals
+    {
+        type                solverInfo;
+        libs                ("libutilityFunctionObjects.so");
+        fields              (U p_rgh H2 k omega);
+        writeControl        timeStep;
+        writeInterval       1;
+    }
+
+    outletFlux
+    {
+        type                surfaceFieldValue;
+        libs                ("libfieldFunctionObjects.so");
+        fields              (phi);
+        operation           sum;
+        regionType          patch;
+        name                outlet;
+        writeFields         false;
+        log                 true;
+        writeControl        timeStep;
+        writeInterval       100;
+    }
+
+    H2_outletAvg
+    {
+        type                surfaceFieldValue;
+        libs                ("libfieldFunctionObjects.so");
+        fields              (H2);
+        operation           areaAverage;
+        regionType          patch;
+        name                outlet;
+        writeFields         false;
+        log                 true;
+        writeControl        timeStep;
+        writeInterval       100;
+    }
+
+    p_rgh_inlet
+    {
+        type                surfaceFieldValue;
+        libs                ("libfieldFunctionObjects.so");
+        fields              (p_rgh);
+        operation           areaAverage;
+        regionType          patch;
+        name                main_inlet;
+        writeFields         false;
+        log                 true;
+        writeControl        timeStep;
+        writeInterval       100;
+    }
+
+    p_rgh_outlet
+    {
+        type                surfaceFieldValue;
+        libs                ("libfieldFunctionObjects.so");
+        fields              (p_rgh);
+        operation           areaAverage;
+        regionType          patch;
+        name                outlet;
+        writeFields         false;
+        log                 true;
+        writeControl        timeStep;
+        writeInterval       100;
+    }
+}

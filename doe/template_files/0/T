@@ -1,0 +1,29 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      T;
+}
+
+// ISOTHERMAL APPROXIMATION:
+// T is frozen at 288 K everywhere by disabling the enthalpy equation
+// (h solver maxIter=0 in fvSolution). This is justified because:
+//   - T_H2 (293 K) and T_CH4 (284 K) differ by only 9 K (3%), while
+//     composition-driven density ratio H2/CH4 = 8:1 dominates mixing.
+//   - Thermal conductivity/diffusion of H2 and CH4 are both >> Prandtl
+//     time scales compared to turbulent mixing, so species transport
+//     captures the mixing physics without an energy equation.
+// This removes the main numerical stiffness source seen in earlier runs.
+
+dimensions  [0 0 0 1 0 0 0];
+
+internalField   uniform 288;
+
+boundaryField
+{
+    main_inlet   { type fixedValue; value uniform 288; }
+    branch_inlet { type fixedValue; value uniform 288; }
+    outlet       { type inletOutlet; inletValue uniform 288; value uniform 288; }
+    wall         { type zeroGradient; }
+}

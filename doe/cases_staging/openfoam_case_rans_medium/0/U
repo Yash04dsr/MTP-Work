@@ -1,0 +1,40 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volVectorField;
+    object      U;
+}
+dimensions      [0 1 -1 0 0 0 0];
+
+// Moderate axial startup. potentialFoam will be used to promote this
+// to a divergence-free field before the main solver runs.
+internalField   uniform (0 0 5);
+
+boundaryField
+{
+    wall { type noSlip; }
+    main_inlet
+    {
+        type            codedFixedValue;
+        value           uniform (0 0 10);
+        name            mainInletPowerLaw;
+        code
+        #{
+            const vectorField& Cf = this->patch().Cf();
+            vectorField& field = *this;
+            const scalar d    = 0.46;
+            const scalar uMax = 10.0;
+            const scalar n    = 7.0;
+            forAll(Cf, i)
+            {
+                const scalar r = Foam::sqrt(sqr(Cf[i].x()) + sqr(Cf[i].y()));
+                const scalar arg = Foam::max(1.0 - sqr(2.0*r/d), scalar(0));
+                const scalar u = uMax * Foam::pow(arg, 1.0/n);
+                field[i] = vector(0, 0, u);
+            }
+        #};
+    }
+    outlet { type pressureInletOutletVelocity; value uniform (0 0 5); }
+    branch_inlet { type fixedValue; value uniform (0 -32 0); }
+}

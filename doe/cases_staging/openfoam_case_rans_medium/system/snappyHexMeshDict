@@ -1,0 +1,141 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      snappyHexMeshDict;
+}
+
+castellatedMesh true;
+snap            true;
+addLayers       true;
+
+geometry
+{
+    wall.stl          { type triSurfaceMesh; name wall; }
+    main_inlet.stl    { type triSurfaceMesh; name main_inlet; }
+    outlet.stl        { type triSurfaceMesh; name outlet; }
+    branch_inlet.stl  { type triSurfaceMesh; name branch_inlet; }
+
+    junctionRefine
+    {
+        type    searchableSphere;
+        centre  (0 0 4.6);
+        radius  0.690;
+    }
+}
+
+castellatedMeshControls
+{
+    maxLocalCells       200000;
+    maxGlobalCells      2000000;
+    minRefinementCells  10;
+    maxLoadUnbalance    0.10;
+    nCellsBetweenLevels 3;
+
+    features
+    (
+        { file "wall.eMesh";         level 1; }
+        { file "main_inlet.eMesh";   level 0; }
+        { file "outlet.eMesh";       level 0; }
+        { file "branch_inlet.eMesh"; level 1; }
+    );
+
+    // MEDIUM MESH: wall surface refinement KEPT at level 1 (same as coarse)
+    // so that near-wall layer cell size is identical → same dt stability
+    // limit as coarse. Refinement is applied where it matters physically:
+    // the junction sphere is upgraded from level 1 → level 2 (2x finer
+    // bulk mesh in the mixing region). This isolates the mixing-region
+    // resolution as the single variable between coarse and medium, which
+    // is the standard approach for isolating dispersion/mixing error in
+    // a RANS T-junction study (cf. Roache 1997 GCI methodology).
+    refinementSurfaces
+    {
+        wall
+        {
+            level (1 1);
+            patchInfo { type wall; }
+        }
+        main_inlet     { level (0 0); patchInfo { type patch; } }
+        outlet         { level (0 0); patchInfo { type patch; } }
+        branch_inlet   { level (1 1); patchInfo { type patch; } }
+    }
+
+    resolveFeatureAngle 30;
+
+    refinementRegions
+    {
+        junctionRefine
+        {
+            mode    inside;
+            levels  ((1e15 2));
+        }
+    }
+
+    locationInMesh (0 0 2.0);
+    allowFreeStandingZoneFaces true;
+}
+
+snapControls
+{
+    nSmoothPatch            3;
+    tolerance               2.0;
+    nSolveIter              50;
+    nRelaxIter              5;
+    nFeatureSnapIter        10;
+    implicitFeatureSnap     false;
+    explicitFeatureSnap     true;
+    multiRegionFeatureSnap  false;
+}
+
+addLayersControls
+{
+    relativeSizes       true;
+
+    layers
+    {
+        wall
+        {
+            nSurfaceLayers  3;
+        }
+    }
+
+    expansionRatio          1.2;
+    finalLayerThickness     0.5;
+    minThickness            0.15;
+    nGrow                   0;
+    featureAngle            60;
+    slipFeatureAngle        30;
+    nRelaxIter              5;
+    nSmoothSurfaceNormals   1;
+    nSmoothNormals          3;
+    nSmoothThickness        10;
+    maxFaceThicknessRatio   0.5;
+    maxThicknessToMedialRatio 0.3;
+    minMedialAxisAngle      90;
+    nBufferCellsNoExtrude   0;
+    nLayerIter              40;
+}
+
+meshQualityControls
+{
+    maxNonOrtho         65;
+    maxBoundarySkewness 20;
+    maxInternalSkewness 4;
+    maxConcave          80;
+    minVol              1e-13;
+    minTetQuality       1e-15;
+    minArea             -1;
+    minTwist            0.05;
+    minDeterminant      0.001;
+    minFaceWeight       0.05;
+    minVolRatio         0.01;
+    minTriangleTwist    -1;
+
+    nSmoothScale        4;
+    errorReduction      0.75;
+}
+
+writeFlags ( scalarLevels );
+
+mergeTolerance  1e-6;

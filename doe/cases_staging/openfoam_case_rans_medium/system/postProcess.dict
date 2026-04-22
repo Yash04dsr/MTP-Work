@@ -1,0 +1,48 @@
+outletH2
+{
+    type            surfaceFieldValue;
+    libs            ("libfieldFunctionObjects.so");
+    fields          (H2);
+    operation       areaAverage;
+    regionType      patch;
+    name            outlet;
+    writeFields     true;
+    writeArea       true;
+    log             true;
+}
+
+outletH2Stats
+{
+    type            surfaceFieldValue;
+    libs            ("libfieldFunctionObjects.so");
+    fields          (H2);
+    operation       areaIntegrate;
+    regionType      patch;
+    name            outlet;
+    writeFields     false;
+    log             true;
+}
+
+inletPavg
+{
+    type            surfaceFieldValue;
+    libs            ("libfieldFunctionObjects.so");
+    fields          (p p_rgh);
+    operation       areaAverage;
+    regionType      patch;
+    name            main_inlet;
+    writeFields     false;
+    log             true;
+}
+
+outletPavg
+{
+    type            surfaceFieldValue;
+    libs            ("libfieldFunctionObjects.so");
+    fields          (p p_rgh);
+    operation       areaAverage;
+    regionType      patch;
+    name            outlet;
+    writeFields     false;
+    log             true;
+}
