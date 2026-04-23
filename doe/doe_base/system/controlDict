@@ -163,14 +163,16 @@ functions
     //       H2 area-average of sqr(H2) -> second moment (enables CoV calc)
     //       p_rgh area-average -> local pressure level
     // -----------------------------------------------------------------
-    plane_z3.0_H2
+    plane_z3_H2
     {
         type            surfaceFieldValue;
-        libs            ("libfieldFunctionObjects.so");
-        fields          (H2);
-        operation       areaAverage;
+        libs            (fieldFunctionObjects);
+        writeControl    timeStep;
+        writeInterval   20;
+        log             true;
+        writeFields     false;
         regionType      sampledSurface;
-        surfaceFormat   none;
+        name            planeZ3;
         sampledSurfaceDict
         {
             type        plane;
@@ -178,15 +180,13 @@ functions
             pointAndNormalDict { point (0 0 3.0); normal (0 0 1); }
             interpolate true;
         }
-        writeFields     false;
-        log             true;
-        writeControl    timeStep;
-        writeInterval   20;
+        operation       areaAverage;
+        fields          (H2);
     }
-
-    plane_z4.0_H2
+    plane_z4_H2
     {
-        $plane_z3.0_H2;
+        $plane_z3_H2;
+        name            planeZ4;
         sampledSurfaceDict
         {
             type        plane;
@@ -195,10 +195,10 @@ functions
             interpolate true;
         }
     }
-
-    plane_z5.0_H2
+    plane_z5_H2
     {
-        $plane_z3.0_H2;
+        $plane_z3_H2;
+        name            planeZ5;
         sampledSurfaceDict
         {
             type        plane;
@@ -207,10 +207,10 @@ functions
             interpolate true;
         }
     }
-
-    plane_z6.0_H2
+    plane_z6_H2
     {
-        $plane_z3.0_H2;
+        $plane_z3_H2;
+        name            planeZ6;
         sampledSurfaceDict
         {
             type        plane;
@@ -220,26 +220,10 @@ functions
         }
     }
 
-    plane_z3.0_p
-    {
-        $plane_z3.0_H2;
-        fields          (p_rgh);
-    }
-    plane_z4.0_p
-    {
-        $plane_z4.0_H2;
-        fields          (p_rgh);
-    }
-    plane_z5.0_p
-    {
-        $plane_z5.0_H2;
-        fields          (p_rgh);
-    }
-    plane_z6.0_p
-    {
-        $plane_z6.0_H2;
-        fields          (p_rgh);
-    }
+    plane_z3_p { $plane_z3_H2; name planeZ3p; fields (p_rgh); }
+    plane_z4_p { $plane_z4_H2; name planeZ4p; fields (p_rgh); }
+    plane_z5_p { $plane_z5_H2; name planeZ5p; fields (p_rgh); }
+    plane_z6_p { $plane_z6_H2; name planeZ6p; fields (p_rgh); }
 
     // -----------------------------------------------------------------
     //   [5] Time-averaged fields (volFieldValue) -- CoV uses mean H2.

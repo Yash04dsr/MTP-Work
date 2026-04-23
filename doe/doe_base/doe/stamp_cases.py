@@ -165,18 +165,17 @@ else
 fi
 
 # ----- initial field ------------------------------------------------------
-# Copy 0/ template into processor0/0 ... processorN/0 if not already done.
-if [[ ! -d processor0/0 ]]; then
-    # (decomposePar already did this above, but idempotent safety net)
-    decomposePar -copyZero -force                         | tee -a log.decomposePar
-fi
+# Always rebuild processor*/0 from the case-local 0/ template so field
+# sizes match the (possibly reused) mesh.
+rm -rf processor*/0 processor*/0.*
+decomposePar -force                                   | tee log.decomposePar
 
-# potentialFoam warm start for a divergence-free U (prevents first-step PISO
-# divergence on high-VR cases).
-mpirun -n 16 potentialFoam -parallel -writephi           | tee log.potentialFoam
+# (potentialFoam warm-start removed -- it leaves rho with wrong dimensions
+#  for rhoReactingBuoyantFoam.  High-VR startup is instead handled by
+#  relaxation in fvSolution.)
 
 # ----- main solver --------------------------------------------------------
-mpirun -n 16 rhoReactingBuoyantFoam -parallel            | tee log.solver
+mpirun --use-hwthread-cpus -n 16 rhoReactingBuoyantFoam -parallel    | tee log.solver
 
 # ----- reconstruction + metrics -------------------------------------------
 reconstructPar -latestTime                                | tee log.reconstructPar
