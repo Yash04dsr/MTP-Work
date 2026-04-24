@@ -1,0 +1,97 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      thermophysicalProperties;
+}
+
+thermoType
+{
+    type            heRhoThermo;
+    mixture         reactingMixture;
+    transport       sutherland;
+    thermo          janaf;
+    energy          sensibleEnthalpy;
+    equationOfState perfectGas;
+    specie          specie;
+}
+
+inertSpecie CH4;
+
+chemistryReader foamChemistryReader;
+
+// Pointing to the (empty) reactions file — no combustion
+foamChemistryFile "<constant>/reactions";
+foamChemistryThermoFile "<constant>/thermo.compressibleGas";
+
+species ( H2 CH4 );
+
+// ── H2 thermophysical data (NIST / JANAF) ───────────────────────────
+H2
+{
+    specie
+    {
+        molWeight   2.016;      // kg/kmol
+    }
+    thermodynamics
+    {
+        // JANAF coefficients for H2 (200–1000 K low, 1000–6000 K high)
+        Tlow    200;
+        Thigh   6000;
+        Tcommon 1000;
+        highCpCoeffs
+        (
+            2.93287     8.26608e-04  -1.46402e-07
+            1.54100e-11 -6.88805e-16  -813.066
+            -1.02433
+        );
+        lowCpCoeffs
+        (
+            2.34433     7.98052e-03  -1.94782e-05
+            2.01572e-08 -7.37612e-12  -917.935
+            0.683010
+        );
+    }
+    transport
+    {
+        // Sutherland coeffs fitted to NIST target mu_H2 = 9.0e-6 Pa.s
+        // at T = 284 K (gives mu(284) = 9.00e-6 exactly).
+        As      6.69e-07;
+        Ts      72.0;
+    }
+}
+
+// ── CH4 thermophysical data (NIST / JANAF) ──────────────────────────
+CH4
+{
+    specie
+    {
+        molWeight   16.043;     // kg/kmol
+    }
+    thermodynamics
+    {
+        Tlow    200;
+        Thigh   6000;
+        Tcommon 1000;
+        highCpCoeffs
+        (
+            1.63553     1.00842e-02  -3.36916e-06
+            5.34958e-10 -3.15528e-14  -10005.6
+            9.99372
+        );
+        lowCpCoeffs
+        (
+            5.14988    -1.36710e-02   4.91800e-05
+           -4.84743e-08  1.66694e-11  -10246.6
+           -4.64130
+        );
+    }
+    transport
+    {
+        // Sutherland coeffs fitted to NIST target mu_CH4 = 1.25e-5 Pa.s
+        // at T = 284 K (gives mu(284) = 1.250e-5 exactly).
+        As      1.17e-06;
+        Ts      164.0;
+    }
+}

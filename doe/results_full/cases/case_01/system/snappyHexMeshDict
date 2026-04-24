@@ -1,0 +1,172 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      snappyHexMeshDict;
+}
+
+// -----------------------------------------------------------------------------
+//  DoE baseline snappyHexMesh config
+//
+//    - half-domain (x >= 0) : the x = 0 face is the "sym" symmetryPlane patch
+//      from blockMesh; snappy leaves it untouched.
+//    - junction sphere centred at (0, 0, Z_JCT=2.3), radius 1.5*D_main = 0.69 m
+//      -> refined to level 2 (5.8 mm cells) to capture jet core shear.
+//    - R1-lite : level-1 cylindrical refinement from junction to +3.6 m
+//      downstream (= 8 D_main), radius = R_main = 0.23 m.  Captures vortex
+//      decay / swirl relaxation without the cost of full level-2 over that
+//      length.   Adds ~150 - 200 k cells (Chen et al. 2017; Frank 2010).
+//    - wall refinement kept at level 1 : same near-wall cell size as the
+//      validated medium-full-domain case, so y+ ~ 30 - 80 at the first cell
+//      and the wall-function regime (30 < y+ < 200) is respected.
+// -----------------------------------------------------------------------------
+
+castellatedMesh true;
+snap            true;
+addLayers       true;
+
+geometry
+{
+    wall.stl          { type triSurfaceMesh; name wall; }
+    main_inlet.stl    { type triSurfaceMesh; name main_inlet; }
+    outlet.stl        { type triSurfaceMesh; name outlet; }
+    branch_inlet.stl  { type triSurfaceMesh; name branch_inlet; }
+
+    // Level-2 sphere around the junction -- jet impingement + shear layer.
+    junctionRefine
+    {
+        type        searchableSphere;
+        centre      (0 0 2.3000);
+        radius      0.6900;
+    }
+
+    // R1-lite : level-1 cylinder, axis along +z, covers junction down to
+    // 3.6 m downstream (= 8 D_main) at r = R_main.
+    jetRefine
+    {
+        type        searchableCylinder;
+        point1      (0 0 2.600);   //  just downstream of junction sphere
+        point2      (0 0 6.200);   //  ~ 8 D downstream; outlet sits at 6.9
+        radius      0.230;
+    }
+}
+
+castellatedMeshControls
+{
+    maxLocalCells       200000;
+    maxGlobalCells      1500000;   // half-domain, so cap is tighter
+    minRefinementCells  10;
+    maxLoadUnbalance    0.10;
+    nCellsBetweenLevels 3;
+
+    features
+    (
+        { file "wall.eMesh";         level 1; }
+        { file "main_inlet.eMesh";   level 0; }
+        { file "outlet.eMesh";       level 0; }
+        { file "branch_inlet.eMesh"; level 1; }
+    );
+
+    refinementSurfaces
+    {
+        wall
+        {
+            level (1 1);
+            patchInfo { type wall; }
+        }
+        main_inlet     { level (0 0); patchInfo { type patch; } }
+        outlet         { level (0 0); patchInfo { type patch; } }
+        branch_inlet   { level (1 1); patchInfo { type patch; } }
+    }
+
+    resolveFeatureAngle 30;
+
+    refinementRegions
+    {
+        junctionRefine
+        {
+            mode    inside;
+            levels  ((1e15 2));    // jet core + shear : level 2
+        }
+        jetRefine
+        {
+            mode    inside;
+            levels  ((1e15 1));    // post-junction mixing : level 1
+        }
+    }
+
+    // Must lie in +x half (symmetry); pick a point well inside the main
+    // pipe, upstream of junction, clear of any refinement boundary.
+    // Both pipes are separate topological regions; list a point in each.
+    locationsInMesh
+    (
+        ((0.077 0.011 1.111)  none)   // inside main pipe, upstream of junction
+        ((0.010 1.000 2.3000)  none)  // inside branch pipe (y near top, x small)
+    );
+    allowFreeStandingZoneFaces true;
+}
+
+snapControls
+{
+    nSmoothPatch            3;
+    tolerance               2.0;
+    nSolveIter              50;
+    nRelaxIter              5;
+    nFeatureSnapIter        10;
+    implicitFeatureSnap     false;
+    explicitFeatureSnap     true;
+    multiRegionFeatureSnap  false;
+}
+
+addLayersControls
+{
+    relativeSizes       true;
+
+    layers
+    {
+        wall
+        {
+            nSurfaceLayers  3;
+        }
+    }
+
+    expansionRatio          1.2;
+    finalLayerThickness     0.5;
+    minThickness            0.15;
+    nGrow                   0;
+    featureAngle            60;
+    slipFeatureAngle        30;
+    nRelaxIter              5;
+    nSmoothSurfaceNormals   1;
+    nSmoothNormals          3;
+    nSmoothThickness        10;
+    maxFaceThicknessRatio   0.5;
+    maxThicknessToMedialRatio 0.3;
+    minMedialAxisAngle      90;
+    nBufferCellsNoExtrude   0;
+    nLayerIter              40;
+}
+
+meshQualityControls
+{
+    maxNonOrtho         65;
+    maxBoundarySkewness 20;
+    maxInternalSkewness 4;
+    maxConcave          80;
+    minVol              1e-13;
+    minTetQuality       1e-15;
+    minArea             -1;
+    minTwist            0.05;
+    minDeterminant      0.001;
+    minFaceWeight       0.05;
+    minVolRatio         0.01;
+    minTriangleTwist    -1;
+
+    nSmoothScale        4;
+    errorReduction      0.75;
+}
+
+writeFlags ( scalarLevels );
+
+mergeTolerance  1e-6;

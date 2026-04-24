@@ -99,6 +99,21 @@ def get_patch(ds, name: str):
     return None
 
 
+_TRI_CACHE = {}
+
+def triangulated(internal):
+    """Return a triangulated (tetrahedral) copy of the internal grid.
+
+    OpenFOAM polyhedral cells can be non-manifold at sharp junction edges,
+    which causes VTK's slice() to drop those cells and leave visible "white
+    notch" gaps in centreline contour figures.  Converting the whole volume
+    to tetrahedra (cheap, ~1-2 s) eliminates the gaps."""
+    key = id(internal)
+    if key not in _TRI_CACHE:
+        _TRI_CACHE[key] = internal.triangulate()
+    return _TRI_CACHE[key]
+
+
 def add_text(p, txt, pos=(0.01, 0.92)):
     p.add_text(txt, font_size=13, color="black", position=pos, viewport=True)
 
@@ -132,28 +147,37 @@ def strip_figure(
     stations = Z_STATIONS + [L_MAIN - 0.01]   # outlet just upstream of end
     titles   = [f"z = {z:.1f} m" for z in Z_STATIONS] + ["outlet"]
 
-    # Compute field range from the last slice (usually most diffuse) if no
-    # clim provided.  Shared across all 5 panels so contours are comparable.
-    if clim is None:
-        last = internal.slice(normal="z", origin=(0, 0, stations[-1]))
-        if field not in last.array_names:
-            raise SystemExit(f"field {field} not in slice; have {last.array_names}")
-        v = last[field]
-        clim = (float(v.min()), float(v.max()))
+    tri = triangulated(internal)
+
+    # Compute a SHARED range across all 5 panels so contours are comparable.
+    # Use the 99.5th percentile over all stations so a single upstream spike
+    # does not flatten the downstream mixed regions to dark purple.
+    if clim is None or clim == (0, 1):
+        vmax_candidates = []
+        for z in stations:
+            sl0 = tri.slice(normal="z", origin=(0, 0, z))
+            if field in sl0.array_names and sl0.n_points > 0:
+                vmax_candidates.append(float(np.nanpercentile(
+                    np.asarray(sl0[field]), 99.5)))
+        if not vmax_candidates:
+            raise SystemExit(f"field {field} not available on any station slice")
+        vmax = max(vmax_candidates)
+        vmax = max(vmax, 1.0e-6)
+        clim = (0.0, vmax)
 
     for k, (z, t) in enumerate(zip(stations, titles)):
         p.subplot(0, k)
-        sl = internal.slice(normal="z", origin=(0, 0, z))
+        sl = tri.slice(normal="z", origin=(0, 0, z))
         if field not in sl.array_names:
             add_text(p, f"no {field} at z={z:.1f}")
             continue
         sl_full = _mirror(sl)
         p.add_mesh(sl_full, scalars=field, cmap=cmap, clim=clim,
                    show_edges=False, show_scalar_bar=False)
-        # Camera looking +z, centred on the plane.
-        cam_pos = (0.0,  0.35, z - 1.6)
-        p.camera_position = [cam_pos, (0, 0.35, z), (0, 1, 0)]
-        p.camera.zoom(1.35)
+        # Camera looking +z, centred on the pipe axis (y = 0).
+        cam_pos = (0.0, 0.0, z - 1.2)
+        p.camera_position = [cam_pos, (0.0, 0.0, z), (0, 1, 0)]
+        p.camera.zoom(1.4)
         add_text(p, t, pos=(0.05, 0.90))
         if k == 0:
             add_text(p, title_fmt.format(lo=clim[0], hi=clim[1]),
@@ -172,14 +196,27 @@ def strip_figure(
 def long_slice_figure(internal, out: Path):
     p = pv.Plotter(off_screen=True, window_size=HALF_HEIGHT)
     p.set_background("white")
-    sl = internal.slice(normal="x", origin=(0, 0, 0))   # whole y-z slice
+    # Slice the triangulated grid so the junction renders without polyhedral
+    # non-manifold gaps.
+    tri = triangulated(internal)
+    sl = tri.slice(normal="x", origin=(0.005, 0, 0))
     if "H2" not in sl.array_names and "H2Mean" not in sl.array_names:
         raise SystemExit("no H2 / H2Mean on the x-slice")
     fld = "H2Mean" if "H2Mean" in sl.array_names else "H2"
-    p.add_mesh(sl, scalars=fld, cmap=CMAP_H2, clim=(0, 1),
+    # Clip to main pipe only (exclude branch interior with pure H2 ~= 1.0).
+    arr = np.asarray(sl[fld])
+    pts = np.asarray(sl.cell_centers().points) if sl.n_cells == arr.size \
+          else np.asarray(sl.points)
+    main_mask = (np.abs(pts[:, 1]) < R_MAIN) & (pts[:, 2] > Z_JCT + 0.3)
+    if main_mask.sum() > 0:
+        vmax = float(np.nanpercentile(arr[main_mask], 99.5))
+    else:
+        vmax = float(np.nanpercentile(arr, 99.5))
+    vmax = max(vmax, 1.0e-6)
+    p.add_mesh(sl, scalars=fld, cmap=CMAP_H2, clim=(0.0, vmax),
                show_edges=False, show_scalar_bar=True,
                scalar_bar_args=dict(
-                   title=fld, color="black", n_labels=5,
+                   title=f"{fld} [0..{vmax:.3g}]", color="black", n_labels=5,
                    label_font_size=11, title_font_size=12,
                    vertical=False, position_x=0.22, position_y=0.04,
                    width=0.56, height=0.032, fmt="%.2g"))
@@ -201,18 +238,28 @@ def outlet_face_figure(ds, out: Path):
         return
     fld = "H2Mean" if "H2Mean" in outlet.array_names else "H2"
     full = _mirror(outlet)
+    arr = np.asarray(full[fld])
+    vmean = float(np.nanmean(arr))
+    vmax_99 = float(np.nanpercentile(arr, 99.0))
+    # Use a scale that spans the actual data: 99th percentile, floored at
+    # 2 * mean so the mean is always in the middle of the colormap.
+    vmax = max(vmax_99, 2.0 * vmax_99 if vmax_99 < 1.0e-6 else vmax_99, 2.0 * vmean)
+    vmax = max(vmax, 1.0e-6)
     p = pv.Plotter(off_screen=True, window_size=SQUARE)
     p.set_background("white")
-    p.add_mesh(full, scalars=fld, cmap=CMAP_H2, clim=(0, 1),
+    p.add_mesh(full, scalars=fld, cmap=CMAP_H2, clim=(0.0, vmax),
                show_edges=False,
                scalar_bar_args=dict(
-                   title=fld, color="black", n_labels=5,
+                   title=f"{fld}   [0..{vmax:.3g}]", color="black", n_labels=5,
                    label_font_size=11, title_font_size=12,
                    vertical=False, position_x=0.20, position_y=0.04,
                    width=0.60, height=0.032, fmt="%.3g"))
-    p.camera_position = [(0, 0.35, L_MAIN + 1.5), (0, 0.35, L_MAIN), (0, 1, 0)]
-    p.camera.zoom(1.4)
-    add_text(p, f"Outlet face, {fld}  (CoV reporting plane)")
+    # Camera focal point at pipe axis (y = 0 for this geometry), looking from +z.
+    p.camera_position = [(0, 0.0, L_MAIN + 1.2),
+                         (0, 0.0, L_MAIN), (0, 1, 0)]
+    p.camera.zoom(1.35)
+    add_text(p, f"Outlet face, {fld}  (CoV reporting plane)   "
+                f"mean={vmean:.4g}, 99%ile={vmax_99:.4g}")
     p.screenshot(str(out))
     print(f"  wrote {out.name}")
 

@@ -116,6 +116,24 @@ def get_patch(ds, name: str):
     return None
 
 
+# ---------------------------------------------------------------------------
+# Triangulate cache: OpenFOAM polyhedral cells from snappyHexMesh are often
+# non-manifold at the junction, which causes VTK's slice() to drop cells and
+# leave "white notch" holes in longitudinal centreline figures.  Triangulating
+# the volume once up-front converts every cell to tetrahedra which slice
+# cleanly.  Cache the triangulated grid so callers can reuse it.
+# ---------------------------------------------------------------------------
+_TRI_CACHE = {}
+
+
+def triangulated(ds):
+    internal = get_internal(ds)
+    key = id(internal)
+    if key not in _TRI_CACHE:
+        _TRI_CACHE[key] = internal.triangulate()
+    return _TRI_CACHE[key]
+
+
 def add_text(p, txt):
     p.add_text(txt, font_size=13, color="black", position=(0.01, 0.94),
                viewport=True)
@@ -159,7 +177,7 @@ def fig_geometry(case: Path, out: Path):
 
 def fig_mesh_xz(ds, out: Path):
     internal = get_internal(ds)
-    slc = internal.slice(normal="x", origin=(0.0, 0.0, 4.6))
+    slc = internal.slice(normal="x", origin=(0.001, 0.0, 4.6))
     p = pv.Plotter(off_screen=True, window_size=WIDE)
     p.set_background("white")
     p.add_mesh(
@@ -178,7 +196,9 @@ def fig_mesh_xz(ds, out: Path):
 
 def _slice_x0(ds):
     internal = get_internal(ds)
-    return internal, internal.slice(normal="x", origin=(0.0, 0.0, 4.6))
+    tri = triangulated(ds)
+    # Triangulated slice has no polyhedral non-manifold gaps at the junction.
+    return internal, tri.slice(normal="x", origin=(0.005, 0.0, 4.6))
 
 
 def fig_scalar_xz(ds, field: str, out: Path, *, clim=None, cmap="viridis",
@@ -200,7 +220,9 @@ def fig_velocity_xz(ds, out: Path):
     internal = get_internal(ds)
     U = np.asarray(internal.cell_data["U"])
     internal["|U|"] = np.linalg.norm(U, axis=1)
-    slc = internal.slice(normal="x", origin=(0.0, 0.0, 4.6))
+    tri = triangulated(ds)
+    tri["|U|"] = np.linalg.norm(np.asarray(tri.cell_data["U"]), axis=1)
+    slc = tri.slice(normal="x", origin=(0.005, 0.0, 4.6))
     sbar = dict(SBAR, title="|U|  [m/s]")
     p = pv.Plotter(off_screen=True, window_size=WIDE)
     p.set_background("white")
@@ -325,9 +347,25 @@ def main():
     fig_mesh_xz(ds, out / "fig_mesh_xz.png")
 
     print("[4/7] fig_H2_xz")
+    # Data-driven range: 99th percentile of H2 in the MAIN pipe volume only
+    # (the branch inlet carries pure H2 at ~1.0 and would otherwise flatten
+    # the colormap).  Clip to |y| < 0.23 (inside main pipe radius).
+    _, _slc = _slice_x0(ds)
+    if "H2" in _slc.cell_data or "H2" in _slc.point_data:
+        _arr = np.asarray(_slc.cell_data.get("H2", _slc.point_data.get("H2")))
+        _pts = np.asarray(_slc.cell_centers().points) if _slc.n_cells == _arr.size \
+            else np.asarray(_slc.points)
+        main_mask = (np.abs(_pts[:, 1]) < 0.23) & (_pts[:, 2] > 2.5)
+        if main_mask.sum() > 0:
+            _vmax = float(np.nanpercentile(_arr[main_mask], 99.0))
+        else:
+            _vmax = float(np.nanpercentile(_arr, 99.0))
+        _vmax = max(_vmax, 1.0e-6)
+    else:
+        _vmax = 0.5
     fig_scalar_xz(ds, "H2", out / "fig_H2_xz.png",
-                  clim=[0.0, 0.5], cmap=CMAP_H2,
-                  title=f"Y_H2 (H2 mass fraction, 0–0.5)  —  x=0 slice  (t = {t:g} s)")
+                  clim=[0.0, _vmax], cmap=CMAP_H2,
+                  title=f"Y_H2 (H2 mass fraction, 0–{_vmax:.3g})  —  x=0 slice  (t = {t:g} s)")
 
     print("[5/7] fig_H2_outlet")
     fig_H2_outlet(ds, out / "fig_H2_outlet.png")

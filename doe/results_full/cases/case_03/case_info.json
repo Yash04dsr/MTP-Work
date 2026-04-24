@@ -1,0 +1,20 @@
+{
+  "case": 3,
+  "d_over_D": 0.2518,
+  "HBR": 0.0778,
+  "VR": 1.3303,
+  "D2_m": 0.11585,
+  "U_main_mps": 10.0,
+  "U_branch_mps": 13.3032,
+  "Re_branch": 8806546.0,
+  "K_main": 0.375,
+  "K_branch": 0.663661,
+  "Omega_main": 34.7216,
+  "Omega_branch": 183.4123,
+  "mix_branch_m": 0.008109,
+  "ZJCT": 2.3,
+  "LMAIN": 6.9,
+  "slice_id": 2,
+  "wall_seconds": 7031.0,
+  "sim_status": "ok"
+}
