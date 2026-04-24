@@ -1,0 +1,43 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      k;
+}
+dimensions  [0 2 -2 0 0 0 0];
+internalField   uniform 0.375;
+
+// DoE tokens (replaced per-case by stamp_cases.py) :
+//    0.375     = 1.5 * (I_main * UMAIN)^2
+//    1.01189   = 1.5 * (I_branch * UBRANCH)^2
+// Turbulence intensity I = 5 % is the standard assumption for internal
+// pipe flow at Re > 10^5 (Versteeg & Malalasekera 2007, sec. 6.3).
+
+boundaryField
+{
+    main_inlet
+    {
+        type            turbulentIntensityKineticEnergyInlet;
+        intensity       0.05;
+        value           uniform 0.375;
+    }
+    branch_inlet
+    {
+        type            turbulentIntensityKineticEnergyInlet;
+        intensity       0.05;
+        value           uniform 1.01189;
+    }
+    outlet
+    {
+        type            inletOutlet;
+        inletValue      uniform 0.375;
+        value           uniform 0.375;
+    }
+    wall
+    {
+        type            kqRWallFunction;
+        value           uniform 0.375;
+    }
+    sym { type symmetryPlane; }
+}

@@ -37,49 +37,99 @@ import stat
 from pathlib import Path
 
 
-TOKENS = [
-    # replaced in 0/U
-    ("@UMAIN@",         lambda r: r["U_main_mps"]),
-    ("@UBRANCH@",       lambda r: r["U_branch_mps"]),
-    ("@D1@",            lambda r: 0.460),            # main pipe diameter [m]
-    ("@D2@",            lambda r: r["D2_m"]),
-    ("@ZJCT@",          lambda r: r["ZJCT"]),
-    # replaced in 0/k
-    ("@K_MAIN@",        lambda r: r["K_main"]),
-    ("@K_BRANCH@",      lambda r: r["K_branch"]),
-    # replaced in 0/omega
-    ("@OMEGA_MAIN@",    lambda r: r["Omega_main"]),
-    ("@OMEGA_BRANCH@",  lambda r: r["Omega_branch"]),
-    ("@MIX_BRANCH@",    lambda r: r["mix_branch_m"]),
-    # 30deg fork: tilted-branch direction tokens
-    ("@ALPHA_DEG@",     lambda r: ALPHA_DEG),
-    ("@SIN_ALPHA@",     lambda r: SIN_ALPHA),
-    ("@COS_ALPHA@",     lambda r: COS_ALPHA),
-    ("@YJCT@",          lambda r: 0.230),  # = R1 = D1/2
-    ("@UBY@",           lambda r: -r["U_branch_mps"] * SIN_ALPHA),
-    ("@UBZ@",           lambda r:  r["U_branch_mps"] * COS_ALPHA),
-    # Branch interior seed for snappyHexMesh locationsInMesh:
-    ("@YBRANCH_INT@",   lambda r: 0.230 + 0.5 * float(max(1.380, 0.230 + 12.0 * r["D2_m"])) * SIN_ALPHA),
-    ("@ZBRANCH_INT@",   lambda r: r["ZJCT"] - 0.5 * float(max(1.380, 0.230 + 12.0 * r["D2_m"])) * COS_ALPHA),
+# --- Geometry constants (match generateSTL.py defaults) --------------------
+D1_DEFAULT  = 0.460                  # main pipe diameter [m]
+R1_DEFAULT  = D1_DEFAULT / 2.0       # main pipe radius  [m]
 
+def _L_branch(r: dict) -> float:
+    """Branch length per-case, matches generateSTL.py."""
+    return float(max(1.380, 0.230 + 12.0 * r["D2_m"]))
+
+def _R2(r: dict) -> float:
+    return 0.5 * r["D2_m"]
+
+
+TOKENS = [
+    # -- 0/U, 0/k, 0/omega --
+    ("@UMAIN@",          lambda r: r["U_main_mps"]),
+    ("@UBRANCH@",        lambda r: r["U_branch_mps"]),
+    ("@D1@",             lambda r: D1_DEFAULT),
+    ("@D2@",             lambda r: r["D2_m"]),
+    ("@ZJCT@",           lambda r: r["ZJCT"]),
+    ("@YJCT@",           lambda r: R1_DEFAULT),
+    ("@K_MAIN@",         lambda r: r["K_main"]),
+    ("@K_BRANCH@",       lambda r: r["K_branch"]),
+    ("@OMEGA_MAIN@",     lambda r: r["Omega_main"]),
+    ("@OMEGA_BRANCH@",   lambda r: r["Omega_branch"]),
+    ("@MIX_BRANCH@",     lambda r: r["mix_branch_m"]),
+    # -- tilted-branch direction tokens --
+    ("@ALPHA_DEG@",      lambda r: ALPHA_DEG),
+    ("@SIN_ALPHA@",      lambda r: SIN_ALPHA),
+    ("@COS_ALPHA@",      lambda r: COS_ALPHA),
+    ("@UBY@",            lambda r: -r["U_branch_mps"] * SIN_ALPHA),
+    ("@UBZ@",            lambda r:  r["U_branch_mps"] * COS_ALPHA),
+    # -- branch interior seed for snappyHexMesh locationsInMesh --
+    # Seed at half-branch-length along the tilted branch axis, clear of all
+    # walls.  x-coord = 0.25 * R2 keeps it safely inside the half-domain
+    # (x>=0) and inside the branch cross-section even at small D2.
+    ("@XBRANCH_INT@",    lambda r: 0.25 * _R2(r)),
+    ("@YBRANCH_INT@",    lambda r: R1_DEFAULT + 0.5 * _L_branch(r) * SIN_ALPHA),
+    ("@ZBRANCH_INT@",    lambda r: r["ZJCT"]   - 0.5 * _L_branch(r) * COS_ALPHA),
+    # -- junction-core level-3 sphere --
+    # Centred ~0.25 * R1 inside the main pipe along -S_HAT (= into the jet),
+    # radius = R2 + 0.25 R1 so it safely covers the analytical intersection
+    # ring for all phi.
+    ("@Y_CORE@",         lambda r: R1_DEFAULT - 0.25 * R1_DEFAULT * SIN_ALPHA),
+    ("@Z_CORE@",         lambda r: r["ZJCT"]  + 0.25 * R1_DEFAULT * COS_ALPHA),
+    ("@R_CORE@",         lambda r: _R2(r) + 0.25 * R1_DEFAULT),
+    # -- branchRefine cylinder endpoints (along branch axis, tilted) --
+    # point1 = junction ring centre; point2 = branch inlet disc centre.
+    ("@YBRANCH_P1@",     lambda r: R1_DEFAULT),
+    ("@ZBRANCH_P1@",     lambda r: r["ZJCT"]),
+    ("@YBRANCH_P2@",     lambda r: R1_DEFAULT + _L_branch(r) * SIN_ALPHA),
+    ("@ZBRANCH_P2@",     lambda r: r["ZJCT"]   - _L_branch(r) * COS_ALPHA),
+    ("@RBRANCH_REFINE@", lambda r: _R2(r) + 0.010),
 ]
 
-# Numeric columns cast from CSV strings.
+# Numeric columns cast from CSV strings.  alpha_deg is optional (legacy CSVs
+# written before the angle-agnostic rewrite won't have it).
 NUM_COLS = (
     "d_over_D", "HBR", "VR", "D2_m", "U_main_mps", "U_branch_mps",
     "Re_branch", "K_main", "K_branch", "Omega_main", "Omega_branch",
     "mix_branch_m", "ZJCT", "LMAIN",
 )
+OPTIONAL_NUM_COLS = ("alpha_deg",)
 INT_COLS = ("case", "slice_id")
 
-# --- 30deg fork: tilted-branch configuration -----------------------
-# Branch axis makes ALPHA_DEG with the -z axis.  ALPHA=90 reproduces
-# the perpendicular T (= parent 90deg base).  Override via env if needed.
-ALPHA_DEG_DEFAULT = 30.0
+# --- Tilted-branch configuration (angle-agnostic) ---------------------
+# Branch axis makes ALPHA_DEG with the -z main-flow axis.
+#   ALPHA = 90 deg  -> perpendicular T
+#   ALPHA = 30 deg  -> Y-junction with branch inlet up-and-upstream
+#
+# Resolution precedence (highest first):
+#   1. per-row "alpha_deg" column in doe_design.csv
+#   2. ALPHA_DEG environment variable
+#   3. default 90.0 deg
+#
+# ALPHA_DEG / SIN_ALPHA / COS_ALPHA are recomputed per-row inside the token
+# lambdas via ``_set_alpha(row)`` so the stamper handles multi-angle CSVs
+# cleanly (e.g. if you ever want to run a combined DoE).
 import os as _os
-ALPHA_DEG = float(_os.environ.get("ALPHA_DEG", ALPHA_DEG_DEFAULT))
+_ALPHA_DEFAULT = float(_os.environ.get("ALPHA_DEG", 90.0))
+ALPHA_DEG = _ALPHA_DEFAULT
 SIN_ALPHA = math.sin(math.radians(ALPHA_DEG))
 COS_ALPHA = math.cos(math.radians(ALPHA_DEG))
+
+
+def _set_alpha(row: dict) -> None:
+    """Update module-level ALPHA_DEG / SIN_ALPHA / COS_ALPHA for this row."""
+    global ALPHA_DEG, SIN_ALPHA, COS_ALPHA
+    alpha = row.get("alpha_deg", _ALPHA_DEFAULT)
+    if alpha is None:
+        alpha = _ALPHA_DEFAULT
+    ALPHA_DEG = float(alpha)
+    SIN_ALPHA = math.sin(math.radians(ALPHA_DEG))
+    COS_ALPHA = math.cos(math.radians(ALPHA_DEG))
 
 
 
@@ -89,6 +139,9 @@ def _load_design(path: Path) -> list[dict]:
     for r in rows:
         for c in NUM_COLS:
             r[c] = float(r[c])
+        for c in OPTIONAL_NUM_COLS:
+            if c in r and r[c] != "":
+                r[c] = float(r[c])
         for c in INT_COLS:
             r[c] = int(r[c])
     return rows
@@ -105,29 +158,43 @@ def _sed(path: Path, row: dict) -> None:
     text = path.read_text()
     for tok, fn in TOKENS:
         text = text.replace(tok, _format_num(fn(row)))
+    leftover = re.findall(r"@[A-Z0-9_]+@", text)
+    if leftover:
+        raise RuntimeError(
+            f"token stamping left unresolved placeholders "
+            f"{sorted(set(leftover))} in {path}"
+        )
     path.write_text(text)
 
 
 def _stamp_snappy(path: Path, row: dict) -> None:
-    """Update junction-refine + jet-refine radii to match per-case D2."""
+    """Stamp the snappyHexMeshDict template.
+
+    Token-based only (no regex surgery) -- the template declares every
+    angle/diameter-dependent refinement as an @XXX@ token.  Fall-back
+    per-case sphere/cylinder radii:
+        junctionRefine radius  = max(3 * D2, 1.5 * D1)    ~ 0.69 m floor
+        jetRefine endpoints    = Z_JCT + 0.5 * sphere_r .. Z_JCT + 8 D_main
+    """
     text = path.read_text()
+
+    # Per-case derived radii/endpoints (substituted inline as raw floats so
+    # the template itself never needs an @XXX@ for these).  If the user
+    # edits the template they can replace the raw numbers or keep them.
+    d1 = D1_DEFAULT
     d2 = row["D2_m"]
     z_jct = row["ZJCT"]
 
-    # junctionRefine : sphere radius ~ 3 * D2 (captures jet shear layer)
-    jct_radius = max(3.0 * d2, 6.0 * 0.115)   # >= 0.69 for small D2
-    # jetRefine : cylinder radius = 0.23 (main pipe radius), unchanged
-    # Update only the sphere radius and centre.
+    jct_radius = max(3.0 * d2, 1.5 * d1)          # floor = 0.69 m at D1=0.46
+    p1 = z_jct + jct_radius * 0.5
+    p2 = min(z_jct + 8.0 * d1, row["LMAIN"] - 0.10)
+
     text = re.sub(
         r"(junctionRefine\s*\{\s*type\s+searchableSphere;\s*"
-        r"centre\s+\(0\s+0\s+)[0-9.]+(\);\s*radius\s+)[0-9.]+(;)",
-        rf"\g<1>{z_jct:.4f}\g<2>{jct_radius:.4f}\g<3>",
+        r"centre\s+\(0\s+0\s+[^)]+\);\s*radius\s+)[0-9.]+(;)",
+        rf"\g<1>{jct_radius:.4f}\g<2>",
         text,
     )
-    # jetRefine cylinder : point1 just downstream of sphere, point2 8D
-    # downstream.  Keep radius at main-pipe radius 0.23.
-    p1 = z_jct + jct_radius * 0.5          # just past sphere edge
-    p2 = min(z_jct + 8.0 * 0.460, row["LMAIN"] - 0.10)
     text = re.sub(
         r"(jetRefine\s*\{\s*type\s+searchableCylinder;\s*"
         r"point1\s+\(0\s+0\s+)[0-9.]+(\);\s*"
@@ -135,12 +202,23 @@ def _stamp_snappy(path: Path, row: dict) -> None:
         rf"\g<1>{p1:.4f}\g<2>{p2:.4f}\g<3>",
         text,
     )
-    # Substitute template tokens used by locationsInMesh.
+
+    # Legacy token (pre-unification): map @Z_JCT@ -> ZJCT value for backwards
+    # compat with old templates.  New templates only use @ZJCT@.
     text = text.replace('@Z_JCT@', f'{z_jct:.4f}')
-    # Also walk the generic TOKENS list so tilted-branch tokens
-    # (@YBRANCH_INT@, @ZBRANCH_INT@, @ALPHA_DEG@) are substituted.
+
+    # All remaining angle/D2-dependent tokens are handled by the generic
+    # TOKENS list.
     for tok, fn in TOKENS:
         text = text.replace(tok, _format_num(fn(row)))
+
+    # Post-condition: no unsubstituted tokens remain.
+    leftover = re.findall(r"@[A-Z0-9_]+@", text)
+    if leftover:
+        raise RuntimeError(
+            f"snappyHexMeshDict stamping left unresolved tokens: "
+            f"{sorted(set(leftover))} in {path}"
+        )
     path.write_text(text)
 
 
@@ -305,10 +383,11 @@ def main():
     for r in rows:
         if args.only is not None and r["case"] not in args.only:
             continue
+        _set_alpha(r)           # refresh ALPHA / SIN / COS per row
         case_dir = cases_root / f"case_{r['case']:02d}"
         print(f"[stamp] case {r['case']:02d}  d/D={r['d_over_D']:.3f}  "
               f"HBR={r['HBR']*100:.1f}%  VR={r['VR']:.3f}  "
-              f"-> {case_dir}")
+              f"alpha={ALPHA_DEG:.1f} deg  -> {case_dir}")
         stamp_one(base, case_dir, r, overwrite=args.overwrite)
 
     # Also stash the design CSV alongside the cases for provenance.

@@ -1,4 +1,4 @@
-# DoE Campaign Plan — 90 deg T-junction, (d/D, HBR) sweep
+# DoE Campaign Plan — 30 deg Y-junction, (d/D, HBR) sweep
 
 ## 1. Design summary
 
@@ -11,9 +11,14 @@
 | HBR band | 0.05 – 0.20 (5 % – 20 %) |
 | d/D band | 0.15 – 0.45 |
 | VR safety cap | ≤ 12 |
-| Injection angle | 90 deg (fixed) |
+| Injection angle | **30 deg** (w.r.t. the -z main-flow axis, configurable via `ALPHA_DEG` env var) |
 | Main pipe bulk velocity | 10 m s⁻¹ (fixed) |
 | Solver | `rhoReactingBuoyantFoam` (transient, k-ω SST) |
+
+> The tool-chain (generateSTL, 0/U, stamp_cases.py, snappyHexMeshDict) is
+> angle-agnostic: any `ALPHA_DEG` in ~[25, 90] deg produces a watertight
+> STL, a clean snappy mesh, and a fully-stamped case.  Swap the env var,
+> re-run `stamp_cases.py`, and go.
 
 HBR is derived from (d/D, VR) via the volumetric-flow identity
 

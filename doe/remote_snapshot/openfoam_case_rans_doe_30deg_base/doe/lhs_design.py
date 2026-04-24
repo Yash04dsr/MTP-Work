@@ -134,6 +134,11 @@ def main(argv=None):
     ap.add_argument("--outdir", type=str, default=".")
     ap.add_argument("--max-redraws", type=int, default=100,
                     help="Max per-cell redraws to satisfy VR cap")
+    ap.add_argument("--alpha-deg", type=float,
+                    default=float(os.environ.get("ALPHA_DEG", 90.0)),
+                    help="Injection angle [deg] wrt -z main-flow axis. "
+                         "Recorded in doe_design.csv for provenance only; "
+                         "LHS variables are (d/D, HBR) independent of alpha.")
     args = ap.parse_args(argv)
 
     rng = np.random.default_rng(args.seed)
@@ -195,6 +200,7 @@ def main(argv=None):
                 "mix_branch_m":  round(l_branch, 6),
                 "ZJCT":          Z_JCT,
                 "LMAIN":         L_MAIN,
+                "alpha_deg":     round(float(args.alpha_deg), 4),
                 # Mesh reuse tag : cases sharing slice_id can share the mesh.
                 "slice_id":      k + 1,
             })

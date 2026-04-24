@@ -7,19 +7,21 @@ FoamFile
 }
 
 // -----------------------------------------------------------------------------
-//  DoE baseline snappyHexMesh config
+//  DoE baseline snappyHexMesh config  (angle-agnostic template)
 //
 //    - half-domain (x >= 0) : the x = 0 face is the "sym" symmetryPlane patch
 //      from blockMesh; snappy leaves it untouched.
-//    - junction sphere centred at (0, 0, Z_JCT=2.3), radius 1.5*D_main = 0.69 m
-//      -> refined to level 2 (5.8 mm cells) to capture jet core shear.
-//    - R1-lite : level-1 cylindrical refinement from junction to +3.6 m
-//      downstream (= 8 D_main), radius = R_main = 0.23 m.  Captures vortex
-//      decay / swirl relaxation without the cost of full level-2 over that
-//      length.   Adds ~150 - 200 k cells (Chen et al. 2017; Frank 2010).
-//    - wall refinement kept at level 1 : same near-wall cell size as the
-//      validated medium-full-domain case, so y+ ~ 30 - 80 at the first cell
-//      and the wall-function regime (30 < y+ < 200) is respected.
+//    - junctionRefine : level-2 sphere centred on the junction (Z_JCT), captures
+//      the jet impingement + shear layer. Centre Z is tokenised via @ZJCT@.
+//    - jetRefine      : level-1 cylinder from just downstream of junction to
+//      ~8 D_main downstream, captures vortex decay / swirl relaxation.
+//    - wall refinement level 1 : same near-wall cell size as validated
+//      medium-full-domain case (y+ ~ 30 - 80).
+//
+//  locationsInMesh supplies TWO seed points (main + branch); snappy keeps the
+//  two connected regions as a single fluid domain because the STL has no
+//  wall at the branch-main intersection ring (generateSTL.py zippers them).
+//  Branch-seed coords are tokenised so any ALPHA_DEG works.
 // -----------------------------------------------------------------------------
 
 castellatedMesh true;
@@ -33,21 +35,18 @@ geometry
     outlet.stl        { type triSurfaceMesh; name outlet; }
     branch_inlet.stl  { type triSurfaceMesh; name branch_inlet; }
 
-    // Level-2 sphere around the junction -- jet impingement + shear layer.
     junctionRefine
     {
         type        searchableSphere;
-        centre      (0 0 2.3);
-        radius      0.690;
+        centre      (0 0 @ZJCT@);
+        radius      0.6900;
     }
 
-    // R1-lite : level-1 cylinder, axis along +z, covers junction down to
-    // 3.6 m downstream (= 8 D_main) at r = R_main.
     jetRefine
     {
         type        searchableCylinder;
-        point1      (0 0 2.600);   //  just downstream of junction sphere
-        point2      (0 0 6.200);   //  ~ 8 D downstream; outlet sits at 6.9
+        point1      (0 0 2.600);
+        point2      (0 0 6.200);
         radius      0.230;
     }
 }
@@ -55,7 +54,7 @@ geometry
 castellatedMeshControls
 {
     maxLocalCells       200000;
-    maxGlobalCells      1500000;   // half-domain, so cap is tighter
+    maxGlobalCells      1500000;
     minRefinementCells  10;
     maxLoadUnbalance    0.10;
     nCellsBetweenLevels 3;
@@ -65,7 +64,7 @@ castellatedMeshControls
         { file "wall.eMesh";         level 1; }
         { file "main_inlet.eMesh";   level 0; }
         { file "outlet.eMesh";       level 0; }
-        { file "branch_inlet.eMesh"; level 1; }
+        { file "branch_inlet.eMesh"; level 2; }
     );
 
     refinementSurfaces
@@ -77,32 +76,27 @@ castellatedMeshControls
         }
         main_inlet     { level (0 0); patchInfo { type patch; } }
         outlet         { level (0 0); patchInfo { type patch; } }
-        branch_inlet   { level (1 1); patchInfo { type patch; } }
+        // level (2 2) on branch_inlet so a tilted inlet disc still catches
+        // 40+ faces for the 1/7th power-law profile BC (matches resolution
+        // of perpendicular cases).  Cost: ~5 % extra cells near inlet.
+        branch_inlet   { level (2 2); patchInfo { type patch; } }
     }
 
     resolveFeatureAngle 30;
 
     refinementRegions
     {
-        junctionRefine
-        {
-            mode    inside;
-            levels  ((1e15 2));    // jet core + shear : level 2
-        }
-        jetRefine
-        {
-            mode    inside;
-            levels  ((1e15 1));    // post-junction mixing : level 1
-        }
+        junctionRefine { mode inside; levels ((1e15 2)); }
+        jetRefine      { mode inside; levels ((1e15 1)); }
     }
 
-    // Must lie in +x half (symmetry); pick a point well inside the main
-    // pipe, upstream of junction, clear of any refinement boundary.
-    // Both pipes are separate topological regions; list a point in each.
+    // Must lie in +x half (symmetry); pick a point well inside each pipe.
+    // Branch seed coords are tokenised so snappy finds the tilted branch
+    // interior for any ALPHA_DEG.
     locationsInMesh
     (
-        ((0.077 0.011 1.111)  none)   // inside main pipe, upstream of junction
-        ((0.010 @YBRANCH_INT@ @ZBRANCH_INT@)  none)  // inside branch pipe (y near top, x small)
+        ((0.077 0.011 1.111)                           none)
+        ((@XBRANCH_INT@ @YBRANCH_INT@ @ZBRANCH_INT@)    none)
     );
     allowFreeStandingZoneFaces true;
 }

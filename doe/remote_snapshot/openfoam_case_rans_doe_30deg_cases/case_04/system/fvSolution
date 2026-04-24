@@ -1,0 +1,132 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      fvSolution;
+}
+
+solvers
+{
+    // For transient, rho IS solved (ddt*rho + div(rho*U) = 0). Let it
+    // through with a loose tolerance since thermo refresh corrects it.
+    "rho.*"
+    {
+        solver          diagonal;
+    }
+
+    p
+    {
+        solver          GAMG;
+        smoother        GaussSeidel;
+        tolerance       1e-7;
+        relTol          0.01;
+    }
+
+    Phi
+    {
+        $p;
+    }
+
+    // PCG+DIC is more robust than GAMG on compressible p_rgh for
+    // strong density gradients (see earlier GAMG FPE diagnostics).
+    p_rgh
+    {
+        solver          PCG;
+        preconditioner  DIC;
+        tolerance       1e-7;
+        relTol          0.01;
+        maxIter         200;
+    }
+
+    p_rghFinal
+    {
+        $p_rgh;
+        relTol          0;
+    }
+
+    "U"
+    {
+        solver          smoothSolver;
+        smoother        symGaussSeidel;
+        tolerance       1e-7;
+        relTol          0.1;
+        nSweeps         2;
+    }
+
+    UFinal
+    {
+        $U;
+        relTol          0;
+    }
+
+    // Energy equation disabled (isothermal assumption).
+    "(h|he|hs|e)"
+    {
+        solver          smoothSolver;
+        smoother        symGaussSeidel;
+        tolerance       1;
+        relTol          1;
+        maxIter         0;
+    }
+
+    "(h|he|hs|e)Final"
+    {
+        solver          smoothSolver;
+        smoother        symGaussSeidel;
+        tolerance       1;
+        relTol          1;
+        maxIter         0;
+    }
+
+    "(H2|CH4|Yi|k|omega|epsilon)"
+    {
+        solver          PBiCGStab;
+        preconditioner  DILU;
+        tolerance       1e-7;
+        relTol          0.1;
+    }
+
+    "(H2|CH4|Yi|k|omega|epsilon)Final"
+    {
+        $H2;
+        relTol          0;
+    }
+}
+
+potentialFlow
+{
+    nNonOrthogonalCorrectors    3;
+}
+
+PIMPLE
+{
+    momentumPredictor        yes;
+    nOuterCorrectors         1;
+    nCorrectors              2;
+    nNonOrthogonalCorrectors 1;
+    transonic                no;
+
+    // Transient: deltaT controlled by controlDict (adjustTimeStep)
+}
+
+// No under-relaxation on final corrector in transient mode.
+// Intermediate URFs help stability of outer loop.
+relaxationFactors
+{
+    equations
+    {
+        "U.*"           0.7;
+        "h.*"           0;
+        "he.*"          0;
+        "k.*"           0.7;
+        "omega.*"       0.7;
+        "H2.*"          0.9;
+        "CH4.*"         0.9;
+        "Yi.*"          0.9;
+    }
+    fields
+    {
+        "p_rgh.*"       0.3;
+    }
+}
