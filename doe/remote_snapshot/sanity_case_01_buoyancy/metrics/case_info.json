@@ -1,0 +1,15 @@
+{
+  "case": 1,
+  "sanity_test": "buoyancy (Fr<<1)",
+  "d_over_D": 0.1964,
+  "HBR": 0.184,
+  "VR": 1.0,
+  "D2_m": 0.09036,
+  "U_main_mps": 0.5,
+  "U_branch_mps": 0.5,
+  "Re_branch": 258322.0,
+  "ZJCT": 2.3,
+  "LMAIN": 6.9,
+  "slice_id": 1,
+  "note": "repurposed as Fr<<1 sanity test to verify buoyancy physics: plume should rise (or not sink) since inertia << buoyancy here"
+}
