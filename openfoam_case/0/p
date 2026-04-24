@@ -1,0 +1,42 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      p;
+}
+
+// In rhoReactingBuoyantFoam, p is reconstructed internally from p_rgh
+// (p = p_rgh + rho*g*h). The boundary conditions here are auxiliary;
+// all physically meaningful pressure BCs belong in 0/p_rgh.
+
+dimensions  [1 -1 -2 0 0 0 0];
+
+internalField   uniform 6900000;        // operating pressure, 6.9 MPa
+
+boundaryField
+{
+    main_inlet
+    {
+        type    calculated;
+        value   uniform 6900000;
+    }
+
+    branch_inlet
+    {
+        type    calculated;
+        value   uniform 6900000;
+    }
+
+    outlet
+    {
+        type    calculated;
+        value   uniform 6900000;
+    }
+
+    wall
+    {
+        type    calculated;
+        value   uniform 6900000;
+    }
+}

@@ -1,0 +1,43 @@
+#!/bin/bash
+cd "${0%/*}" || exit 1
+. ${WM_PROJECT_DIR:?}/bin/tools/RunFunctions
+
+# ────────────────────────────────────────────────────────────────────
+# Hydrogen-into-methane T-junction DDES
+# Replicates the OpenFOAM setup of Eames et al.
+# (Int. J. Hydrogen Energy, 2022, 47:25745) using rhoReactingBuoyantFoam.
+# ────────────────────────────────────────────────────────────────────
+
+# ── 1.  Generate STL geometry (needs numpy + numpy-stl) ──────────────
+echo "[1/8]  Generating T-junction STL..."
+python3 generateSTL.py
+
+# ── 2.  Background hex mesh ─────────────────────────────────────────
+echo "[2/8]  blockMesh..."
+runApplication blockMesh
+
+# ── 3.  Extract surface features for snapping ────────────────────────
+echo "[3/8]  surfaceFeatureExtract..."
+runApplication surfaceFeatureExtract
+
+# ── 4.  snappyHexMesh (castellate + snap + layers) ───────────────────
+echo "[4/8]  snappyHexMesh..."
+runApplication snappyHexMesh -overwrite
+
+# ── 5.  Patch branch region with pure H2 and branch velocity ────────
+echo "[5/8]  setFields..."
+runApplication setFields
+
+# ── 6.  Decompose for parallel run ───────────────────────────────────
+echo "[6/8]  decomposePar..."
+runApplication decomposePar
+
+# ── 7.  Run the solver (rhoReactingBuoyantFoam) ──────────────────────
+echo "[7/8]  rhoReactingBuoyantFoam (this will take days for 25k steps)..."
+runParallel -np 16 rhoReactingBuoyantFoam
+
+# ── 8.  Reconstruct ─────────────────────────────────────────────────
+echo "[8/8]  reconstructPar..."
+runApplication reconstructPar
+
+echo "Done. Use paraFoam to post-process."

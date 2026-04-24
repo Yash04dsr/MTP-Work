@@ -1,0 +1,121 @@
+\begin{thebibliography}{16}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Eames et~al.(2022)Eames, Austin, and Wojcik]{Eames2022}
+I.~Eames, M.~Austin, and A.~Wojcik.
+\newblock Injection of gaseous hydrogen into a natural gas pipeline.
+\newblock \emph{International Journal of Hydrogen Energy}, 47\penalty0
+  (61):\penalty0 25745--25760, 2022.
+\newblock \doi{10.1016/j.ijhydene.2022.05.300}.
+
+\bibitem[Laureys et~al.(2022)Laureys, Depraetere, Cauwels, and
+  Verbeken]{Laureys2022}
+A.~Laureys, R.~Depraetere, M.~Cauwels, and K.~Verbeken.
+\newblock Use of existing steel pipeline infrastructure for gaseous hydrogen
+  storage and transport: A review of factors affecting hydrogen induced
+  degradation.
+\newblock \emph{Journal of Natural Gas Science and Engineering}, 101:\penalty0
+  104534, 2022.
+\newblock \doi{10.1016/j.jngse.2022.104534}.
+
+\bibitem[Schlichting and Gersten(2017)]{Schlichting2017}
+H.~Schlichting and K.~Gersten.
+\newblock \emph{Boundary-Layer Theory}.
+\newblock Springer, 9th edition, 2017.
+\newblock \doi{10.1007/978-3-662-52919-5}.
+
+\bibitem[{ANSYS Inc.}(2024{\natexlab{a}})]{ANSYSFluentUG2024}
+{ANSYS Inc.}
+\newblock \emph{{ANSYS Fluent User's Guide}}.
+\newblock ANSYS Inc., Canonsburg, PA, release 24.2 edition, 2024{\natexlab{a}}.
+
+\bibitem[Gritskevich et~al.(2012)Gritskevich, Menter, Garbaruk, and
+  Schutze]{Gritskevich2012}
+M.~S. Gritskevich, F.~R. Menter, A.~V. Garbaruk, and J.~Schutze.
+\newblock Investigation of the thermal mixing in a {T}-junction flow with
+  different {SRS} approaches.
+\newblock In \emph{Proc.\ CFD4NRS-4, OECD/NEA \& IAEA Workshop}, Daejeon,
+  Republic of Korea, 2012.
+
+\bibitem[Spalart and Allmaras(1994)]{SpalartAllmaras1994}
+P.~R. Spalart and S.~R. Allmaras.
+\newblock A one-equation turbulence model for aerodynamic flows.
+\newblock \emph{La Recherche A\'{e}rospatiale}, 1:\penalty0 5--21, 1994.
+
+\bibitem[Spalart et~al.(2006)Spalart, Deck, Shur, Squires, Strelets, and
+  Travin]{Spalart2006}
+P.~R. Spalart, S.~Deck, M.~L. Shur, K.~D. Squires, M.~Kh. Strelets, and
+  A.~Travin.
+\newblock A new version of detached-eddy simulation, resistant to ambiguous
+  grid densities.
+\newblock \emph{Theoretical and Computational Fluid Dynamics}, 20\penalty0
+  (3):\penalty0 181--195, 2006.
+\newblock \doi{10.1007/s00162-006-0015-0}.
+
+\bibitem[{National Institute of Standards and Technology}(2023)]{NIST2023}
+{National Institute of Standards and Technology}.
+\newblock {NIST} chemistry {WebBook}, {SRD} 69.
+\newblock \url{https://webbook.nist.gov/chemistry/}, 2023.
+\newblock Accessed 2024.
+
+\bibitem[Shur et~al.(2008)Shur, Spalart, Strelets, and Travin]{Shur2008}
+M.~L. Shur, P.~R. Spalart, M.~Kh. Strelets, and A.~K. Travin.
+\newblock A hybrid {RANS}--{LES} approach with delayed-{DES} and wall-modelled
+  {LES} capabilities.
+\newblock \emph{International Journal of Heat and Fluid Flow}, 29\penalty0
+  (6):\penalty0 1638--1649, 2008.
+\newblock \doi{10.1016/j.ijheatfluidflow.2008.07.001}.
+
+\bibitem[Poling et~al.(2001)Poling, Prausnitz, and O'Connell]{Poling2001}
+B.~E. Poling, J.~M. Prausnitz, and J.~P. O'Connell.
+\newblock \emph{The Properties of Gases and Liquids}.
+\newblock McGraw-Hill, 5th edition, 2001.
+
+\bibitem[{ANSYS Inc.}(2024{\natexlab{b}})]{ANSYSFluent2024}
+{ANSYS Inc.}
+\newblock \emph{{ANSYS Fluent Theory Guide}}.
+\newblock ANSYS Inc., Canonsburg, PA, release 24.2 edition, 2024{\natexlab{b}}.
+
+\bibitem[Menter(2012)]{Menter2012}
+F.~R. Menter.
+\newblock Best practice: Scale-resolving simulations in {ANSYS CFD}.
+\newblock Technical report, ANSYS Inc., 2012.
+\newblock Version 1.0, ANSYS Germany GmbH.
+
+\bibitem[Courant et~al.(1928)Courant, Friedrichs, and Lewy]{Courant1928}
+R.~Courant, K.~Friedrichs, and H.~Lewy.
+\newblock \"{U}ber die partiellen {Differenzengleichungen} der mathematischen
+  {Physik}.
+\newblock \emph{Mathematische Annalen}, 100:\penalty0 32--74, 1928.
+\newblock \doi{10.1007/BF01448839}.
+
+\bibitem[Kukukova et~al.(2009)Kukukova, Aubin, and Kresta]{Kukukova2009}
+A.~Kukukova, J.~Aubin, and S.~M. Kresta.
+\newblock A new definition of mixing and segregation: Three dimensions of a key
+  process variable.
+\newblock \emph{Chemical Engineering Research and Design}, 87\penalty0
+  (4):\penalty0 633--647, 2009.
+\newblock \doi{10.1016/j.cherd.2009.01.001}.
+
+\bibitem[Roache(1994)]{Roache1994}
+P.~J. Roache.
+\newblock Perspective: A method for uniform reporting of grid refinement
+  studies.
+\newblock \emph{Journal of Fluids Engineering}, 116\penalty0 (3):\penalty0
+  405--413, 1994.
+\newblock \doi{10.1115/1.2910291}.
+
+\bibitem[Celik et~al.(2008)Celik, Ghia, Roache, Freitas, Coleman, and
+  Raad]{Celik2008}
+I.~B. Celik, U.~Ghia, P.~J. Roache, C.~J. Freitas, H.~Coleman, and P.~E. Raad.
+\newblock Procedure for estimation and reporting of uncertainty due to
+  discretization in {CFD} applications.
+\newblock \emph{Journal of Fluids Engineering}, 130\penalty0 (7):\penalty0
+  078001, 2008.
+\newblock \doi{10.1115/1.2960953}.
+
+\end{thebibliography}

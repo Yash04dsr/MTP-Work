@@ -1,0 +1,236 @@
+% ════════════════════════════════════════════════════════════════
+%  BIBLIOGRAPHY — Parameterised T-Junction H₂/CH₄ CFD Guide
+% ════════════════════════════════════════════════════════════════
+
+% ── Primary reference paper ──
+@article{Eames2022,
+  author  = {Eames, I. and Austin, M. and Wojcik, A.},
+  title   = {Injection of gaseous hydrogen into a natural gas pipeline},
+  journal = {International Journal of Hydrogen Energy},
+  volume  = {47},
+  number  = {61},
+  pages   = {25745--25760},
+  year    = {2022},
+  doi     = {10.1016/j.ijhydene.2022.05.300},
+}
+
+% ── Turbulence modelling ──
+@article{Spalart2006,
+  author  = {Spalart, P. R. and Deck, S. and Shur, M. L. and Squires, K. D.
+             and Strelets, M. Kh. and Travin, A.},
+  title   = {A new version of detached-eddy simulation, resistant to
+             ambiguous grid densities},
+  journal = {Theoretical and Computational Fluid Dynamics},
+  volume  = {20},
+  number  = {3},
+  pages   = {181--195},
+  year    = {2006},
+  doi     = {10.1007/s00162-006-0015-0},
+}
+
+@article{SpalartAllmaras1994,
+  author  = {Spalart, P. R. and Allmaras, S. R.},
+  title   = {A one-equation turbulence model for aerodynamic flows},
+  journal = {La Recherche A\'{e}rospatiale},
+  volume  = {1},
+  pages   = {5--21},
+  year    = {1994},
+}
+
+@article{Shur2008,
+  author  = {Shur, M. L. and Spalart, P. R. and Strelets, M. Kh. and Travin, A. K.},
+  title   = {A hybrid {RANS}--{LES} approach with delayed-{DES} and
+             wall-modelled {LES} capabilities},
+  journal = {International Journal of Heat and Fluid Flow},
+  volume  = {29},
+  number  = {6},
+  pages   = {1638--1649},
+  year    = {2008},
+  doi     = {10.1016/j.ijheatfluidflow.2008.07.001},
+}
+
+% ── ANSYS best-practice for SRS ──
+@techreport{Menter2012,
+  author      = {Menter, F. R.},
+  title       = {Best Practice: Scale-Resolving Simulations in {ANSYS CFD}},
+  institution = {ANSYS Inc.},
+  year        = {2012},
+  note        = {Version 1.0, ANSYS Germany GmbH},
+}
+
+% ── T-junction benchmark (thermal mixing) ──
+@inproceedings{Gritskevich2012,
+  author    = {Gritskevich, M. S. and Menter, F. R. and Garbaruk, A. V.
+               and Schutze, J.},
+  title     = {Investigation of the thermal mixing in a {T}-junction flow
+               with different {SRS} approaches},
+  booktitle = {Proc.\ CFD4NRS-4, OECD/NEA \& IAEA Workshop},
+  year      = {2012},
+  address   = {Daejeon, Republic of Korea},
+}
+
+% ── Grid convergence methodology ──
+@article{Roache1994,
+  author  = {Roache, P. J.},
+  title   = {Perspective: A method for uniform reporting of grid
+             refinement studies},
+  journal = {Journal of Fluids Engineering},
+  volume  = {116},
+  number  = {3},
+  pages   = {405--413},
+  year    = {1994},
+  doi     = {10.1115/1.2910291},
+}
+
+@article{Celik2008,
+  author  = {Celik, I. B. and Ghia, U. and Roache, P. J. and Freitas, C. J.
+             and Coleman, H. and Raad, P. E.},
+  title   = {Procedure for estimation and reporting of uncertainty due to
+             discretization in {CFD} applications},
+  journal = {Journal of Fluids Engineering},
+  volume  = {130},
+  number  = {7},
+  pages   = {078001},
+  year    = {2008},
+  doi     = {10.1115/1.2960953},
+}
+
+% ── Gas properties and diffusion ──
+@book{Poling2001,
+  author    = {Poling, B. E. and Prausnitz, J. M. and O'Connell, J. P.},
+  title     = {The Properties of Gases and Liquids},
+  edition   = {5th},
+  publisher = {McGraw-Hill},
+  year      = {2001},
+}
+
+@misc{NIST2023,
+  author       = {{National Institute of Standards and Technology}},
+  title        = {{NIST} Chemistry {WebBook}, {SRD} 69},
+  howpublished = {\url{https://webbook.nist.gov/chemistry/}},
+  year         = {2023},
+  note         = {Accessed 2024},
+}
+
+% ── Boundary-layer theory and y+ ──
+@book{Schlichting2017,
+  author    = {Schlichting, H. and Gersten, K.},
+  title     = {Boundary-Layer Theory},
+  edition   = {9th},
+  publisher = {Springer},
+  year      = {2017},
+  doi       = {10.1007/978-3-662-52919-5},
+}
+
+% ── Pipe flow development length ──
+@article{Durst2005,
+  author  = {Durst, F. and Ray, S. and \"{U}nsal, B. and Bayoumi, O. A.},
+  title   = {The development lengths of laminar pipe and channel flows},
+  journal = {Journal of Fluids Engineering},
+  volume  = {127},
+  number  = {6},
+  pages   = {1154--1160},
+  year    = {2005},
+  doi     = {10.1115/1.2063088},
+}
+
+% ── Hydrogen blending / mixing in T-junctions ──
+@article{Tao2023,
+  author  = {Tao, Y. and Wang, H. and Shi, Z. and Liu, G.},
+  title   = {Simulation of mixing of single-phase fluids in {T}-junctions},
+  journal = {Thermal Engineering},
+  volume  = {70},
+  number  = {9},
+  pages   = {673--683},
+  year    = {2023},
+  doi     = {10.1134/S0040601523090082},
+}
+
+@article{Zhang2025,
+  author  = {Zhang, D. and Wang, Y. and Li, X. and Yang, Z.},
+  title   = {Numerical simulation of hydrogen mixing process in
+             {T}-junction natural gas pipeline},
+  journal = {Materials},
+  volume  = {18},
+  number  = {8},
+  pages   = {1879},
+  year    = {2025},
+  doi     = {10.3390/ma18081879},
+}
+
+@article{Ślęzak2024,
+  author  = {\'Sl\c{e}zak, M. and Uilhoorn, F. E.},
+  title   = {A numerical study on hydrogen blending in natural gas
+             pipeline by a {T}-pipe},
+  journal = {International Journal of Hydrogen Energy},
+  volume  = {88},
+  pages   = {780--795},
+  year    = {2024},
+  doi     = {10.1016/j.ijhydene.2024.09.205},
+}
+
+% ── Hydrogen embrittlement ──
+@article{Laureys2022,
+  author  = {Laureys, A. and Depraetere, R. and Cauwels, M. and Verbeken, K.},
+  title   = {Use of existing steel pipeline infrastructure for gaseous
+             hydrogen storage and transport: A review of factors affecting
+             hydrogen induced degradation},
+  journal = {Journal of Natural Gas Science and Engineering},
+  volume  = {101},
+  pages   = {104534},
+  year    = {2022},
+  doi     = {10.1016/j.jngse.2022.104534},
+}
+
+% ── ANSYS documentation ──
+@manual{ANSYSFluent2024,
+  author       = {{ANSYS Inc.}},
+  title        = {{ANSYS Fluent Theory Guide}},
+  edition      = {Release 24.2},
+  year         = {2024},
+  organization = {ANSYS Inc.},
+  address      = {Canonsburg, PA},
+}
+
+@manual{ANSYSFluentUG2024,
+  author       = {{ANSYS Inc.}},
+  title        = {{ANSYS Fluent User's Guide}},
+  edition      = {Release 24.2},
+  year         = {2024},
+  organization = {ANSYS Inc.},
+  address      = {Canonsburg, PA},
+}
+
+% ── Courant number and time-stepping ──
+@article{Courant1928,
+  author  = {Courant, R. and Friedrichs, K. and Lewy, H.},
+  title   = {\"{U}ber die partiellen {Differenzengleichungen} der
+             mathematischen {Physik}},
+  journal = {Mathematische Annalen},
+  volume  = {100},
+  pages   = {32--74},
+  year    = {1928},
+  doi     = {10.1007/BF01448839},
+}
+
+% ── Mixing uniformity metric (Coefficient of Variation) ──
+@article{Kukukova2009,
+  author  = {Kukukova, A. and Aubin, J. and Kresta, S. M.},
+  title   = {A new definition of mixing and segregation: Three dimensions
+             of a key process variable},
+  journal = {Chemical Engineering Research and Design},
+  volume  = {87},
+  number  = {4},
+  pages   = {633--647},
+  year    = {2009},
+  doi     = {10.1016/j.cherd.2009.01.001},
+}
+
+% ── Turbulent pipe flow velocity profile (power law) ──
+@book{Pope2000,
+  author    = {Pope, S. B.},
+  title     = {Turbulent Flows},
+  publisher = {Cambridge University Press},
+  year      = {2000},
+  doi       = {10.1017/CBO9780511840531},
+}

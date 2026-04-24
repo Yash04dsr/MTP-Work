@@ -1,0 +1,74 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      fvSchemes;
+}
+
+// Transient RANS with adjustable dt and moderate upwind schemes.
+// First-order in time (Euler) gives monotonic convergence to the
+// time-averaged flow; residuals drop as the flow reaches quasi-steady.
+
+ddtSchemes
+{
+    default         Euler;
+}
+
+gradSchemes
+{
+    default         Gauss linear;
+    grad(U)         cellLimited Gauss linear 1;
+    grad(p_rgh)     Gauss linear;
+    grad(H2)        cellLimited Gauss linear 1;
+}
+
+divSchemes
+{
+    default         none;
+
+    // First-order upwind for momentum + scalars for stability during
+    // startup transient. At quasi-steady, spatial error ~5-10% on CoV
+    // (Ferziger & Peric 2002, sec. 8.8), which is acceptable here.
+    div(phi,U)      Gauss upwind;
+    div(phi,H2)     Gauss upwind;
+    div(phi,CH4)    Gauss upwind;
+    div(phi,k)      Gauss upwind;
+    div(phi,omega)  Gauss upwind;
+    div(phi,h)      Gauss upwind;
+    div(phi,K)      Gauss upwind;
+    div(phi,Yi_h)   Gauss multivariateSelection
+    {
+        H2          upwind;
+        CH4         upwind;
+        h           upwind;
+    };
+    div(phiv,p)     Gauss upwind;
+    div(((rho*nuEff)*dev2(T(grad(U))))) Gauss linear;
+}
+
+laplacianSchemes
+{
+    default         Gauss linear corrected;
+}
+
+interpolationSchemes
+{
+    default         linear;
+}
+
+snGradSchemes
+{
+    default         corrected;
+}
+
+wallDist
+{
+    method          meshWave;
+}
+
+fluxRequired
+{
+    default         no;
+    p_rgh;
+}

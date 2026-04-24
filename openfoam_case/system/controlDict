@@ -1,0 +1,260 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Solver: rhoReactingBuoyantFoam
+// -------------------------------------------------------------------
+// Used by Eames et al. (Int. J. Hydrogen Energy, 2022, 47:25745) for
+// the original hydrogen-into-methane T-junction study. The buoyant
+// pressure decomposition (p = p_rgh + rho*g*h) is essential for
+// resolving the density-driven stratification that dominates this
+// flow.
+// ────────────────────────────────────────────────────────────────────
+application     rhoReactingBuoyantFoam;
+
+startFrom       startTime;
+startTime       0;
+
+stopAt          endTime;
+endTime         5;                      // 25000 steps * 2e-4 s
+
+deltaT          2e-4;                   // CFL ~ 1.3 at the junction
+
+writeControl    adjustableRunTime;
+writeInterval   0.1;                    // save every 500 steps
+purgeWrite      0;
+writeFormat     binary;
+writePrecision  8;
+writeCompression off;
+timeFormat      general;
+timePrecision   6;
+
+runTimeModifiable true;
+
+// ── Function objects (runtime monitors + derived fields) ────────────
+functions
+{
+    // =====================  Residuals  =============================
+    residuals
+    {
+        type            solverInfo;
+        libs            (utilityFunctionObjects);
+        writeControl    timeStep;
+        writeInterval   1;
+        fields          (U p_rgh h nuTilda H2);
+    }
+
+    // =====================  Courant number  ========================
+    Co
+    {
+        type            CourantNo;
+        libs            (fieldFunctionObjects);
+        writeControl    writeTime;
+    }
+
+    // =====================  Wall y+  ===============================
+    yPlus
+    {
+        type            yPlus;
+        libs            (fieldFunctionObjects);
+        writeControl    writeTime;
+    }
+
+    // =====================  Hydrogen VOLUME fraction  ==============
+    // Paper reports phi_H2 (volume/mole fraction) rather than mass
+    // fraction Y_H2. This function object computes phi_H2 at every
+    // write step using the same formula as the Fluent custom field
+    // function.
+    phiH2
+    {
+        type            coded;
+        libs            (utilityFunctionObjects);
+        name            phiH2Compute;
+        writeControl    writeTime;
+
+        codeExecute
+        #{
+            const volScalarField& Y_H2 =
+                mesh().lookupObject<volScalarField>("H2");
+
+            volScalarField phiH2
+            (
+                IOobject
+                (
+                    "phi_H2",
+                    mesh().time().timeName(),
+                    mesh(),
+                    IOobject::NO_READ,
+                    IOobject::AUTO_WRITE
+                ),
+                (Y_H2 / 2.016)
+              / (Y_H2 / 2.016 + (1.0 - Y_H2) / 16.043)
+            );
+
+            phiH2.write();
+        #};
+    }
+
+    // =====================  Mass balance checks  ===================
+    outletMassFlow
+    {
+        type            surfaceFieldValue;
+        libs            (fieldFunctionObjects);
+        writeControl    timeStep;
+        writeInterval   1;
+        surfaceFormat   none;
+        regionType      patch;
+        name            outlet;
+        operation       sum;
+        fields          (phi);
+    }
+
+    mainInletMassFlow
+    {
+        type            surfaceFieldValue;
+        libs            (fieldFunctionObjects);
+        writeControl    timeStep;
+        writeInterval   1;
+        surfaceFormat   none;
+        regionType      patch;
+        name            main_inlet;
+        operation       sum;
+        fields          (phi);
+    }
+
+    branchInletMassFlow
+    {
+        type            surfaceFieldValue;
+        libs            (fieldFunctionObjects);
+        writeControl    timeStep;
+        writeInterval   1;
+        surfaceFormat   none;
+        regionType      patch;
+        name            branch_inlet;
+        operation       sum;
+        fields          (phi);
+    }
+
+    // =====================  Outlet mixing statistics  ==============
+    outletH2
+    {
+        type            surfaceFieldValue;
+        libs            (fieldFunctionObjects);
+        writeControl    timeStep;
+        writeInterval   1;
+        surfaceFormat   none;
+        regionType      patch;
+        name            outlet;
+        operation       weightedAverage;
+        weightField     phi;
+        fields          (H2);
+    }
+
+    // =====================  Wall H2 exposure stats  ================
+    // Paper plots max and mean H2 on the pipe wall to quantify
+    // embrittlement risk. These monitors produce the data needed
+    // to reproduce Fig. 5 and Fig. 7.
+    wallH2
+    {
+        type            surfaceFieldValue;
+        libs            (fieldFunctionObjects);
+        writeControl    timeStep;
+        writeInterval   10;                 // every 10 steps
+        surfaceFormat   none;
+        regionType      patch;
+        name            wall;
+        operation       max;
+        fields          (H2);
+    }
+
+    wallH2Mean
+    {
+        type            surfaceFieldValue;
+        libs            (fieldFunctionObjects);
+        writeControl    timeStep;
+        writeInterval   10;
+        surfaceFormat   none;
+        regionType      patch;
+        name            wall;
+        operation       areaAverage;
+        fields          (H2);
+    }
+
+    // =====================  Wall H2 probes  ========================
+    // Probes at z/d1 = 2, 4, 6, 8 on the pipe TOP (+y) AND BOTTOM (-y)
+    // so that we capture the stratification asymmetry that is the
+    // central result of Eames et al. (Fig. 5, Fig. 7).
+    wallH2Probes
+    {
+        type            probes;
+        libs            (sampling);
+        writeControl    timeStep;
+        writeInterval   1;
+        fields          (H2 T U);
+        probeLocations
+        (
+            // --- Pipe top (+y = +0.23)  ---
+            (0  0.23 5.52)      // z/d1 = 2
+            (0  0.23 6.44)      // z/d1 = 4
+            (0  0.23 7.36)      // z/d1 = 6
+            (0  0.23 8.28)      // z/d1 = 8
+
+            // --- Pipe bottom (-y = -0.23) ---
+            (0 -0.23 5.52)
+            (0 -0.23 6.44)
+            (0 -0.23 7.36)
+            (0 -0.23 8.28)
+
+            // --- Pipe sides (x = +-0.23, y = 0) -----
+            ( 0.23 0 5.52)
+            (-0.23 0 5.52)
+            ( 0.23 0 6.44)
+            (-0.23 0 6.44)
+        );
+    }
+
+    // =====================  Time-averaged fields  ==================
+    // Paper averages t = 4 ... 5 s for the reported statistics.
+    fieldAverage1
+    {
+        type            fieldAverage;
+        libs            (fieldFunctionObjects);
+        writeControl    writeTime;
+        timeStart       4.0;
+        restartOnRestart false;
+        restartOnOutput  false;
+
+        fields
+        (
+            U
+            {
+                mean        on;
+                prime2Mean  on;
+                base        time;
+            }
+            p
+            {
+                mean        on;
+                prime2Mean  off;
+                base        time;
+            }
+            H2
+            {
+                mean        on;
+                prime2Mean  on;     // needed for COV calculation
+                base        time;
+            }
+            T
+            {
+                mean        on;
+                prime2Mean  off;
+                base        time;
+            }
+        );
+    }
+}

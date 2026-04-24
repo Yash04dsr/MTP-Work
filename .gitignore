@@ -1,0 +1,89 @@
+# ============================================================================
+#  .gitignore for the MTP / CFD DoE repository.
+#
+#  Philosophy: commit CODE, CONFIG, and small SUMMARY RESULTS (metrics, PNGs,
+#  CSV tables).  Exclude regeneratable heavy CFD data:
+#    - polyMesh binaries (10s of MB each)
+#    - reconstructed time directories (100+ MB each)
+#    - per-processor parallel decompositions (GBs)
+#    - bloated solver logs (10s of MB)
+#    - postProcessing raw binaries
+#    - dynamicCode compiled shared objects
+#
+#  Net repo size target: < 200 MB.  If you need the heavy data, re-run
+#  the Allrun scripts against the committed configs.
+# ============================================================================
+
+# ---- report build artefacts ----------------------------------------------
+/report.aux
+/report.log
+/report.out
+/report.toc
+
+# ---- Python / IDE ---------------------------------------------------------
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+.DS_Store
+
+# ---- OpenFOAM: parallel decompositions -----------------------------------
+# These are reproducible via decomposePar, and can be multi-GB per case.
+**/processor*/
+**/processor[0-9]/
+**/processor[0-9][0-9]/
+
+# ---- OpenFOAM: compiled codedFixedValue dynamic code ---------------------
+**/dynamicCode/
+
+# ---- OpenFOAM: polyMesh binaries (regeneratable by Allrun) ---------------
+**/constant/polyMesh/
+**/constant/extendedFeatureEdgeMesh/
+
+# ---- OpenFOAM: reconstructed time directories ----------------------------
+# Final-time fields are regenerable from the solver; too big to track.
+# Keep only time=0 (initial conditions) and per-case 'figures/'.
+doe/results_full/cases/*/0.[0-9]*/
+doe/results_full/cases/*/[1-9]*.[0-9]*/
+doe/results_full/cases/*/[1-9]/
+doe/results_full/cases/*/_stash/
+doe/results_full/cases/case_*/postProcessing/
+
+# Early validation runs (mesh independence study etc.) with huge time dirs.
+# Skip the ENTIRE cases_staging/ tree -- it pre-dates the DoE and duplicates
+# what the base template already provides.  (Hundreds of MB of dumped fields.)
+doe/cases_staging/
+
+# Old 'results/' directory (earlier fast iteration runs)
+doe/results/
+
+# Report/template staging (legacy heavy fields)
+doe/template_files/
+doe/reports_staging/
+
+# ---- OpenFOAM: solver logs (tens of MB of residual prints) ---------------
+**/log.run_doe
+**/log.run_doe_30deg
+**/log.solver
+**/log.solver_*
+**/log.sanity_run
+**/log.snappyHexMesh
+**/log.decomposePar
+**/log.reconstructPar
+**/log.blockMesh
+**/log.checkMesh
+**/log.generateSTL
+**/log.clipStls
+**/log.surfaceFeatureExtract
+**/log.createPatch
+
+# ---- OpenFOAM: marker files ----------------------------------------------
+**/SIM_DONE
+**/SIM_FAILED
+**/case.foam
+
+# ---- scratch figures from diagnostics ------------------------------------
+doe/results_full/_test_*.png
+doe/results_full/case_07_H2_diagnostic.png
+doe/results_full/case_07_H2_gridsample.png
+doe/results_full/case_07_H2_merged3.png

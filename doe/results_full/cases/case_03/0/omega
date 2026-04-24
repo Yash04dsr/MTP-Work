@@ -1,0 +1,44 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      omega;
+}
+dimensions  [0 0 -1 0 0 0 0];
+internalField   uniform 35;
+
+// DoE tokens (replaced per-case by stamp_cases.py) :
+//    34.7216     = k^0.5 / (C_mu^0.25 * L_main)       [1/s]
+//    183.412   = k^0.5 / (C_mu^0.25 * L_branch)     [1/s]
+//    0.008109     = 0.07 * D2                          [m]
+// Mixing length  L = 0.07 * D  per Versteeg & Malalasekera 2007 Eq. 3.64
+// and C_mu = 0.09 (k-omega SST standard).
+
+boundaryField
+{
+    main_inlet
+    {
+        type            turbulentMixingLengthFrequencyInlet;
+        mixingLength    0.0322;           // 0.07 * 0.460
+        value           uniform 34.7216;
+    }
+    branch_inlet
+    {
+        type            turbulentMixingLengthFrequencyInlet;
+        mixingLength    0.008109;
+        value           uniform 183.412;
+    }
+    outlet
+    {
+        type            inletOutlet;
+        inletValue      uniform 34.7216;
+        value           uniform 34.7216;
+    }
+    wall
+    {
+        type            omegaWallFunction;
+        value           uniform 34.7216;
+    }
+    sym { type symmetryPlane; }
+}

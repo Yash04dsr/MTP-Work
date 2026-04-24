@@ -1,0 +1,68 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      fvSchemes;
+}
+
+// ── Time discretisation ─────────────────────────────────────────────
+// Fluent: Bounded Second Order Implicit  -->  OpenFOAM: backward
+ddtSchemes
+{
+    default         backward;
+}
+
+// ── Gradient schemes ────────────────────────────────────────────────
+// Fluent: Least Squares Cell Based  -->  OpenFOAM: Gauss linear
+gradSchemes
+{
+    default         Gauss linear;
+    grad(U)         Gauss linear;
+    grad(nuTilda)   Gauss linear;
+    grad(p)         Gauss linear;
+    grad(p_rgh)     Gauss linear;
+}
+
+// ── Divergence (convection) schemes ─────────────────────────────────
+divSchemes
+{
+    default         none;
+
+    // Momentum: LUST = 75% linear + 25% linearUpwind
+    //   ==  Fluent Bounded Central Differencing (low-dissipation, LES-grade)
+    div(phi,U)              Gauss LUST grad(U);
+
+    // Species & energy: Second Order Upwind equivalent (TVD, bounded)
+    div(phi,H2)             Gauss limitedLinear 1;
+    div(phi,CH4)            Gauss limitedLinear 1;
+    div(phi,Yi_h)           Gauss limitedLinear 1;
+    div(phi,K)              Gauss limitedLinear 1;
+    div(phi,h)              Gauss limitedLinear 1;
+    div(phi,e)              Gauss limitedLinear 1;
+    div(phi,nuTilda)        Gauss limitedLinear 1;
+
+    // Pressure-work term (rhoReactingBuoyantFoam specific)
+    div(phiv,p)             Gauss limitedLinear 1;
+
+    // Diffusive momentum residual (deviatoric stress)
+    div(((rho*nuEff)*dev2(T(grad(U)))))  Gauss linear;
+}
+
+// ── Laplacian schemes ───────────────────────────────────────────────
+laplacianSchemes
+{
+    default         Gauss linear corrected;
+}
+
+// ── Interpolation schemes ───────────────────────────────────────────
+interpolationSchemes
+{
+    default         linear;
+}
+
+// ── Surface-normal gradient schemes ─────────────────────────────────
+snGradSchemes
+{
+    default         corrected;
+}

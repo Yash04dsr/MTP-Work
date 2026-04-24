@@ -1,0 +1,23 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      T;
+}
+
+// Isothermal approximation (energy equation disabled in fvSolution).
+// See MESH_INDEPENDENCE.md and the validated medium case for justification.
+
+dimensions  [0 0 0 1 0 0 0];
+
+internalField   uniform 288;
+
+boundaryField
+{
+    main_inlet   { type fixedValue; value uniform 288; }
+    branch_inlet { type fixedValue; value uniform 288; }
+    outlet       { type inletOutlet; inletValue uniform 288; value uniform 288; }
+    wall         { type zeroGradient; }
+    sym          { type symmetryPlane; }
+}

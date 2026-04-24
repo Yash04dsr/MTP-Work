@@ -1,0 +1,101 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volVectorField;
+    object      U;
+}
+
+// Inlet profiles follow the power-law used by Eames et al. (2022):
+//
+//   u_r = u* * (1 - (2r/d*)^2)^(1/n),    with  n = 7
+//
+// main_inlet:   u* = 10 m/s along +Z,  d* = 0.46 m   (main pipe)
+// branch_inlet: u* = 32 m/s along -Y,  d* = 0.115 m  (branch pipe)
+//
+// The codedFixedValue BCs compile the profile at runtime. Make sure
+// OpenFOAM was built with the coded BC support (default in ESI/org).
+
+dimensions  [0 1 -1 0 0 0 0];
+
+internalField   uniform (0 0 10);
+
+boundaryField
+{
+    main_inlet
+    {
+        type            codedFixedValue;
+        value           uniform (0 0 10);
+        name            mainInletPowerLaw;
+        code
+        #{
+            const vectorField& Cf = this->patch().Cf();
+            vectorField& field = *this;
+
+            const scalar d    = 0.46;   // main-pipe diameter [m]
+            const scalar uMax = 10.0;   // centreline velocity [m/s]
+            const scalar n    = 7.0;
+
+            forAll(Cf, i)
+            {
+                // radial distance from pipe centre (main pipe axis = Z)
+                const scalar r = Foam::sqrt(sqr(Cf[i].x()) + sqr(Cf[i].y()));
+                const scalar arg = Foam::max
+                (
+                    1.0 - sqr(2.0 * r / d),
+                    scalar(0)
+                );
+                const scalar u = uMax * Foam::pow(arg, 1.0 / n);
+                field[i] = vector(0, 0, u);
+            }
+        #};
+    }
+
+    branch_inlet
+    {
+        type            codedFixedValue;
+        value           uniform (0 -32 0);
+        name            branchInletPowerLaw;
+        code
+        #{
+            const vectorField& Cf = this->patch().Cf();
+            vectorField& field = *this;
+
+            const scalar d    = 0.115;  // branch diameter [m]
+            const scalar uMax = 32.0;   // branch centreline velocity [m/s]
+            const scalar n    = 7.0;
+
+            forAll(Cf, i)
+            {
+                // branch-inlet face is at Y = 1.38 m, axis along Y;
+                // radial distance uses X and (Z - Z_junction).
+                const scalar zJct = 4.6;
+                const scalar r    = Foam::sqrt
+                (
+                    sqr(Cf[i].x()) + sqr(Cf[i].z() - zJct)
+                );
+                const scalar arg = Foam::max
+                (
+                    1.0 - sqr(2.0 * r / d),
+                    scalar(0)
+                );
+                const scalar u = uMax * Foam::pow(arg, 1.0 / n);
+                field[i] = vector(0, -u, 0);
+            }
+        #};
+    }
+
+    outlet
+    {
+        // Robust BC for compressible buoyant outflow: normal U is
+        // zero-gradient when flow leaves, reverts to tangential zero
+        // if backflow develops (prevents "sucking" instabilities).
+        type            pressureInletOutletVelocity;
+        value           uniform (0 0 10);
+    }
+
+    wall
+    {
+        type            noSlip;
+    }
+}

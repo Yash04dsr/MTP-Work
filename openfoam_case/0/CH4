@@ -1,0 +1,39 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      CH4;
+}
+
+dimensions  [0 0 0 0 0 0 0];
+
+// CH4 is the balance (inert) species: Y_CH4 = 1 - Y_H2
+internalField   uniform 1;
+
+boundaryField
+{
+    main_inlet
+    {
+        type    fixedValue;
+        value   uniform 1;
+    }
+
+    branch_inlet
+    {
+        type    fixedValue;
+        value   uniform 0;
+    }
+
+    outlet
+    {
+        type            inletOutlet;
+        inletValue      uniform 1;
+        value           uniform 1;
+    }
+
+    wall
+    {
+        type    zeroGradient;
+    }
+}

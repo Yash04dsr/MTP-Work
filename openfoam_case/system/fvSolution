@@ -1,0 +1,97 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      fvSolution;
+}
+
+solvers
+{
+    "rho.*"
+    {
+        solver          diagonal;
+    }
+
+    // ── Pressure (buoyant decomposition) ────────────────────────────
+    p_rgh
+    {
+        solver          GAMG;
+        smoother        GaussSeidel;
+        tolerance       1e-7;
+        relTol          0.01;
+    }
+
+    p_rghFinal
+    {
+        $p_rgh;
+        relTol          0;
+    }
+
+    // ── Absolute pressure (reconstructed from p_rgh) ────────────────
+    p
+    {
+        $p_rgh;
+    }
+
+    pFinal
+    {
+        $p_rghFinal;
+    }
+
+    // ── Momentum, enthalpy, turbulence working variable ─────────────
+    "(U|h|nuTilda)"
+    {
+        solver          PBiCGStab;
+        preconditioner  DILU;
+        tolerance       1e-7;
+        relTol          0.1;
+    }
+
+    "(U|h|nuTilda)Final"
+    {
+        $U;
+        relTol          0;
+    }
+
+    // ── Species mass fractions ──────────────────────────────────────
+    "(H2|CH4|Yi)"
+    {
+        solver          PBiCGStab;
+        preconditioner  DILU;
+        tolerance       1e-8;
+        relTol          0;
+    }
+
+    "(H2|CH4|Yi)Final"
+    {
+        $H2;
+        relTol          0;
+    }
+}
+
+// ── PIMPLE (nOuterCorrectors = 1 => PISO, matches Fluent) ───────────
+PIMPLE
+{
+    nOuterCorrectors    1;      // PISO mode
+    nCorrectors         2;      // pressure corrector steps
+    nNonOrthogonalCorrectors 1;
+    momentumPredictor   yes;
+}
+
+// ── Under-relaxation factors (match Fluent setup) ───────────────────
+relaxationFactors
+{
+    equations
+    {
+        U               0.7;
+        nuTilda         0.8;
+        "H2|CH4|Yi"     0.9;
+        h               1.0;
+    }
+    fields
+    {
+        p_rgh           0.3;
+        rho             1.0;
+    }
+}

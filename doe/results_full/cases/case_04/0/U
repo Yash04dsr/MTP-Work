@@ -1,0 +1,82 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volVectorField;
+    object      U;
+}
+dimensions      [0 1 -1 0 0 0 0];
+
+// Moderate axial startup. potentialFoam will be used to promote this
+// to a divergence-free field before the main solver runs.
+internalField   uniform (0 0 5);
+
+// DoE tokens (replaced per-case by stamp_cases.py) :
+//    10      = main pipe bulk inlet velocity [m/s]  (default 10)
+//    38.0731    = branch pipe bulk inlet velocity [m/s] (= VR * UMAIN)
+//    0.46         = main pipe diameter [m]
+//    0.11585         = branch pipe diameter [m]
+//
+// The main_inlet uses a 1/7th power-law profile so the mesh sees a fully
+// developed turbulent pipe flow from the upstream end (R3a spirit, without
+// the headache of a mapped BC).  The branch_inlet likewise uses a 1/7th
+// power-law profile centred on its own axis, which represents an injector
+// with ~12 D_branch of upstream development -- consistent with Forney &
+// Kwon (1979) and most industrial co-flow mixer tees.
+boundaryField
+{
+    wall { type noSlip; }
+    sym  { type symmetryPlane; }
+
+    main_inlet
+    {
+        type            codedFixedValue;
+        value           uniform (0 0 10);
+        name            mainInletPowerLaw;
+        code
+        #{
+            const vectorField& Cf = this->patch().Cf();
+            vectorField& field = *this;
+            const scalar d    = 0.46;
+            const scalar uMax = 10;
+            const scalar n    = 7.0;
+            forAll(Cf, i)
+            {
+                const scalar r = Foam::sqrt(sqr(Cf[i].x()) + sqr(Cf[i].y()));
+                const scalar arg = Foam::max(1.0 - sqr(2.0*r/d), scalar(0));
+                const scalar u = uMax * Foam::pow(arg, 1.0/n);
+                field[i] = vector(0, 0, u);
+            }
+        #};
+    }
+
+    outlet { type pressureInletOutletVelocity; value uniform (0 0 5); }
+
+    // 1/7th power-law developed profile on the branch inlet.
+    // Branch axis is +y, injection direction is -y (into main pipe).
+    //   r = sqrt(x^2 + (z - Z_JCT)^2)  ;  Z_JCT is baked in at stamp time.
+    branch_inlet
+    {
+        type            codedFixedValue;
+        value           uniform (0 -38.0731 0);
+        name            branchInletPowerLaw;
+        code
+        #{
+            const vectorField& Cf = this->patch().Cf();
+            vectorField& field = *this;
+            const scalar d    = 0.11585;
+            const scalar uMax = 38.0731;
+            const scalar zc   = 2.3;
+            const scalar n    = 7.0;
+            forAll(Cf, i)
+            {
+                const scalar r = Foam::sqrt(
+                    sqr(Cf[i].x()) + sqr(Cf[i].z() - zc)
+                );
+                const scalar arg = Foam::max(1.0 - sqr(2.0*r/d), scalar(0));
+                const scalar u = uMax * Foam::pow(arg, 1.0/n);
+                field[i] = vector(0, -u, 0);
+            }
+        #};
+    }
+}
