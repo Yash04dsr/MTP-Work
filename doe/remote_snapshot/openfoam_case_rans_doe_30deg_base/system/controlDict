@@ -34,7 +34,7 @@ runTimeModifiable   true;
 // Courant-based adaptive time step; maxCo 3.5 is comfortable for
 // transient PIMPLE with 2 inner correctors.
 adjustTimeStep      yes;
-maxCo               4.5;
+maxCo               8.0;
 maxDeltaT           0.01;
 
 functions
