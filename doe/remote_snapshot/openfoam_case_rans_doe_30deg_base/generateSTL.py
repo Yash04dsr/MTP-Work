@@ -211,22 +211,32 @@ def main():
     dth = 2.0 * math.pi / N_CIRC
     dz = L_MAIN / N_AXIAL_MAIN
 
-    theta_min_hole = math.acos(R2 / R1)
-    theta_max_hole = math.pi - theta_min_hole
-    # When the branch is tilted, the foot-print of the hole on main wall
-    # stretches along z. A generous initial bounding box is enough;
-    # the while-loop below expands it automatically to cover every
-    # in-hole vertex.
-    z_stretch = R2 + 0.5 * L_BRANCH * abs(COS_A)
-    z_min_hole = Z_JCT - z_stretch
-    z_max_hole = Z_JCT + z_stretch
+    # The rectangular hole in (theta, z) parameter space must (a) contain
+    # every grid vertex that lies inside the projected branch foot-print
+    # AND (b) contain the entire intersection curve P.  Any rectangle
+    # larger than that wastes zipper triangles; for a tilted branch the
+    # old "z_stretch = R2 + 0.5*L_BRANCH*|cos(alpha)|" heuristic produced
+    # a rectangle ~7x wider in z than the intersection curve, which made
+    # the zipper span ~1m gaps with skewed triangles and produced two
+    # disconnected snappyHexMesh fluid regions at the junction.
+    #
+    # Replace the heuristic with a tight bbox derived directly from the
+    # intersection curve P (mapped to (theta, z) space), padded by a few
+    # grid cells.  This shrinks the zipper annulus to a tight band and
+    # restores a watertight, single-region junction at any ALPHA.
+    P_theta = np.array([math.atan2(p[1], p[0]) for p in P])
+    P_theta = np.where(P_theta < 0.0, P_theta + 2.0 * math.pi, P_theta)
+    P_z = P[:, 2]
 
-    j_lo = max(int(math.floor(theta_min_hole / dth)) - BUFFER_CELLS, 0)
-    j_hi = min(int(math.ceil(theta_max_hole / dth)) + BUFFER_CELLS, N_CIRC - 1)
-    i_lo = max(int(math.floor(z_min_hole / dz)) - BUFFER_CELLS, 0)
-    i_hi = min(int(math.ceil(z_max_hole / dz)) + BUFFER_CELLS, N_AXIAL_MAIN)
+    j_lo = max(int(math.floor(P_theta.min() / dth)) - BUFFER_CELLS, 0)
+    j_hi = min(int(math.ceil(P_theta.max() / dth)) + BUFFER_CELLS, N_CIRC - 1)
+    i_lo = max(int(math.floor(P_z.min() / dz)) - BUFFER_CELLS, 0)
+    i_hi = min(int(math.ceil(P_z.max() / dz)) + BUFFER_CELLS, N_AXIAL_MAIN)
 
-    # Safety: expand until every hole vertex is strictly inside the rect.
+    # Safety: every in-hole grid vertex must lie strictly inside the rect.
+    # If the bbox-from-P heuristic missed any (e.g., because the branch
+    # is very oblique and the curve turns sharply between sample points),
+    # expand minimally until they are all covered.
     while True:
         expanded = False
         for j in range(N_CIRC):
@@ -373,12 +383,15 @@ def main():
         all_tris = wall_tris + main_inlet_tris + outlet_tris + branch_inlet_tris
         vol = signed_volume(all_tris)
 
-    # Expected volume: main pipe minus the branch-pipe "plug" occupying the
-    # upper-half region, plus the actual branch pipe above the intersection
-    # curve.  For beta = R2/R1 = 0.25, the corrections are small; use the
-    # straightforward estimate and allow a 3% tolerance.
+    # Expected volume: main pipe + branch pipe above the intersection curve.
+    # For a tilted branch, the mean branch-arc from centre to intersection
+    # is approximately R1 / sin(alpha) (exact at alpha=90, diverges as
+    # alpha -> 0 as expected).  For beta = R2/R1 and typical alphas in
+    # [25,90] deg the remaining correction is O(beta^2).  Allow 10 %
+    # tolerance to absorb zipper-edge/hole-shape effects.
+    s_int_mean = R1 / max(SIN_A, 1e-3)
     expected_vol = (math.pi * R1 ** 2 * L_MAIN
-                    + math.pi * R2 ** 2 * (L_BRANCH - R1))
+                    + math.pi * R2 ** 2 * max(L_BRANCH - s_int_mean, 0.0))
     ratio = vol / expected_vol
     print(f"  Main pipe wall tris:   {len(main_wall_tris)}")
     print(f"  Branch pipe wall tris: {len(branch_wall_tris)}")
