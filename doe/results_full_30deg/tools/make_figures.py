@@ -22,6 +22,7 @@ PYVISTA_OFF_SCREEN=true for headless execution.
 from __future__ import annotations
 
 import argparse
+import math
 import os
 import sys
 from pathlib import Path
@@ -212,13 +213,19 @@ Z_JCT_HALF   = 2.30
 def _render_centerline_interp(internal, field: str, out: Path, *,
                               title: str, cmap: str, clim=None,
                               r_branch: float = 0.10, zjct: float = Z_JCT_HALF,
-                              l_branch: float = 1.15, x_plane: float = 0.015,
+                              l_branch: float = 1.15, x_plane: float = 0.05,
+                              alpha_deg: float = 90.0,
+                              outlier_pct: float | None = None,
+                              outlier_max: float | None = None,
+                              outlier_min: float | None = None,
                               label: str | None = None):
     """Render a scalar on the x=0 centreline plane via point-interpolation.
 
-    Kernel-based interpolation from cell centres on a regular (y,z) image
-    grid, then an analytical geometry mask for pipe walls.  Eliminates the
-    'white notch' slicing artifact at the T-junction.
+    k=4 inverse-distance-weighted interpolation from cell centres onto a
+    regular (y,z) image grid, masked by an analytical pipe-geometry mask.
+    Handles a branch that meets the main pipe at an arbitrary angle
+    `alpha_deg` (90 deg for the original geometry, 30 deg for forward-tilt,
+    150 deg for counter-flow).
     """
     import matplotlib
     matplotlib.use("Agg")
@@ -237,34 +244,117 @@ def _render_centerline_interp(internal, field: str, out: Path, *,
     if key not in _CTR_CACHE_FIG:
         _CTR_CACHE_FIG[key] = np.asarray(internal.cell_centers().points)
     ctrs = _CTR_CACHE_FIG[key]
-    vals = np.asarray(internal.cell_data[field])
+    vals = np.asarray(internal.cell_data[field], dtype=float).copy()
+
+    # Outlier rejection on the *cell values*.  snappyHexMesh leaves frozen-
+    # field "orphan" / dead-zone cells stuck at their initial-condition value
+    # (e.g. p_rgh = p_atm sitting ~270 kPa above the bulk fluid; H2 stuck at
+    # 1.0 instead of 0 from a left-over initialField).  Without rejection
+    # these contaminate the kNN.  Two filter knobs:
+    #   - outlier_pct : IQR multiplier k -- keeps [Q1-k*IQR, Q3+k*IQR].
+    #     Adapts to the field's natural variability (good for unimodal
+    #     fields like p_rgh).  Skipped when IQR == 0.
+    #   - outlier_max / outlier_min : hard caps -- drop cells with values
+    #     above / below the cap (good for bounded fields like mass fractions
+    #     where the orphan value is known a priori).
+    if outlier_pct is not None and outlier_pct > 0.0:
+        k_iqr = float(outlier_pct)
+        q1, q3 = np.nanpercentile(vals, [25.0, 75.0])
+        iqr = q3 - q1
+        if iqr > 0:
+            lo = q1 - k_iqr * iqr
+            hi = q3 + k_iqr * iqr
+            ok = (vals >= lo) & (vals <= hi)
+            ctrs = ctrs[ok]
+            vals = vals[ok]
+    # Spatial-aware hard caps: orphan cells stuck at the field's initial value
+    # need to be filtered, but the BRANCH PIPE legitimately holds extreme
+    # values (the branch_inlet sets H2 = 1.0, full hydrogen) so we must spare
+    # any cell that is geometrically inside the analytical branch volume.
+    if outlier_max is not None or outlier_min is not None:
+        a_rad = math.radians(alpha_deg)
+        sa_c, ca_c = math.sin(a_rad), math.cos(a_rad)
+        nb = np.array([0.0, sa_c, -ca_c])
+        base = np.array([0.0, R_MAIN_HALF, zjct])
+        dvec = ctrs - base
+        s_along = dvec @ nb
+        perp = dvec - np.outer(s_along, nb)
+        r_perp = np.linalg.norm(perp, axis=1)
+        in_branch_cell = (s_along >= -0.05) & (s_along <= l_branch + 0.05) \
+                         & (r_perp < r_branch * 1.05)
+        ok = np.ones_like(vals, dtype=bool)
+        if outlier_max is not None:
+            ok &= (vals < outlier_max) | in_branch_cell
+        if outlier_min is not None:
+            ok &= (vals > outlier_min) | in_branch_cell
+        ctrs = ctrs[ok]
+        vals = vals[ok]
     tree = cKDTree(ctrs)
 
     ny, nz = 520, 1400
-    y = np.linspace(-R_MAIN_HALF - 0.02,  R_MAIN_HALF + 1.20, ny)
-    z = np.linspace(0.0,                   L_MAIN_HALF,        nz)
+    y_lo = -R_MAIN_HALF - 0.04
+    y_hi =  R_MAIN_HALF + 1.20
+    y = np.linspace(y_lo, y_hi, ny)
+    z = np.linspace(0.0, L_MAIN_HALF, nz)
     Y, Z = np.meshgrid(y, z, indexing="ij")
     X = np.full_like(Y, x_plane)
     qpts = np.column_stack([X.ravel(), Y.ravel(), Z.ravel()])
-    dist, idx = tree.query(qpts, k=1)
-    img = vals[idx].reshape(Y.shape)
-    img = np.where(dist.reshape(Y.shape) > 0.04, np.nan, img)
 
-    in_main   = (x_plane**2 + Y**2 < R_MAIN_HALF**2) & (Y <= R_MAIN_HALF)
-    in_branch = (x_plane**2 + (Z - zjct)**2 < r_branch**2) \
-              & (Y >= R_MAIN_HALF) & (Y <= R_MAIN_HALF + l_branch)
+    # k=4 inverse-distance weighting; this smooths over coarse upstream cells
+    # and removes the speckled accept/reject pattern that k=1 + tight cap
+    # produces on the bulk background mesh.
+    dist, idx = tree.query(qpts, k=4)
+    eps = 1.0e-6
+    w = 1.0 / (dist + eps)
+    w_sum = w.sum(axis=1)
+    img_raw = (w * vals[idx]).sum(axis=1) / w_sum
+    img = img_raw.reshape(Y.shape)
+    # Reject points whose nearest neighbour is unreasonably far -- larger cap
+    # (12 cm) than before, because the background mesh is coarse upstream.
+    nearest = dist[:, 0].reshape(Y.shape)
+    img = np.where(nearest > 0.12, np.nan, img)
+
+    # ----- analytic geometry mask --------------------------------------
+    # Main pipe: cylinder along z with radius R_MAIN_HALF.  At slice plane
+    # x = x_plane, the in-pipe condition is x^2 + y^2 < R^2.
+    in_main = (x_plane * x_plane + Y * Y < R_MAIN_HALF * R_MAIN_HALF) \
+              & (Z >= 0.0) & (Z <= L_MAIN_HALF)
+
+    # Branch pipe: cylinder whose axis starts at (0, R_main, zjct) and
+    # points along  n_hat = (0, sin a, -cos a)  for a forward-tilt branch
+    # (a < 90: branch leans downstream;  a = 90: vertical;  a > 90:
+    # counter-flow lean upstream).  For each grid point we project onto
+    # the axis to get (s, r_perp) and require 0 <= s <= l_branch and
+    # r_perp < r_branch.
+    a_rad = math.radians(alpha_deg)
+    sa, ca = math.sin(a_rad), math.cos(a_rad)
+    nb_y, nb_z = sa, -ca
+    dY = Y - R_MAIN_HALF
+    dZ = Z - zjct
+    s = dY * nb_y + dZ * nb_z
+    perp_y = dY - s * nb_y
+    perp_z = dZ - s * nb_z
+    r_perp = np.sqrt(x_plane * x_plane + perp_y * perp_y + perp_z * perp_z)
+    in_branch = (s >= 0.0) & (s <= l_branch) & (r_perp < r_branch)
+
     geom = in_main | in_branch
     img = np.where(geom & np.isfinite(img), img, np.nan)
 
-    # Mask orphan "dead-zone" cells (tiny pockets snappyHexMesh leaves which
-    # stay frozen at their initial field value ~1.0 for H2).  Harmless for
-    # metrics but visually ugly.  Only applies when the rendered field is a
-    # bounded mass fraction — guarded by checking that the data range is
-    # [0, ~1] before masking.
+    # Mask orphan "dead-zone" cells (small pockets snappyHexMesh leaves which
+    # stay frozen at their initial field value ~1.0 for H2 / 0 for the rest).
+    # Applied to bounded mass-fraction fields only.
     if field in ("H2", "H2Mean"):
-        orphan = (img > 0.5) & (Y < R_MAIN_HALF) \
-                 & (np.abs(Z - zjct) > r_branch + 0.05)
+        # Branch interior gets to keep its real H2 values; everywhere else
+        # values > 0.5 are non-physical orphans (after dilution by main flow
+        # the outlet H2 is < 0.05 for every DoE case).
+        orphan = (img > 0.5) & (~in_branch)
         img = np.where(orphan, np.nan, img)
+        # Hide any leftover non-zero H2 upstream of the junction (z < zjct - 0.3).
+        # Physically H2 = 0 upstream of the branch in steady state; tiny
+        # residual values there come from numerical noise or initial-condition
+        # leftover after restart and only confuse the visualisation.
+        upstream_noise = (Z < zjct - 0.3) & (~in_branch) & (img < 0.05)
+        img = np.where(upstream_noise, 0.0, img)
 
     if clim is None:
         valid = geom & (np.abs(Y) < R_MAIN_HALF) & (Z > zjct + 0.3) \
@@ -283,7 +373,7 @@ def _render_centerline_interp(internal, field: str, out: Path, *,
     ax.set_aspect("equal")
     ax.set_xlabel("z [m]"); ax.set_ylabel("y [m]")
     ax.set_xlim(0.0, L_MAIN_HALF)
-    ax.set_ylim(-R_MAIN_HALF - 0.02, R_MAIN_HALF + 1.20)
+    ax.set_ylim(y_lo, y_hi)
     ax.set_title(title)
     cbar = fig.colorbar(pcm, ax=ax, orientation="horizontal",
                         fraction=0.035, pad=0.08)
@@ -310,7 +400,7 @@ def fig_scalar_xz(ds, field: str, out: Path, *, clim=None, cmap="viridis",
 
 
 def fig_velocity_xz(ds, out: Path, r_branch: float = 0.10,
-                    zjct: float = Z_JCT_HALF):
+                    zjct: float = Z_JCT_HALF, alpha_deg: float = 90.0):
     internal = get_internal(ds)
     U = np.asarray(internal.cell_data["U"])
     internal["|U|"] = np.linalg.norm(U, axis=1)
@@ -321,23 +411,42 @@ def fig_velocity_xz(ds, out: Path, r_branch: float = 0.10,
         internal, "|U|", out,
         title=f"Velocity magnitude |U| (m/s)  —  x=0 centreline (gap-free)",
         cmap=CMAP_SPEED, clim=(0.0, vmax),
-        r_branch=r_branch, zjct=zjct,
+        r_branch=r_branch, zjct=zjct, alpha_deg=alpha_deg,
         label="|U| [m/s]",
     )
 
 
 def fig_pressure_xz(ds, out: Path, t: float, r_branch: float = 0.10,
-                    zjct: float = Z_JCT_HALF):
+                    zjct: float = Z_JCT_HALF, alpha_deg: float = 90.0):
     internal = get_internal(ds)
-    p_mean = float(np.mean(np.asarray(internal.cell_data["p_rgh"])))
-    internal["p_rgh_gauge"] = np.asarray(internal.cell_data["p_rgh"]) - p_mean
-    rng = float(np.nanpercentile(np.abs(internal["p_rgh_gauge"]), 99.0))
-    rng = max(rng, 1.0e2)
+    p = np.asarray(internal.cell_data["p_rgh"], dtype=float)
+    # Bulk fluid identified by a wide IQR band -- snappyHexMesh leaves orphan
+    # cells stuck at their initial value (often the operating reference
+    # pressure ~270 kPa above bulk).  The bulk-fluid IQR is small (often
+    # < 1 kPa) so we use a wide multiplier (k = 50) to keep the entire
+    # physical pipe gradient (including the downstream recovery zone, which
+    # sits ~30 IQRs above the median) while still rejecting orphans (which
+    # are >300 IQRs from the bulk centre).
+    q1, q3 = np.nanpercentile(p, [25.0, 75.0])
+    iqr = q3 - q1
+    if iqr > 0:
+        in_band = (p >= q1 - 50.0 * iqr) & (p <= q3 + 50.0 * iqr)
+    else:
+        in_band = np.ones_like(p, dtype=bool)
+    p_mean = float(np.mean(p[in_band])) if in_band.any() else float(np.mean(p))
+    internal["p_rgh_gauge"] = p - p_mean
+    # Colour-map range tied to the bulk-fluid IQR, NOT to the global gauge
+    # extremes -- the downstream recovery zone (a few cells) sits at gauge
+    # ~ +20 kPa which would otherwise wash the colourmap out.  rng = 8 IQR
+    # makes the wake low-pressure (gauge ~ -3 IQR) and the bulk gradient
+    # readable; the recovery cells correctly saturate at the red end.
+    rng = max(8.0 * iqr, 1.0e2) if iqr > 0 else 2.0e3
     _render_centerline_interp(
         internal, "p_rgh_gauge", out,
         title=f"p_rgh − {p_mean/1e6:.3f} MPa [Pa]  —  x=0 centreline (t = {t:g} s)",
         cmap=CMAP_PRESS, clim=(-rng, rng),
-        r_branch=r_branch, zjct=zjct,
+        r_branch=r_branch, zjct=zjct, alpha_deg=alpha_deg,
+        outlier_pct=50.0,
         label="p_rgh gauge [Pa]",
     )
 
@@ -438,15 +547,22 @@ def main():
         info = json.loads(info_path.read_text()) if info_path.exists() else {}
     except Exception:
         info = {}
-    r_branch = float(info.get("D2_m", 0.10)) / 2.0
-    z_jct    = float(info.get("ZJCT",  Z_JCT_HALF))
+    r_branch  = float(info.get("D2_m", 0.10)) / 2.0
+    z_jct     = float(info.get("ZJCT",  Z_JCT_HALF))
+    alpha_deg = float(info.get("alpha_deg", 90.0))
+    print(f"       per-case mask: r_branch={r_branch:.4f} m, "
+          f"z_jct={z_jct:.3f} m, alpha={alpha_deg:.1f} deg")
 
     print("[4/7] fig_H2_xz")
+    # H2 orphans are frozen at the initial value (~1.0) in disconnected
+    # pockets snappyHexMesh occasionally leaves; the physical max in this
+    # campaign is HBR < 0.20.  outlier_max = 0.5 cleanly separates them.
     _render_centerline_interp(
         internal, "H2", out / "fig_H2_xz.png",
         title=f"Y_H2 (H2 mass fraction)  —  x=0 centreline slice  (t = {t:g} s)",
         cmap=CMAP_H2, clim=None,
-        r_branch=r_branch, zjct=z_jct,
+        r_branch=r_branch, zjct=z_jct, alpha_deg=alpha_deg,
+        outlier_max=0.5,
         label="Y_H2 (mass fraction)",
     )
 
@@ -455,9 +571,9 @@ def main():
 
     print("[6/7] fig_velocity_xz + fig_pressure_xz")
     fig_velocity_xz(ds, out / "fig_velocity_xz.png",
-                    r_branch=r_branch, zjct=z_jct)
+                    r_branch=r_branch, zjct=z_jct, alpha_deg=alpha_deg)
     fig_pressure_xz(ds, out / "fig_pressure_xz.png", t,
-                    r_branch=r_branch, zjct=z_jct)
+                    r_branch=r_branch, zjct=z_jct, alpha_deg=alpha_deg)
 
     print("[7/7] fig_streamlines")
     fig_streamlines(ds, case, out / "fig_streamlines.png")
