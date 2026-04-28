@@ -176,10 +176,16 @@ def _branch_axis(alpha_deg: float):
 
 
 def _branch_mask(Y, Z, *, alpha_deg, r_branch, zjct,
-                 l_branch=1.55, x_plane=0.005, slack=0.0):
+                 l_branch=1.55, x_plane=0.005, slack=None):
     """Boolean mask of (Y, Z) points that lie inside the analytical branch
     tube.  The branch axis starts at (0, R_main, zjct) and runs in
-    direction (0, sin(alpha), -cos(alpha))."""
+    direction (0, sin(alpha), -cos(alpha)).
+
+    `slack` extends the mask in the negative-s direction (into the main
+    pipe) so the perpendicular cross-section at the wall is covered.
+    Default = r_branch / tan(alpha) so the branch base ellipse on the
+    main-pipe wall is fully drawn -- prevents the visual "gap" between
+    the tilted branch tube and the plume entering the main pipe."""
     nb_y, nb_z = _branch_axis(alpha_deg)
     dy = Y - R_MAIN_HALF
     dz = Z - zjct
@@ -187,6 +193,11 @@ def _branch_mask(Y, Z, *, alpha_deg, r_branch, zjct,
     perp_y = dy - s * nb_y
     perp_z = dz - s * nb_z
     rperp = np.sqrt(perp_y**2 + perp_z**2 + x_plane**2)
+    if slack is None:
+        # Extend backward by r_branch / tan(alpha) so the perpendicular
+        # cross-section at the wall (Y=R_main) is fully inside the mask.
+        ta = math.tan(math.radians(alpha_deg))
+        slack = r_branch / ta if ta > 1.0e-6 else 0.10
     return (s >= -slack) & (s <= l_branch + slack) & (rperp <= r_branch)
 
 
@@ -196,10 +207,24 @@ def _branch_mask(Y, Z, *, alpha_deg, r_branch, zjct,
 def _orphan_mask_3d(ctrs: np.ndarray, h2_arr: np.ndarray, *,
                     alpha_deg: float, r_branch: float, zjct: float,
                     l_branch: float = 1.55) -> np.ndarray:
-    """Boolean orphan-cell mask: cells with H2 > 0.5 that are NOT inside
-    the analytical branch tube.  These are snappyHexMesh "frozen-IC"
-    cells which contaminate every field (H2, |U|, p_rgh) and dominate
-    the 99th-percentile range."""
+    """Boolean orphan-cell mask flagging two failure modes:
+
+    1.  **Frozen-IC orphans** -- cells with H2 > 0.5 lying *outside* the
+        analytical branch tube.  These are snappyHexMesh artifacts that
+        carry the initial-condition H2 mass-fraction throughout the run
+        and dominate the 99th percentile of every field.
+
+    2.  **Upstream noise cells** -- cells with H2 > 0.005 located more
+        than 0.5 m *upstream* of the junction.  Physically the plume
+        cannot reach this region in the simulated 1.2 s window, so any
+        non-zero H2 here is a numerical artifact (mesh-refinement
+        boundary mass diffusion or solver overshoot).  Without this
+        filter the kNN reconstruction painted a ring of yellow / red
+        specks across the upstream half of the pipe -- noise that the
+        90 deg meshes happen to have far less of.
+
+    Cells inside the analytical branch tube are exempt from both
+    filters."""
     nb_y, nb_z = _branch_axis(alpha_deg)
     dy = ctrs[:, 1] - R_MAIN_HALF
     dz = ctrs[:, 2] - zjct
@@ -209,7 +234,9 @@ def _orphan_mask_3d(ctrs: np.ndarray, h2_arr: np.ndarray, *,
     rperp = np.sqrt(ctrs[:, 0]**2 + perp_y**2 + perp_z**2)
     in_branch_3d = ((s >= -0.05) & (s <= l_branch + 0.05)
                     & (rperp <= r_branch * 1.05))
-    return (h2_arr > 0.5) & ~in_branch_3d
+    frozen   = (h2_arr > 0.5) & ~in_branch_3d
+    upstream = (ctrs[:, 2] < zjct - 0.5) & (h2_arr > 0.005) & ~in_branch_3d
+    return frozen | upstream
 
 
 def _render_centerline_interp(internal, field: str, out: Path, *,
@@ -240,17 +267,43 @@ def _render_centerline_interp(internal, field: str, out: Path, *,
         raise SystemExit(f"field {field!r} not in internal cell data")
 
     from scipy.spatial import cKDTree
-    global _CTR_CACHE_FIG
+    global _CTR_CACHE_FIG, _TREE_CACHE_FIG
     try:
         _CTR_CACHE_FIG
     except NameError:
         _CTR_CACHE_FIG = {}
+    try:
+        _TREE_CACHE_FIG
+    except NameError:
+        _TREE_CACHE_FIG = {}
     key = id(internal)
     if key not in _CTR_CACHE_FIG:
         _CTR_CACHE_FIG[key] = np.asarray(internal.cell_centers().points)
-    ctrs = _CTR_CACHE_FIG[key]
-    vals = np.asarray(internal.cell_data[field])
-    tree = cKDTree(ctrs)
+    ctrs_all = _CTR_CACHE_FIG[key]
+    vals_all = np.asarray(internal.cell_data[field])
+
+    # ------------------------------------------------------------------
+    # Build the kNN tree on NON-ORPHAN cells only.  The tilted-junction
+    # 30 deg meshes carry ~0.1-1.5 % frozen-IC cells (snappyHexMesh
+    # defects) scattered through the upstream pipe and -- worst -- a
+    # cluster right under the junction hole.  If those are left in the
+    # kdtree, query points end up with an orphan as their nearest
+    # neighbour and the figure shows white speckles + a vertical white
+    # stripe at the plume-entry zone.  Excluding them at the tree level
+    # makes the kNN return the closest *real* fluid cell, so the holes
+    # fill in with sensible values and the plume connects smoothly to
+    # the branch.
+    # ------------------------------------------------------------------
+    if orphan_3d is not None:
+        non_orphan = ~orphan_3d
+    else:
+        non_orphan = np.ones(len(ctrs_all), dtype=bool)
+    ctrs = ctrs_all[non_orphan]
+    vals = vals_all[non_orphan]
+    tree_key = (key, int(non_orphan.sum()))
+    if tree_key not in _TREE_CACHE_FIG:
+        _TREE_CACHE_FIG[tree_key] = cKDTree(ctrs)
+    tree = _TREE_CACHE_FIG[tree_key]
 
     sa = math.sin(math.radians(alpha_deg))
     y_tip = R_MAIN_HALF + l_branch * sa
@@ -263,9 +316,22 @@ def _render_centerline_interp(internal, field: str, out: Path, *,
     Y, Z = np.meshgrid(y, z, indexing="ij")
     X = np.full_like(Y, x_plane)
     qpts = np.column_stack([X.ravel(), Y.ravel(), Z.ravel()])
-    dist, idx = tree.query(qpts, k=1)
-    img = vals[idx].reshape(Y.shape)
-    img = np.where(dist.reshape(Y.shape) > 0.04, np.nan, img)
+
+    # k=4 inverse-distance-weighted interpolation gives a smoother
+    # gradient than 1-NN, especially across the tilted T-junction where
+    # cells from branch / main-pipe / wall-adjacent regions need to
+    # blend rather than snap to a single closest one.
+    K = 4
+    dist, idx = tree.query(qpts, k=K)
+    weights = 1.0 / np.maximum(dist, 1.0e-9)
+    weights /= weights.sum(axis=1, keepdims=True)
+    img = (vals[idx] * weights).sum(axis=1).reshape(Y.shape)
+    # Cutoff distance: pixels whose nearest non-orphan cell is far away
+    # (outside the fluid domain or in a wall) get NaN'd, then painted
+    # white by the analytical mask below.  20 cm is generous enough to
+    # cover any junction-induced void without spilling over the wall.
+    nearest = dist[:, 0].reshape(Y.shape)
+    img = np.where(nearest > 0.20, np.nan, img)
 
     in_main   = (X**2 + Y**2 < R_MAIN_HALF**2) & (Y <= R_MAIN_HALF)
     in_branch = _branch_mask(Y, Z, alpha_deg=alpha_deg,
@@ -273,19 +339,6 @@ def _render_centerline_interp(internal, field: str, out: Path, *,
                              l_branch=l_branch, x_plane=x_plane)
     geom = in_main | in_branch
     img = np.where(geom & np.isfinite(img), img, np.nan)
-
-    # Mask orphan cells using the 3-D mask propagated through the kNN
-    # lookup.  Applies uniformly to H2 / |U| / p_rgh.
-    if orphan_3d is not None:
-        is_orphan_pixel = orphan_3d[idx].reshape(Y.shape)
-        img = np.where(is_orphan_pixel & in_main & ~in_branch,
-                       np.nan, img)
-
-    # Belt-and-braces: also mask any obviously-non-physical cell that
-    # somehow slipped through the orphan filter (typically only a handful
-    # at most after the 3-D filter).
-    if field in ("H2", "H2Mean"):
-        img = np.where((img > 0.5) & in_main & ~in_branch, np.nan, img)
 
     # Choose colour range from the bulk-pipe fluid downstream of the
     # junction (|Y| < R_MAIN_HALF, Z > zjct + 0.3) so the dilution

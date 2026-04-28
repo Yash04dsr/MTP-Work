@@ -105,31 +105,53 @@ the case with VR = 5.8 mixes 70x better than the cases with VR < 1.5 at comparab
 Same matplotlib + kNN look as the 90 deg pack so the two campaigns can be
 compared figure-for-figure.  The centreline figures (`fig_H2_xz`,
 `fig_velocity_xz`, `fig_pressure_xz`) sample the OpenFOAM volume fields at
-their cell centres and 1-NN-interpolate them onto a 520 x 1400 (Y, Z) image
-grid, then apply an analytical pipe-shape mask:
+their cell centres and interpolate them onto a 520 x 1400 (Y, Z) image grid,
+then apply an analytical pipe-shape mask:
 
 * `in_main`   -- the disc `x_plane^2 + Y^2 < R_main^2`
 * `in_branch` -- the tilted tube around axis
                  `nb = (0, sin(alpha), -cos(alpha))` starting at
-                 `(0, R_main, zjct)` and running for `l_branch`.
+                 `(0, R_main, zjct)` and running for `l_branch`,
+                 with a `r_branch / tan(alpha)` slack on the
+                 negative-`s` side so the perpendicular base of the
+                 branch tube is fully drawn at the wall (this removes
+                 the visual "gap" between the tilted branch and the
+                 plume entering the main pipe).
 
 Reading `alpha_deg` from `case_info.json` makes the same script render 30,
 90 and 150 deg cases identically, with the branch tube drawn at the right
 angle for each case.
 
-Field colour ranges are set from the **bulk fluid only** (cells inside the
-main pipe, downstream of the junction) so the dilution gradient and wake
-structure are the visual focus.  The branch (H2 = 1) and the high-speed jet
-saturate at the top of the colour map.
+### Why the 30 deg meshes need a tighter orphan filter than 90 deg
+
+The 30 deg `snappyHexMesh` runs leave roughly 1.4 % "orphan" cells -- 10x
+more than the 90 deg meshes.  These come in two flavours:
+
+1.  **Frozen-IC cells**: `H2 > 0.5`, `|U| ~ 1000+ m/s`, scattered through
+    the upstream pipe (the meshing pipeline never visited them and they
+    still carry the initial-condition values).
+2.  **Upstream noise cells**: `H2 ~ 0.005-0.05` more than 0.5 m upstream
+    of the junction, where physically the plume cannot have reached in
+    1.2 s of simulated flow.  These are mesh-refinement boundary
+    diffusion / solver overshoot artifacts.
+
+The orphan mask flags both kinds (cells inside the analytical branch
+tube are exempt) and is computed once per case.  Crucially, the orphan
+cells are excluded from the kNN tree itself rather than NaN'd
+post-query: that way every grid point in the rendered image gets a
+clean nearest-neighbour answer, and the figures show no white speckles
+or stripes.  k = 4 inverse-distance-weighting then produces the smooth
+gradient look across the tilted T-junction.
+
+### Colour ranges and the H2 outlet view
+
+Field colour ranges are set from the **bulk fluid only** (main pipe cells
+downstream of the junction) so the dilution gradient and wake structure
+are the visual focus.  The branch (H2 = 1) and the high-speed jet
+saturate at the top of the colour map -- that's expected behaviour and
+matches the 90 deg figures.
 
 `fig_H2_outlet` is mirrored across `x = 0` (PyVista `merge` of the original
 patch with an x-reflected copy) and rendered with point-data interpolation
 (`interpolate_before_map=True`) so the gradient is smooth instead of
 flat-shaded cells.
-
-`snappyHexMesh` occasionally leaves a few hundred "frozen-IC" orphan cells
-in the bulk pipe (cells the meshing pipeline never reached, still at
-`H2 = 1.0` and `|U| = 1000+` m/s).  A 3-D spatially-aware orphan mask
-(`H2 > 0.5` AND outside the analytical branch tube) is computed once and
-reused across every centreline figure so these cells do not pollute the
-99th-percentile colour-range estimates.
