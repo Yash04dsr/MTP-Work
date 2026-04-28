@@ -20,10 +20,9 @@ results_full_30deg/
 |       +-- metrics_out/
 |       |   +-- all_metrics.csv     # 3 snapshots + AVG row, all weights
 |       |   \-- ALL_METRICS.md      # human-readable per-case summary
-|       \-- figures/                # ParaView 6.1 (pvpython) renders, read
-|           |                       # directly from the symmetryPlane patch
-|           |                       # via ExtractBlock("//sym") -- no kNN,
-|           |                       # no analytical mask
+|       \-- figures/                # matplotlib + kNN renders (same look as
+|           |                       # the 90 deg pack), angle-aware analytical
+|           |                       # branch mask + spatially-aware orphan filter
 |           +-- fig_geometry.png    # STL patches in isometric view
 |           +-- fig_mesh_xz.png     # cell faces on the x=0 symmetry plane
 |           +-- fig_H2_xz.png       # Y_H2 on the symmetry plane (bulk-pipe
@@ -48,8 +47,7 @@ results_full_30deg/
 +-- tools/
 |   +-- all_metrics.py              # the per-case post-processor (numpy only)
 |   +-- aggregate_30deg.py          # the DoE-wide aggregator + plotter
-|   +-- make_figures_paraview.py    # PRIMARY: ParaView 6.1 / pvpython renders
-|   \-- make_figures.py             # alternate: pure-PyVista renders (no PV)
+|   \-- make_figures.py             # angle-aware figure pack (per case, 7 PNG)
 \-- doe_design.csv                  # the 10-row LHS design used for stamping
 ```
 
@@ -74,15 +72,6 @@ done
 
 # per-case figure packs (needs the reconstructed t=1.2 fields, which are NOT in
 # this repo because of size; pull them with rsync from the compute host first)
-#
-# PRIMARY path -- ParaView 6.1 (install on macOS with `brew install --cask paraview`)
-for n in 01 02 03 05 06 07 08 09 10; do
-    /Applications/ParaView-6.1.0.app/Contents/bin/pvpython \
-        tools/make_figures_paraview.py cases/case_${n} \
-        cases/case_${n}/figures --time 1.2
-done
-
-# ALTERNATE path -- pure PyVista (use when ParaView is not installed)
 for n in 01 02 03 05 06 07 08 09 10; do
     .venv/bin/python tools/make_figures.py cases/case_${n} \
         cases/case_${n}/figures --time 1.2
@@ -111,41 +100,36 @@ done
 The single dominant effect on mixing is the velocity ratio VR = $u_{branch}/u_{main}$:
 the case with VR = 5.8 mixes 70x better than the cases with VR < 1.5 at comparable d/D.
 
-## Notes on the rendering pipeline
+## Notes on the rendering pipeline (`tools/make_figures.py`)
 
-The figures in `cases/case_*/figures/` were rendered with **ParaView 6.1**
-(`pvpython`).  This is the same engine that produces ParaView GUI screenshots,
-so the figures look like the ones a supervisor would expect from a CFD
-report: the standard `Viridis`, `Plasma` and `Cool to Warm` colour-table
-presets, ParaView's scalar-bar widget, FXAA anti-aliasing, the orientation
-axes triad in 3-D views, and the `Background = white` palette.
+Same matplotlib + kNN look as the 90 deg pack so the two campaigns can be
+compared figure-for-figure.  The centreline figures (`fig_H2_xz`,
+`fig_velocity_xz`, `fig_pressure_xz`) sample the OpenFOAM volume fields at
+their cell centres and 1-NN-interpolate them onto a 520 x 1400 (Y, Z) image
+grid, then apply an analytical pipe-shape mask:
 
-The centreline figures (`fig_H2_xz`, `fig_velocity_xz`, `fig_pressure_xz`,
-`fig_mesh_xz`) read the **symmetryPlane patch (`sym`) directly** through
-`ExtractBlock("//sym")` -- the patch IS the 2-D cell mesh at x = 0, so we get
-face-interpolated values with no kNN/IDW step and no analytical pipe-shape
-mask.
+* `in_main`   -- the disc `x_plane^2 + Y^2 < R_main^2`
+* `in_branch` -- the tilted tube around axis
+                 `nb = (0, sin(alpha), -cos(alpha))` starting at
+                 `(0, R_main, zjct)` and running for `l_branch`.
 
-Field colour ranges are set from the **bulk fluid only** (cells outside the
-analytical branch volume, computed in numpy ahead of rendering) so the
-dilution gradient and wake structure are visible -- the branch (H2 = 1.0)
-and the high-speed jet (60-150 m/s) saturate at the top of the colour map.
+Reading `alpha_deg` from `case_info.json` makes the same script render 30,
+90 and 150 deg cases identically, with the branch tube drawn at the right
+angle for each case.
 
-`fig_H2_outlet.png` is built with a `Reflect` filter across x = 0 so the
-outlet plane is shown as the full physical circle, not the half-disk of the
-simulated half-domain.  The other 3-D views (geometry, streamlines) are kept
-on the half-domain to preserve the symmetry-plane visibility, and they show
-the orientation triad so the reader can read off X/Y/Z directly.
+Field colour ranges are set from the **bulk fluid only** (cells inside the
+main pipe, downstream of the junction) so the dilution gradient and wake
+structure are the visual focus.  The branch (H2 = 1) and the high-speed jet
+saturate at the top of the colour map.
 
-A pure-PyVista fallback (`tools/make_figures.py`) is kept for hosts that do
-not have ParaView installed; it uses the same VTK reader and emits the same
-figure set, just without the ParaView visual identity.
+`fig_H2_outlet` is mirrored across `x = 0` (PyVista `merge` of the original
+patch with an x-reflected copy) and rendered with point-data interpolation
+(`interpolate_before_map=True`) so the gradient is smooth instead of
+flat-shaded cells.
 
-### macOS quirks (PV 6.1)
-
-* `MultiSamples > 0` triggers a renderer bug that drops the background to
-  black -- the script keeps `MultiSamples = 0` and relies on FXAA for
-  anti-aliasing.
-* The OSPRay/openVKL warnings on stdout (`could not open ... openvkl_module_cpu_device.dylib`)
-  are harmless -- they only affect ray-traced volume rendering, which we do
-  not use.
+`snappyHexMesh` occasionally leaves a few hundred "frozen-IC" orphan cells
+in the bulk pipe (cells the meshing pipeline never reached, still at
+`H2 = 1.0` and `|U| = 1000+` m/s).  A 3-D spatially-aware orphan mask
+(`H2 > 0.5` AND outside the analytical branch tube) is computed once and
+reused across every centreline figure so these cells do not pollute the
+99th-percentile colour-range estimates.
