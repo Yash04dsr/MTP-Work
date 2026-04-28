@@ -1,0 +1,142 @@
+% =====================================================================
+%  Bibliography for CLD 411 MTP Major Report
+%  Sakhare Yash Balram, 2022CH71496
+%
+%  Each entry below has been verified against the corresponding journal
+%  / NREL record before inclusion (DOI / NREL TP number given where
+%  possible). Eight references are kept on purpose: every one is
+%  used at least once in the body and is a primary, publicly accessible
+%  source for the claim it supports.
+% =====================================================================
+
+% - 1. Hydrogen-into-NG, T-junction CFD + DNN surrogate -
+%      Closest published precedent for the present DoE+CFD+surrogate
+%      pipeline; 7 citations across the introduction, methodology,
+%      gap analysis and discussion.  Open-access (MDPI Energies).
+@article{su2022prediction,
+  title   = {Prediction of mixing uniformity of hydrogen injection in
+             natural gas pipeline based on a deep learning model},
+  author  = {Su, Yue and Li, Jingfa and Guo, Wangyi and Zhao, Yanlin
+             and Li, Jianli and Zhao, Jie and Wang, Yusheng},
+  journal = {Energies},
+  volume  = {15},
+  number  = {22},
+  pages   = {8694},
+  year    = {2022},
+  doi     = {10.3390/en15228694},
+  publisher = {MDPI}
+}
+
+% - 2. Hydrogen-into-NG, dimensional-analysis reduced-order model -
+%      Cited as the published precedent for a ROM/dimensional-analysis
+%      route on top of T-junction CFD; 3 body citations.
+@article{montanes2024comprehensive,
+  title   = {Comprehensive assessment of hydrogen injection in natural
+             gas networks: Using dimensional analysis and reduced-order
+             models for mixture quality prediction},
+  author  = {Monta\~n\'es, Carlos and Pardo, Leyre and Milla-Val, Jaime
+             and G\'omez, Antonio},
+  journal = {International Journal of Hydrogen Energy},
+  volume  = {101},
+  pages   = {442-449},
+  year    = {2024},
+  doi     = {10.1016/j.ijhydene.2024.07.183}
+}
+
+% - 3. Hydrogen-into-NG, multi-objective network optimisation -
+%      Cited as the prior MOO precedent for HBNG pipeline networks; the
+%      present project is the CFD-side companion to such network MOO
+%      studies.  2 body citations.
+@article{arya2023multi,
+  title   = {A multi-objective model for optimizing hydrogen injected
+             high-pressure natural gas pipeline networks},
+  author  = {Arya, Adarsh Kumar and Katiyar, Rajesh and
+             Senthil Kumar, P. and Kapoor, Ashish and
+             Pal, Dan Bahadur and Rangasamy, Gayathri},
+  journal = {International Journal of Hydrogen Energy},
+  volume  = {48},
+  number  = {76},
+  pages   = {29699-29723},
+  year    = {2023},
+  doi     = {10.1016/j.ijhydene.2023.04.133}
+}
+
+% - 4. NREL HyBlend technology review (techno-economic + materials)
+%      The single open-access NREL review that covers the whole
+%      techno-economic + materials-compatibility context for HBNG
+%      pipelines, including embrittlement.  Replaces the older
+%      ad-hoc embrittlement and TEA citations; used twice.
+@techreport{topolski2022blending,
+  title       = {Hydrogen Blending into Natural Gas Pipeline
+                 Infrastructure: Review of the State of Technology},
+  author      = {Topolski, Kevin and Reznicek, Evan~P. and
+                 Cakir Erdener, Burcin and San Marchi, Chris~W. and
+                 Ronevich, Joseph~A. and Fring, Lisa and
+                 Simmons, Kevin and Guerra Fernandez, Omar~Jose and
+                 Hodge, Bri-Mathias and Chung, Mark},
+  institution = {National Renewable Energy Laboratory},
+  number      = {NREL/TP-5400-81704},
+  year        = {2022},
+  address     = {Golden, CO},
+  url         = {https://www.nrel.gov/docs/fy23osti/81704.pdf}
+}
+
+% - 5. Hydrogen-into-NG, T-junction + helical static mixer CFD -
+%      Used as the published quantitative reference for a static
+%      (helical) mixer downstream of a T-junction in HBNG service.
+%      4 body citations (concept introduction, J definition,
+%      precedent-paragraph, and the Outlook bullet on static mixers).
+@article{du2024numerical,
+  title   = {Numerical study of the mixing process during hydrogen
+             blending in natural gas pipelines},
+  author  = {Du, J. and Lv, X.~F. and Zhao, H.~J. and Qiao, S.~W. and
+             Chen, Z.~H.},
+  journal = {Journal of Applied Fluid Mechanics},
+  volume  = {17},
+  number  = {8},
+  pages   = {1618-1630},
+  year    = {2024},
+  doi     = {10.47176/jafm.17.8.2445}
+}
+
+% - 6. SST k-omega turbulence model (the solver's RANS closure) -
+%      Single methodological citation justifying the SST $k$-$\omega$
+%      model used throughout the campaign.
+@article{menter1994sst,
+  title   = {Two-equation eddy-viscosity turbulence models for
+             engineering applications},
+  author  = {Menter, F.~R.},
+  journal = {AIAA Journal},
+  volume  = {32},
+  number  = {8},
+  pages   = {1598-1605},
+  year    = {1994},
+  doi     = {10.2514/3.12149}
+}
+
+% - 7. Sliced/symmetric Latin hypercube design -
+%      Methodological citation for the sliced-LHS sampler used in the
+%      DoE; matches the algorithm implemented in this project.
+@article{ye2000sliced,
+  title   = {Algorithmic construction of optimal symmetric Latin
+             hypercube designs},
+  author  = {Ye, Kenny~Q. and Li, William and Sudjianto, Agus},
+  journal = {Journal of Statistical Planning and Inference},
+  volume  = {90},
+  number  = {1},
+  pages   = {145-159},
+  year    = {2000},
+  doi     = {10.1016/S0378-3758(00)00105-1}
+}
+
+% - 8. Idelchik handbook (junction-loss K coefficients) -
+%      Classical engineering reference for unshaped tee-junction loss
+%      coefficients; used to benchmark the measured K_{90} and K_{30}.
+@book{idelchik1986handbook,
+  title     = {Handbook of Hydraulic Resistance},
+  author    = {Idelchik, I.~E.},
+  edition   = {2nd},
+  publisher = {Hemisphere Publishing Corporation},
+  address   = {Washington, DC},
+  year      = {1986}
+}

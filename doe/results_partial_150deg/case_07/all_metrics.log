@@ -1,0 +1,26 @@
+
+==== all_metrics.py ====
+case : /home/psl_3/work/openfoam_case_rans_doe_150deg/doe_cases/case_07
+out  : /home/psl_3/work/openfoam_case_rans_doe_150deg/doe_results/case_07
+Parsing boundary ...
+  patches: ['sym', 'wall', 'main_inlet', 'outlet', 'branch_inlet']
+  snapshots: ['1.2']
+Parsing points ...
+  532833 points
+Parsing faces for main_inlet: 348 faces starting at index 1525689 ...
+  total area = 0.08296 m²,  mean face area = 2.384e-04
+Parsing faces for outlet: 387 faces starting at index 1526037 ...
+  total area = 0.08296 m²,  mean face area = 2.144e-04
+Parsing faces for branch_inlet: 289 faces starting at index 1526424 ...
+  total area = 0.01207 m²,  mean face area = 4.176e-05
+
+-- time 1.2 --
+
+Computing CoV on time-averaged H2 field ...
+
+Reading function-object time series from postProcessing ...
+  time-series samples: 236 in [0.800, 1.199] s
+  clean area-weighted ΔP(p_rgh) = 3.689 kPa
+
+Wrote /home/psl_3/work/openfoam_case_rans_doe_150deg/doe_results/case_07/all_metrics.csv
+Wrote /home/psl_3/work/openfoam_case_rans_doe_150deg/doe_results/case_07/ALL_METRICS.md

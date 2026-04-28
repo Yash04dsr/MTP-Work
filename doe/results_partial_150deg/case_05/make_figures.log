@@ -1,0 +1,22 @@
+2026-04-28 10:19:09.594 (   0.987s) [    7EC386DD9540]vtkXOpenGLRenderWindow.:1460  WARN| bad X server connection. DISPLAY=
+/home/psl_3/work/MTP-Work/openfoam_case_rans_doe_150deg_base/tools/make_figures.py:374: PyVistaDeprecationWarning: ``max_time`` parameter is deprecated.  It will be removed in v0.48
+  stream = pdata.streamlines_from_source(
+Case: /home/psl_3/work/openfoam_case_rans_doe_150deg/doe_cases/case_05
+Out:  /home/psl_3/work/openfoam_case_rans_doe_150deg/doe_results/case_05/figures
+[1/7] fig_geometry
+  wrote fig_geometry.png  (49.1 KB)
+[2/7] loading volume mesh...
+  reading t = 1.2 s  (all times: [0.0, 1.2])
+       internal: 484,548 cells, fields: ['CH4', 'CH4Mean', 'CH4Prime2Mean', 'H2', 'H2Mean', 'H2Prime2Mean', 'Qdot', 'T', 'U', 'UMean', 'alphat', 'k', 'kMean', 'nut', 'omega', 'p', 'p_rgh', 'p_rghMean', 'yPlus']
+[3/7] fig_mesh_xz
+  wrote fig_mesh_xz.png  (353.2 KB)
+[4/7] fig_H2_xz
+  wrote fig_H2_xz.png  (61.7 KB)
+[5/7] fig_H2_outlet
+  wrote fig_H2_outlet.png  (28.3 KB)
+[6/7] fig_velocity_xz + fig_pressure_xz
+  wrote fig_velocity_xz.png  (69.0 KB)
+  wrote fig_pressure_xz.png  (46.3 KB)
+[7/7] fig_streamlines
+  wrote fig_streamlines.png  (58.4 KB)
+DONE.

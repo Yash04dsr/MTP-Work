@@ -1,0 +1,23 @@
+2026-04-28 10:20:48.935 (   0.754s) [    704673019540]vtkXOpenGLRenderWindow.:1460  WARN| bad X server connection. DISPLAY=
+2026-04-28 10:20:52.497 (   4.316s) [    704673019540]      vtkPolyhedron.cxx:2025  WARN| A cell with a non-manifold triangulation has been encountered. This cell cannot be contoured.
+/home/psl_3/work/MTP-Work/openfoam_case_rans_doe_150deg_base/tools/make_figures.py:374: PyVistaDeprecationWarning: ``max_time`` parameter is deprecated.  It will be removed in v0.48
+  stream = pdata.streamlines_from_source(
+Case: /home/psl_3/work/openfoam_case_rans_doe_150deg/doe_cases/case_07
+Out:  /home/psl_3/work/openfoam_case_rans_doe_150deg/doe_results/case_07/figures
+[1/7] fig_geometry
+  wrote fig_geometry.png  (50.8 KB)
+[2/7] loading volume mesh...
+  reading t = 1.2 s  (all times: [0.0, 1.2])
+       internal: 498,041 cells, fields: ['CH4', 'CH4Mean', 'CH4Prime2Mean', 'H2', 'H2Mean', 'H2Prime2Mean', 'Qdot', 'T', 'U', 'UMean', 'alphat', 'k', 'kMean', 'nut', 'omega', 'p', 'p_rgh', 'p_rghMean', 'yPlus']
+[3/7] fig_mesh_xz
+  wrote fig_mesh_xz.png  (388.2 KB)
+[4/7] fig_H2_xz
+  wrote fig_H2_xz.png  (63.1 KB)
+[5/7] fig_H2_outlet
+  wrote fig_H2_outlet.png  (29.4 KB)
+[6/7] fig_velocity_xz + fig_pressure_xz
+  wrote fig_velocity_xz.png  (66.9 KB)
+  wrote fig_pressure_xz.png  (48.4 KB)
+[7/7] fig_streamlines
+  wrote fig_streamlines.png  (56.9 KB)
+DONE.

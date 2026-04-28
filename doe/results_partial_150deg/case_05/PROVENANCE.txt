@@ -1,0 +1,4 @@
+case       : case_05
+completed  : 2026-04-28T06:45:58
+case_dir   : /home/psl_3/work/openfoam_case_rans_doe_150deg/doe_cases/case_05
+hostname   : DESKTOP-DSAFRUN

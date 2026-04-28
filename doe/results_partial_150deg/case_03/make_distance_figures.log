@@ -1,0 +1,8 @@
+2026-04-28 14:02:31.493 (   2.644s) [    799E9CD79540]vtkXOpenGLRenderWindow.:1460  WARN| bad X server connection. DISPLAY=
+  reading t = 1.2 s
+  using h2=H2Mean, u=UMean
+  wrote fig_H2_strip.png   clim=(0, 1)
+  wrote fig_U_strip.png   clim=(0, 12.73)
+  wrote fig_H2_long.png
+  wrote fig_H2_outlet.png
+Wrote 4 figures under /home/psl_3/work/openfoam_case_rans_doe_150deg/doe_results/case_03/figures

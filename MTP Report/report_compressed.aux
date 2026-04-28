@@ -1,0 +1,198 @@
+\relax 
+\providecommand \babel@aux [2]{\global \let \babel@toc \@gobbletwo }
+\@nameuse{bbl@beforestart}
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\babel@aux{english}{}
+\citation{su2022prediction,arya2023multi,montanes2024comprehensive}
+\citation{arya2023multi}
+\citation{topolski2022blending}
+\citation{topolski2022blending}
+\citation{topolski2022blending}
+\citation{su2022prediction}
+\citation{su2022prediction,montanes2024comprehensive}
+\citation{su2022prediction,montanes2024comprehensive}
+\citation{su2022prediction,du2024numerical,montanes2024comprehensive}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{3}{section.1}\protected@file@percent }
+\newlabel{sec:intro}{{1}{3}{Introduction}{section.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Why hydrogen-blended natural gas (HBNG)}{3}{subsection.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2}The mixing problem}{3}{subsection.1.2}\protected@file@percent }
+\newlabel{sec:intro_mixing}{{1.2}{3}{The mixing problem}{subsection.1.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Selected physical properties of \ensuremath  {\mathrm  {H_2}}{} and \ensuremath  {\mathrm  {CH_4}}{} at standard temperature and pressure, and their consequence for T-junction injection \citep  {su2022prediction,montanes2024comprehensive}.}}{3}{table.caption.1}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{tab:properties}{{1}{3}{Selected physical properties of \Hi {} and \CHi {} at standard temperature and pressure, and their consequence for T-junction injection \citep {su2022prediction,montanes2024comprehensive}}{table.caption.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.3}Where the injection angle fits in}{3}{subsection.1.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.4}Objectives and scope of this report}{3}{subsection.1.4}\protected@file@percent }
+\newlabel{sec:intro_obj}{{1.4}{3}{Objectives and scope of this report}{subsection.1.4}{}}
+\citation{su2022prediction}
+\citation{su2022prediction}
+\citation{du2024numerical}
+\citation{montanes2024comprehensive}
+\citation{su2022prediction,montanes2024comprehensive,du2024numerical}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Background and Literature Review}{4}{section.2}\protected@file@percent }
+\newlabel{sec:lit}{{2}{4}{Background and Literature Review}{section.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Stratification physics}{4}{subsection.2.1}\protected@file@percent }
+\newlabel{eq:Ri}{{1}{4}{Stratification physics}{equation.1}{}}
+\newlabel{eq:J}{{2}{4}{Stratification physics}{equation.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Prior CFD studies on T-junction blending}{4}{subsection.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Su et al.\ (2022).}{4}{paragraph*.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Du et al.\ (2024).}{4}{paragraph*.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Monta\~n\'es et al.\ (2024).}{4}{paragraph*.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Symmetry simplification.}{4}{paragraph*.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Gap addressed in this work}{4}{subsection.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Methodology}{5}{section.3}\protected@file@percent }
+\newlabel{sec:method}{{3}{5}{Methodology}{section.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Computational domain}{5}{subsection.3.1}\protected@file@percent }
+\newlabel{sec:method_geom}{{3.1}{5}{Computational domain}{subsection.3.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Half-domain T-junction geometry produced by the \texttt  {generateSTL.py} script (\(90^\circ \) baseline, case~03, \(\ensuremath  {d/D}=0.252\)). The colour coding marks the boundary patches: \texttt  {main\_inlet} on the upstream face, \texttt  {outlet} on the downstream face, \texttt  {branch\_inlet} on the open end of the branch, \texttt  {wall} on the curved pipe surfaces, and \texttt  {sym} on the \(x=0\) mirror plane.}}{5}{figure.caption.6}\protected@file@percent }
+\newlabel{fig:geometry}{{1}{5}{Half-domain T-junction geometry produced by the \texttt {generateSTL.py} script (\(90^\circ \) baseline, case~03, \(\dD =0.252\)). The colour coding marks the boundary patches: \texttt {main\_inlet} on the upstream face, \texttt {outlet} on the downstream face, \texttt {branch\_inlet} on the open end of the branch, \texttt {wall} on the curved pipe surfaces, and \texttt {sym} on the \(x=0\) mirror plane}{figure.caption.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Governing equations}{5}{subsection.3.2}\protected@file@percent }
+\newlabel{sec:method_govern}{{3.2}{5}{Governing equations}{subsection.3.2}{}}
+\citation{menter1994sst}
+\citation{su2022prediction}
+\newlabel{eq:cont}{{3}{6}{Governing equations}{equation.3}{}}
+\newlabel{eq:mom}{{4}{6}{Governing equations}{equation.4}{}}
+\newlabel{eq:enth}{{5}{6}{Governing equations}{equation.5}{}}
+\newlabel{eq:species}{{6}{6}{Governing equations}{equation.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Turbulence closure: $k$-$\omega $~SST}{6}{subsection.3.3}\protected@file@percent }
+\newlabel{sec:method_turb}{{3.3}{6}{\texorpdfstring {Turbulence closure: $k$-$\omega $~SST}{Turbulence closure: k-omega SST}}{subsection.3.3}{}}
+\newlabel{eq:mut_sst}{{7}{6}{\texorpdfstring {Turbulence closure: $k$-$\omega $~SST}{Turbulence closure: k-omega SST}}{equation.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Solver and discretisation}{6}{subsection.3.4}\protected@file@percent }
+\newlabel{sec:method_solver}{{3.4}{6}{Solver and discretisation}{subsection.3.4}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Numerical settings used in the OpenFOAM \texttt  {rhoReactingBuoyantFoam} runs.}}{6}{table.caption.7}\protected@file@percent }
+\newlabel{tab:numerics}{{2}{6}{Numerical settings used in the OpenFOAM \texttt {rhoReactingBuoyantFoam} runs}{table.caption.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Mesh}{6}{subsection.3.5}\protected@file@percent }
+\newlabel{sec:method_mesh}{{3.5}{6}{Mesh}{subsection.3.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Cross-section of the computational mesh on the \(x=0\) symmetry plane for the \(90^\circ \) baseline case~03 (\(\ensuremath  {d/D}= 0.252\)). The base cell size is \(\sim \SI {13}{\milli \meter }\); refinement is concentrated at the junction and across a cylindrical region extending \(\sim 8\,D\) downstream (\texttt  {jetRefine}). Boundary layers on the pipe walls are visible as the row of thin cells just inside the surface.}}{7}{figure.caption.8}\protected@file@percent }
+\newlabel{fig:mesh}{{2}{7}{Cross-section of the computational mesh on the \(x=0\) symmetry plane for the \(90^\circ \) baseline case~03 (\(\dD = 0.252\)). The base cell size is \(\sim \SI {13}{\milli \meter }\); refinement is concentrated at the junction and across a cylindrical region extending \(\sim 8\,D\) downstream (\texttt {jetRefine}). Boundary layers on the pipe walls are visible as the row of thin cells just inside the surface}{figure.caption.8}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Mesh statistics for the \(90^\circ \) baseline (case~03, half domain) reported by \texttt  {checkMesh}.}}{7}{table.caption.9}\protected@file@percent }
+\newlabel{tab:mesh_stats}{{3}{7}{Mesh statistics for the \(90^\circ \) baseline (case~03, half domain) reported by \texttt {checkMesh}}{table.caption.9}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.5.1}Mesh-convergence (grid-independence) study}{7}{subsubsection.3.5.1}\protected@file@percent }
+\newlabel{sec:method_meshconv}{{3.5.1}{7}{Mesh-convergence (grid-independence) study}{subsubsection.3.5.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Three-level mesh-convergence (grid-independence) study at \(\ensuremath  {d/D}=0.196\), \(\ensuremath  {\mathrm  {VR}}=1.64\), \(\ensuremath  {\mathrm  {HBR}}=10\,\%\). Successive-refinement changes in \ensuremath  {\mathrm  {CoV}}{} and \(|\Delta p_{\mathrm  {rgh}}|\) are reported relative to the previous (coarser) level.}}{7}{table.caption.10}\protected@file@percent }
+\newlabel{tab:meshconv}{{4}{7}{Three-level mesh-convergence (grid-independence) study at \(\dD =0.196\), \(\VR =1.64\), \(\HBR =10\,\%\). Successive-refinement changes in \CoV {} and \(|\Delta p_{\mathrm {rgh}}|\) are reported relative to the previous (coarser) level}{table.caption.10}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6}Boundary conditions}{7}{subsection.3.6}\protected@file@percent }
+\newlabel{sec:method_bc}{{3.6}{7}{Boundary conditions}{subsection.3.6}{}}
+\@writefile{toc}{\contentsline {paragraph}{\texttt  {main\_inlet}.}{7}{paragraph*.11}\protected@file@percent }
+\newlabel{eq:powerlaw}{{8}{7}{\texttt {main\_inlet}}{equation.8}{}}
+\citation{ye2000sliced}
+\@writefile{toc}{\contentsline {paragraph}{\texttt  {branch\_inlet}.}{8}{paragraph*.12}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\texttt  {outlet}.}{8}{paragraph*.13}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\texttt  {wall}.}{8}{paragraph*.14}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\texttt  {sym}.}{8}{paragraph*.15}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}Design of Experiments (sliced LHS)}{8}{subsection.3.7}\protected@file@percent }
+\newlabel{sec:method_doe}{{3.7}{8}{Design of Experiments (sliced LHS)}{subsection.3.7}{}}
+\newlabel{eq:hbr}{{9}{8}{Design of Experiments (sliced LHS)}{equation.9}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Ten-case sliced LHS design used at both angles. The independent factors \((\ensuremath  {d/D},\ensuremath  {\mathrm  {VR}})\) and the derived \ensuremath  {\mathrm  {HBR}}{} (Eq.~\ref {eq:hbr}) are identical between the two campaigns; only \(\alpha \) differs.}}{8}{table.caption.16}\protected@file@percent }
+\newlabel{tab:doe_design}{{5}{8}{Ten-case sliced LHS design used at both angles. The independent factors \((\dD ,\VR )\) and the derived \HBR {} (Eq.~\ref {eq:hbr}) are identical between the two campaigns; only \(\alpha \) differs}{table.caption.16}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.8}Mixing metrics and post-processing}{8}{subsection.3.8}\protected@file@percent }
+\newlabel{sec:method_metrics}{{3.8}{8}{Mixing metrics and post-processing}{subsection.3.8}{}}
+\newlabel{eq:cov}{{10}{9}{Mixing metrics and post-processing}{equation.10}{}}
+\newlabel{eq:dp}{{11}{9}{Mixing metrics and post-processing}{equation.11}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.9}Acoustic noise on the pressure-drop signal}{9}{subsection.3.9}\protected@file@percent }
+\newlabel{sec:dp_filter}{{3.9}{9}{Acoustic noise on the pressure-drop signal}{subsection.3.9}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Validation}{9}{section.4}\protected@file@percent }
+\newlabel{sec:val}{{4}{9}{Validation}{section.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Buoyancy sanity case}{9}{subsection.4.1}\protected@file@percent }
+\newlabel{sec:val_buoy}{{4.1}{9}{Buoyancy sanity case}{subsection.4.1}{}}
+\citation{su2022prediction}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Mass conservation and residuals}{10}{subsection.4.2}\protected@file@percent }
+\newlabel{sec:val_mass}{{4.2}{10}{Mass conservation and residuals}{subsection.4.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Trend cross-check against Su et al.\ (2022)}{10}{subsection.4.3}\protected@file@percent }
+\newlabel{sec:val_su}{{4.3}{10}{Trend cross-check against Su et al.\ (2022)}{subsection.4.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Results: $90^\circ $ baseline campaign}{10}{section.5}\protected@file@percent }
+\newlabel{sec:results_90}{{5}{10}{\texorpdfstring {Results: $90^\circ $ baseline campaign}{Results: 90 deg baseline campaign}}{section.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}DoE summary}{10}{subsection.5.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Summary of the \(90^\circ \) campaign. \ensuremath  {\mathrm  {CoV}}{} is the area-weighted outlet \ensuremath  {\mathrm  {H_2}}{}-mass-fraction CoV and \(|\Delta p_{\mathrm  {rgh}}|\) is the LP-filtered (cf.\ Section~\ref {sec:dp_filter}) gauge inlet-outlet pressure drop on the post-transient window \([0.4,\,1.2]\,\si {\second }\). Pressure-drop values carry an estimated \(\pm \SI {0.5}{\kilo \pascal }\) uncertainty.}}{10}{table.caption.17}\protected@file@percent }
+\newlabel{tab:90deg_summary}{{6}{10}{Summary of the \(90^\circ \) campaign. \CoV {} is the area-weighted outlet \Hi {}-mass-fraction CoV and \(|\Delta p_{\mathrm {rgh}}|\) is the LP-filtered (cf.\^^MSection~\ref {sec:dp_filter}) gauge inlet-outlet pressure drop on the post-transient window \([0.4,\,1.2]\,\si {\second }\). Pressure-drop values carry an estimated \(\pm \SI {0.5}{\kilo \pascal }\) uncertainty}{table.caption.17}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Effect of velocity ratio on mixing}{10}{subsection.5.2}\protected@file@percent }
+\newlabel{sec:results_90_vr}{{5.2}{10}{Effect of velocity ratio on mixing}{subsection.5.2}{}}
+\citation{su2022prediction}
+\citation{idelchik1986handbook}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Best-mixing case of the \(90^\circ \) campaign (case~04, \(\ensuremath  {d/D}=0.252,\,\ensuremath  {\mathrm  {VR}}=3.81,\,\ensuremath  {\mathrm  {HBR}}=0.195\)). Time-averaged \(Y_{\ensuremath  {\mathrm  {H_2}}}\) on the \(x=0\) symmetry plane at \(t=\SI {1.2}{\second }\). The jet penetrates past the centreline, bends downstream and produces a comparatively uniform exit profile; no top-of-pipe stratification is visible.}}{11}{figure.caption.18}\protected@file@percent }
+\newlabel{fig:case04_xz}{{3}{11}{Best-mixing case of the \(90^\circ \) campaign (case~04, \(\dD =0.252,\,\VR =3.81,\,\HBR =0.195\)). Time-averaged \(Y_{\Hi }\) on the \(x=0\) symmetry plane at \(t=\SI {1.2}{\second }\). The jet penetrates past the centreline, bends downstream and produces a comparatively uniform exit profile; no top-of-pipe stratification is visible}{figure.caption.18}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Worst-mixing case of the \(90^\circ \) campaign (case~08, \(\ensuremath  {d/D}=0.38,\,\ensuremath  {\mathrm  {VR}}=0.69,\,\ensuremath  {\mathrm  {HBR}}=0.092\)). The hydrogen jet attaches to the top wall and stratifies into a top-of-pipe layer with very little entrainment into the methane bulk.}}{11}{figure.caption.19}\protected@file@percent }
+\newlabel{fig:case08_xz}{{4}{11}{Worst-mixing case of the \(90^\circ \) campaign (case~08, \(\dD =0.38,\,\VR =0.69,\,\HBR =0.092\)). The hydrogen jet attaches to the top wall and stratifies into a top-of-pipe layer with very little entrainment into the methane bulk}{figure.caption.19}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Effect of diameter ratio on mixing}{11}{subsection.5.3}\protected@file@percent }
+\newlabel{sec:results_90_dD}{{5.3}{11}{Effect of diameter ratio on mixing}{subsection.5.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Pressure-drop scaling}{11}{subsection.5.4}\protected@file@percent }
+\newlabel{sec:results_90_dp}{{5.4}{11}{Pressure-drop scaling}{subsection.5.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Results: $30^\circ $ campaign}{12}{section.6}\protected@file@percent }
+\newlabel{sec:results_30}{{6}{12}{\texorpdfstring {Results: $30^\circ $ campaign}{Results: 30 deg campaign}}{section.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Why a tilted branch}{12}{subsection.6.1}\protected@file@percent }
+\newlabel{sec:30_why}{{6.1}{12}{Why a tilted branch}{subsection.6.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Angle-agnostic codebase}{12}{subsection.6.2}\protected@file@percent }
+\newlabel{sec:30_code}{{6.2}{12}{Angle-agnostic codebase}{subsection.6.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}Mesh defect and fix}{12}{subsection.6.3}\protected@file@percent }
+\newlabel{sec:30deg_meshfix}{{6.3}{12}{Mesh defect and fix}{subsection.6.3}{}}
+\newlabel{eq:bad_heuristic}{{12}{12}{Mesh defect and fix}{equation.12}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.4}Post-processing pipeline for tilted branches}{12}{subsection.6.4}\protected@file@percent }
+\newlabel{sec:30_postproc}{{6.4}{12}{Post-processing pipeline for tilted branches}{subsection.6.4}{}}
+\newlabel{eq:branch_mask}{{14}{12}{Post-processing pipeline for tilted branches}{equation.14}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.5}DoE summary}{12}{subsection.6.5}\protected@file@percent }
+\newlabel{sec:30_doe}{{6.5}{12}{DoE summary}{subsection.6.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Summary of the \(30^\circ \) campaign. \ensuremath  {\mathrm  {CoV}}{} is computed on the time-averaged \(Y_{\ensuremath  {\mathrm  {H_2}}}\) field on \([0.8,\,1.2]\,\si {\second }\), and \(|\Delta p_{\mathrm  {rgh}}|\) is the LP-filtered (cf.\ Section~\ref {sec:dp_filter}) gauge inlet-outlet pressure drop on \([0.4,\,1.2]\,\si {\second }\), with an estimated \(\pm \SI {0.5}{\kilo \pascal }\) uncertainty. case~04 stopped at \(t=\SI {0.215}{\second }\) (incomplete, queued for rerun) and is omitted.}}{13}{table.caption.20}\protected@file@percent }
+\newlabel{tab:30deg_summary}{{7}{13}{Summary of the \(30^\circ \) campaign. \CoV {} is computed on the time-averaged \(Y_{\Hi }\) field on \([0.8,\,1.2]\,\si {\second }\), and \(|\Delta p_{\mathrm {rgh}}|\) is the LP-filtered (cf.\^^MSection~\ref {sec:dp_filter}) gauge inlet-outlet pressure drop on \([0.4,\,1.2]\,\si {\second }\), with an estimated \(\pm \SI {0.5}{\kilo \pascal }\) uncertainty. case~04 stopped at \(t=\SI {0.215}{\second }\) (incomplete, queued for rerun) and is omitted}{table.caption.20}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.6}Best-, intermediate- and worst-case fields}{13}{subsection.6.6}\protected@file@percent }
+\newlabel{sec:30_fields}{{6.6}{13}{Best-, intermediate- and worst-case fields}{subsection.6.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Best-mixing case of the \(30^\circ \) campaign (case~01, \(\ensuremath  {d/D}=0.196,\,\ensuremath  {\mathrm  {VR}}=5.84,\,\ensuremath  {\mathrm  {HBR}}=0.184\)). The plume fills the cross-section by \(z\approx 3\,\si {\meter }\) and the outlet \ensuremath  {\mathrm  {CoV}}{} is \(0.005\), an order of magnitude below the industrial mixing target.}}{13}{figure.caption.21}\protected@file@percent }
+\newlabel{fig:case01_30_xz}{{5}{13}{Best-mixing case of the \(30^\circ \) campaign (case~01, \(\dD =0.196,\,\VR =5.84,\,\HBR =0.184\)). The plume fills the cross-section by \(z\approx 3\,\si {\meter }\) and the outlet \CoV {} is \(0.005\), an order of magnitude below the industrial mixing target}{figure.caption.21}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Intermediate-mixing case of the \(30^\circ \) campaign (case~06, \(\ensuremath  {d/D}=0.296,\,\ensuremath  {\mathrm  {VR}}=2.61,\,\ensuremath  {\mathrm  {HBR}}=0.187\)). The plume crosses the centreline at the junction and develops a wavy lower edge characteristic of a streamwise vortex pair; outlet \ensuremath  {\mathrm  {CoV}}{} is \(0.088\).}}{14}{figure.caption.22}\protected@file@percent }
+\newlabel{fig:case06_30_xz}{{6}{14}{Intermediate-mixing case of the \(30^\circ \) campaign (case~06, \(\dD =0.296,\,\VR =2.61,\,\HBR =0.187\)). The plume crosses the centreline at the junction and develops a wavy lower edge characteristic of a streamwise vortex pair; outlet \CoV {} is \(0.088\)}{figure.caption.22}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Worst-mixing case of the \(30^\circ \) campaign that completed (case~10, \(\ensuremath  {d/D}=0.396,\,\ensuremath  {\mathrm  {VR}}=0.81,\,\ensuremath  {\mathrm  {HBR}}=0.112\)). The jet attaches to the top wall and the resulting hydrogen-rich layer persists to the outlet; \ensuremath  {\mathrm  {CoV}}{} is \(0.345\).}}{14}{figure.caption.23}\protected@file@percent }
+\newlabel{fig:case10_30_xz}{{7}{14}{Worst-mixing case of the \(30^\circ \) campaign that completed (case~10, \(\dD =0.396,\,\VR =0.81,\,\HBR =0.112\)). The jet attaches to the top wall and the resulting hydrogen-rich layer persists to the outlet; \CoV {} is \(0.345\)}{figure.caption.23}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Cross-campaign synthesis: angle effect}{14}{section.7}\protected@file@percent }
+\newlabel{sec:cross}{{7}{14}{Cross-campaign synthesis: angle effect}{section.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}The matched-pair finding}{14}{subsection.7.1}\protected@file@percent }
+\newlabel{sec:cross_pairs}{{7.1}{14}{The matched-pair finding}{subsection.7.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Matched-pair angle effect. Each pair shares the independent \((\ensuremath  {d/D},\ensuremath  {\mathrm  {VR}})\) (and therefore the derived \ensuremath  {\mathrm  {HBR}}); only \(\alpha \) differs. \(\Delta \ensuremath  {\mathrm  {CoV}}= 100(\ensuremath  {\mathrm  {CoV}}_{30}-\ensuremath  {\mathrm  {CoV}}_{90})/\ensuremath  {\mathrm  {CoV}}_{90}\), \(\Delta \!|\Delta p| = 100(|\Delta p|_{30}-|\Delta p|_{90})/|\Delta p|_{90}\). Pressure-drop values are LP-filtered per Section~\ref {sec:dp_filter} and carry an estimated \(\pm \SI {0.5}{\kilo \pascal }\) per-case uncertainty; the percentage columns therefore have a \(\pm 30\,\%\) sliding band at the smallest absolute pressure drops, although the rank ordering is robust at every \ensuremath  {d/D}{}.}}{15}{table.caption.24}\protected@file@percent }
+\newlabel{tab:matched}{{8}{15}{Matched-pair angle effect. Each pair shares the independent \((\dD ,\VR )\) (and therefore the derived \HBR ); only \(\alpha \) differs. \(\Delta \CoV = 100(\CoV _{30}-\CoV _{90})/\CoV _{90}\), \(\Delta \!|\Delta p| = 100(|\Delta p|_{30}-|\Delta p|_{90})/|\Delta p|_{90}\). Pressure-drop values are LP-filtered per Section~\ref {sec:dp_filter} and carry an estimated \(\pm \SI {0.5}{\kilo \pascal }\) per-case uncertainty; the percentage columns therefore have a \(\pm 30\,\%\) sliding band at the smallest absolute pressure drops, although the rank ordering is robust at every \dD {}}{table.caption.24}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Matched-pair angle effect. Each pair shares the independent \((\ensuremath  {d/D},\ensuremath  {\mathrm  {VR}})\) (and therefore the derived \ensuremath  {\mathrm  {HBR}}); only \(\alpha \) differs. Green arrows indicate that the \(30^\circ \) case is better than the \(90^\circ \) case on that metric. The tilt reduces \ensuremath  {\mathrm  {CoV}}{} and \(|\Delta p_{\mathrm  {rgh}}|\) in every pair.}}{15}{figure.caption.25}\protected@file@percent }
+\newlabel{fig:paired_comparison}{{8}{15}{Matched-pair angle effect. Each pair shares the independent \((\dD ,\VR )\) (and therefore the derived \HBR ); only \(\alpha \) differs. Green arrows indicate that the \(30^\circ \) case is better than the \(90^\circ \) case on that metric. The tilt reduces \CoV {} and \(|\Delta p_{\mathrm {rgh}}|\) in every pair}{figure.caption.25}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Power-law scaling}{15}{subsection.7.2}\protected@file@percent }
+\newlabel{sec:cross_scaling}{{7.2}{15}{Power-law scaling}{subsection.7.2}{}}
+\newlabel{eq:fit_90}{{15}{15}{Power-law scaling}{equation.15}{}}
+\newlabel{eq:fit_30}{{16}{15}{Power-law scaling}{equation.16}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Power-law fit of \ensuremath  {\mathrm  {CoV}}{} vs.\ \ensuremath  {\mathrm  {VR}}{} for the two campaigns. The \(30^\circ \) slope is steeper than the \(90^\circ \) slope, so each unit of \(\ensuremath  {\mathrm  {VR}}\) buys more mixing on the tilted geometry. The dashed green line marks the industrial \(\ensuremath  {\mathrm  {CoV}}\le 0.05\) acceptance threshold.}}{16}{figure.caption.26}\protected@file@percent }
+\newlabel{fig:powerlaw}{{9}{16}{Power-law fit of \CoV {} vs.\ \VR {} for the two campaigns. The \(30^\circ \) slope is steeper than the \(90^\circ \) slope, so each unit of \(\VR \) buys more mixing on the tilted geometry. The dashed green line marks the industrial \(\CoV \le 0.05\) acceptance threshold}{figure.caption.26}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3}Pareto front and design heatmap}{16}{subsection.7.3}\protected@file@percent }
+\newlabel{sec:cross_pareto}{{7.3}{16}{Pareto front and design heatmap}{subsection.7.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Pareto front of \ensuremath  {\mathrm  {CoV}}{} vs.\ \(|\Delta p_{\mathrm  {rgh}}|\) for the two campaigns. Each point is a completed case; lower-left is better. Every \(90^\circ \) point is dominated by a matching or better \(30^\circ \) point.}}{17}{figure.caption.27}\protected@file@percent }
+\newlabel{fig:pareto}{{10}{17}{Pareto front of \CoV {} vs.\ \(|\Delta p_{\mathrm {rgh}}|\) for the two campaigns. Each point is a completed case; lower-left is better. Every \(90^\circ \) point is dominated by a matching or better \(30^\circ \) point}{figure.caption.27}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces Design-space heatmap of \ensuremath  {\mathrm  {CoV}}{} in the \((\ensuremath  {d/D},\ensuremath  {\mathrm  {VR}})\) plane, \(90^\circ \) on the left and \(30^\circ \) on the right. Each tile is annotated with the case number and \ensuremath  {\mathrm  {CoV}}{} value. The colour scale is logarithmic. The \(30^\circ \) panel contains the only design that reaches \(\ensuremath  {\mathrm  {CoV}}<0.01\) (case~01, top-left).}}{17}{figure.caption.28}\protected@file@percent }
+\newlabel{fig:heatmap_cov}{{11}{17}{Design-space heatmap of \CoV {} in the \((\dD ,\VR )\) plane, \(90^\circ \) on the left and \(30^\circ \) on the right. Each tile is annotated with the case number and \CoV {} value. The colour scale is logarithmic. The \(30^\circ \) panel contains the only design that reaches \(\CoV <0.01\) (case~01, top-left)}{figure.caption.28}{}}
+\citation{idelchik1986handbook}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.4}Loss coefficient}{18}{subsection.7.4}\protected@file@percent }
+\newlabel{sec:cross_loss}{{7.4}{18}{Loss coefficient}{subsection.7.4}{}}
+\newlabel{eq:K_loss}{{17}{18}{Loss coefficient}{equation.17}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces Junction loss coefficient \(K = |\Delta p_{\mathrm  {rgh}}|/q_{\mathrm  {dyn,main}}\) plotted against \ensuremath  {\mathrm  {HBR}}. The \(30^\circ \) tilt sits below the \(90^\circ \) point in every matched pair, with a median reduction of \(\sim 63\,\%\).}}{18}{figure.caption.29}\protected@file@percent }
+\newlabel{fig:Kloss}{{12}{18}{Junction loss coefficient \(K = |\Delta p_{\mathrm {rgh}}|/q_{\mathrm {dyn,main}}\) plotted against \HBR . The \(30^\circ \) tilt sits below the \(90^\circ \) point in every matched pair, with a median reduction of \(\sim 63\,\%\)}{figure.caption.29}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.5}Physical mechanism: why does the tilt help?}{18}{subsection.7.5}\protected@file@percent }
+\newlabel{sec:cross_mech}{{7.5}{18}{Physical mechanism: why does the tilt help?}{subsection.7.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {13}{\ignorespaces Side-by-side \(Y_{\ensuremath  {\mathrm  {H_2}}}\) field on the \(x=0\) plane for matched \(\ensuremath  {d/D}\) bins. Left column: \(\alpha =90^\circ \). Right column: \(\alpha =30^\circ \). Per-row title gives the case number and the corresponding \ensuremath  {\mathrm  {CoV}}. The tilted plume diffuses across the cross-section significantly earlier than the perpendicular plume at every matched bin.}}{19}{figure.caption.30}\protected@file@percent }
+\newlabel{fig:xz_montage}{{13}{19}{Side-by-side \(Y_{\Hi }\) field on the \(x=0\) plane for matched \(\dD \) bins. Left column: \(\alpha =90^\circ \). Right column: \(\alpha =30^\circ \). Per-row title gives the case number and the corresponding \CoV . The tilted plume diffuses across the cross-section significantly earlier than the perpendicular plume at every matched bin}{figure.caption.30}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.6}Caveats}{19}{subsection.7.6}\protected@file@percent }
+\newlabel{sec:cross_caveats}{{7.6}{19}{Caveats}{subsection.7.6}{}}
+\citation{idelchik1986handbook}
+\citation{du2024numerical}
+\@writefile{toc}{\contentsline {section}{\numberline {8}Conclusions and outlook}{20}{section.8}\protected@file@percent }
+\newlabel{sec:concl}{{8}{20}{Conclusions and outlook}{section.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.1}What is established}{20}{subsection.8.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.2}Practical recommendation}{20}{subsection.8.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.3}Outlook}{20}{subsection.8.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Remaining inside the Minor-Project window.}{20}{paragraph*.31}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Longer-term extensions beyond the Minor-Project window.}{20}{paragraph*.32}\protected@file@percent }
+\bibstyle{unsrtnat}
+\bibdata{bibliography}
+\bibcite{su2022prediction}{{1}{2022}{{Su et~al.}}{{Su, Li, Guo, Zhao, Li, Zhao, and Wang}}}
+\bibcite{arya2023multi}{{2}{2023}{{Arya et~al.}}{{Arya, Katiyar, Senthil~Kumar, Kapoor, Pal, and Rangasamy}}}
+\bibcite{montanes2024comprehensive}{{3}{2024}{{Monta\~n\'es et~al.}}{{Monta\~n\'es, Pardo, Milla-Val, and G\'omez}}}
+\bibcite{topolski2022blending}{{4}{2022}{{Topolski et~al.}}{{Topolski, Reznicek, Cakir~Erdener, San~Marchi, Ronevich, Fring, Simmons, Guerra~Fernandez, Hodge, and Chung}}}
+\bibcite{du2024numerical}{{5}{2024}{{Du et~al.}}{{Du, Lv, Zhao, Qiao, and Chen}}}
+\bibcite{menter1994sst}{{6}{1994}{{Menter}}{{}}}
+\bibcite{ye2000sliced}{{7}{2000}{{Ye et~al.}}{{Ye, Li, and Sudjianto}}}
+\bibcite{idelchik1986handbook}{{8}{1986}{{Idelchik}}{{}}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.4}Data and code availability}{21}{subsection.8.4}\protected@file@percent }
+\newlabel{sec:data_avail}{{8.4}{21}{Data and code availability}{subsection.8.4}{}}
+\gdef \@abspage@last{22}

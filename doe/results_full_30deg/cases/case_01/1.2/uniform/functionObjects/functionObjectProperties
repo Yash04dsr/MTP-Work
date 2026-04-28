@@ -1,0 +1,181 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2406                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    arch        "LSB;label=32;scalar=64";
+    class       dictionary;
+    location    "1.2/uniform/functionObjects";
+    object      functionObjectProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+cdf7e925f5746741c316f5fbcf39ad0dfca90775
+{
+    residuals
+    {
+        scalar
+        {
+            H2_initial      1.660077423e-06;
+            H2_final        3.505226187e-09;
+            Ux_initial      1.196926925e-05;
+            Ux_final        1.094960527e-10;
+            Uy_initial      9.795603140000001e-06;
+            Uy_final        2.479158326e-10;
+            Uz_initial      5.522013464e-05;
+            Uz_final        6.60593797e-11;
+            k_initial       3.142326312e-06;
+            k_final         2.624587807e-08;
+            omega_initial   1.645311601e-06;
+            omega_final     3.326584919e-09;
+            p_rgh_initial   9.283359618999999e-05;
+            p_rgh_final     1.697484285e-07;
+        }
+        label
+        {
+            H2_iters        1;
+            Ux_iters        2;
+            Uy_iters        2;
+            Uz_iters        2;
+            k_iters         1;
+            omega_iters     1;
+            p_rgh_iters     2;
+        }
+    }
+    mainInletFlux
+    {
+        scalar
+        {
+            sum(main_inlet,phi) -33.74442343213488;
+        }
+    }
+    branchInletFlux
+    {
+        scalar
+        {
+            sum(branch_inlet,phi) -1.686396148249117;
+        }
+    }
+    outletFlux
+    {
+        scalar
+        {
+            sum(outlet,phi) 42.04435197582128;
+        }
+    }
+    H2_outletAvg
+    {
+        scalar
+        {
+            areaAverage(outlet,H2) 0.04746148483608981;
+        }
+    }
+    p_rgh_inlet
+    {
+        scalar
+        {
+            areaAverage(main_inlet,p_rgh) 6919751.650509175;
+        }
+    }
+    p_rgh_outlet
+    {
+        scalar
+        {
+            areaAverage(outlet,p_rgh) 6899999.97134289;
+        }
+    }
+    plane_z3_H2
+    {
+        scalar
+        {
+            areaAverage(planeZ3,H2) 0.04542104744467379;
+        }
+    }
+    plane_z4_H2
+    {
+        scalar
+        {
+            areaAverage(planeZ4,H2) 0.04733474303415416;
+        }
+    }
+    plane_z5_H2
+    {
+        scalar
+        {
+            areaAverage(planeZ5,H2) 0.04740714716997274;
+        }
+    }
+    plane_z6_H2
+    {
+        scalar
+        {
+            areaAverage(planeZ6,H2) 0.04726035960710601;
+        }
+    }
+    plane_z3_p
+    {
+        scalar
+        {
+            areaAverage(planeZ3p,p_rgh) 6911472.871956146;
+        }
+    }
+    plane_z4_p
+    {
+        scalar
+        {
+            areaAverage(planeZ4p,p_rgh) 6916082.921372144;
+        }
+    }
+    plane_z5_p
+    {
+        scalar
+        {
+            areaAverage(planeZ5p,p_rgh) 6915346.777198982;
+        }
+    }
+    plane_z6_p
+    {
+        scalar
+        {
+            areaAverage(planeZ6p,p_rgh) 6910176.822539041;
+        }
+    }
+}
+
+fieldAverage
+{
+    U
+    {
+        totalIter       83216;
+        totalTime       0.600007279021985;
+    }
+    H2
+    {
+        totalIter       83216;
+        totalTime       0.600007279021985;
+    }
+    CH4
+    {
+        totalIter       83216;
+        totalTime       0.600007279021985;
+    }
+    p_rgh
+    {
+        totalIter       83216;
+        totalTime       0.600007279021985;
+    }
+    k
+    {
+        totalIter       83216;
+        totalTime       0.600007279021985;
+    }
+}
+
+
+// ************************************************************************* //

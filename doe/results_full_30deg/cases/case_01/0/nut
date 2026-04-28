@@ -1,0 +1,22 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      nut;
+}
+dimensions  [0 2 -1 0 0 0 0];
+internalField   uniform 1e-5;
+
+boundaryField
+{
+    main_inlet   { type calculated; value uniform 1e-5; }
+    branch_inlet { type calculated; value uniform 1e-5; }
+    outlet       { type calculated; value uniform 1e-5; }
+
+    // nutkWallFunction is more robust than nutUSpaldingWallFunction
+    // during startup when omega can transiently bound (see validated
+    // medium case notes).
+    wall         { type nutkWallFunction; value uniform 0; }
+    sym          { type symmetryPlane; }
+}

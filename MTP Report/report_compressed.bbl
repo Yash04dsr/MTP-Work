@@ -1,0 +1,77 @@
+\begin{thebibliography}{8}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Su et~al.(2022)Su, Li, Guo, Zhao, Li, Zhao, and
+  Wang]{su2022prediction}
+Yue Su, Jingfa Li, Wangyi Guo, Yanlin Zhao, Jianli Li, Jie Zhao, and Yusheng
+  Wang.
+\newblock Prediction of mixing uniformity of hydrogen injection in natural gas
+  pipeline based on a deep learning model.
+\newblock \emph{Energies}, 15\penalty0 (22):\penalty0 8694, 2022.
+\newblock \doi{10.3390/en15228694}.
+
+\bibitem[Arya et~al.(2023)Arya, Katiyar, Senthil~Kumar, Kapoor, Pal, and
+  Rangasamy]{arya2023multi}
+Adarsh~Kumar Arya, Rajesh Katiyar, P.~Senthil~Kumar, Ashish Kapoor, Dan~Bahadur
+  Pal, and Gayathri Rangasamy.
+\newblock A multi-objective model for optimizing hydrogen injected
+  high-pressure natural gas pipeline networks.
+\newblock \emph{International Journal of Hydrogen Energy}, 48\penalty0
+  (76):\penalty0 29699--29723, 2023.
+\newblock \doi{10.1016/j.ijhydene.2023.04.133}.
+
+\bibitem[Monta\~n\'es et~al.(2024)Monta\~n\'es, Pardo, Milla-Val, and
+  G\'omez]{montanes2024comprehensive}
+Carlos Monta\~n\'es, Leyre Pardo, Jaime Milla-Val, and Antonio G\'omez.
+\newblock Comprehensive assessment of hydrogen injection in natural gas
+  networks: Using dimensional analysis and reduced-order models for mixture
+  quality prediction.
+\newblock \emph{International Journal of Hydrogen Energy}, 101:\penalty0
+  442--449, 2024.
+\newblock \doi{10.1016/j.ijhydene.2024.07.183}.
+
+\bibitem[Topolski et~al.(2022)Topolski, Reznicek, Cakir~Erdener, San~Marchi,
+  Ronevich, Fring, Simmons, Guerra~Fernandez, Hodge, and
+  Chung]{topolski2022blending}
+Kevin Topolski, Evan~P. Reznicek, Burcin Cakir~Erdener, Chris~W. San~Marchi,
+  Joseph~A. Ronevich, Lisa Fring, Kevin Simmons, Omar~Jose Guerra~Fernandez,
+  Bri-Mathias Hodge, and Mark Chung.
+\newblock Hydrogen blending into natural gas pipeline infrastructure: Review of
+  the state of technology.
+\newblock Technical Report NREL/TP-5400-81704, National Renewable Energy
+  Laboratory, Golden, CO, 2022.
+\newblock URL \url{https://www.nrel.gov/docs/fy23osti/81704.pdf}.
+
+\bibitem[Du et~al.(2024)Du, Lv, Zhao, Qiao, and Chen]{du2024numerical}
+J.~Du, X.~F. Lv, H.~J. Zhao, S.~W. Qiao, and Z.~H. Chen.
+\newblock Numerical study of the mixing process during hydrogen blending in
+  natural gas pipelines.
+\newblock \emph{Journal of Applied Fluid Mechanics}, 17\penalty0 (8):\penalty0
+  1618--1630, 2024.
+\newblock \doi{10.47176/jafm.17.8.2445}.
+
+\bibitem[Menter(1994)]{menter1994sst}
+F.~R. Menter.
+\newblock Two-equation eddy-viscosity turbulence models for engineering
+  applications.
+\newblock \emph{AIAA Journal}, 32\penalty0 (8):\penalty0 1598--1605, 1994.
+\newblock \doi{10.2514/3.12149}.
+
+\bibitem[Ye et~al.(2000)Ye, Li, and Sudjianto]{ye2000sliced}
+Kenny~Q. Ye, William Li, and Agus Sudjianto.
+\newblock Algorithmic construction of optimal symmetric latin hypercube
+  designs.
+\newblock \emph{Journal of Statistical Planning and Inference}, 90\penalty0
+  (1):\penalty0 145--159, 2000.
+\newblock \doi{10.1016/S0378-3758(00)00105-1}.
+
+\bibitem[Idelchik(1986)]{idelchik1986handbook}
+I.~E. Idelchik.
+\newblock \emph{Handbook of Hydraulic Resistance}.
+\newblock Hemisphere Publishing Corporation, Washington, DC, 2nd edition, 1986.
+
+\end{thebibliography}
