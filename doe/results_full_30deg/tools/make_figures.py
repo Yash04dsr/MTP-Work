@@ -49,20 +49,44 @@ PATCH_COLORS = {
 }
 
 
-# Cameras are tuned for a pipe that runs along +z (length 9.2 m) with a branch
-# pointing in +y.  For the 2-D centerline slice (x=0 plane) we want z horizontal
-# and y vertical.  Looking from −x with view-up = +y puts the inlet (z=0) on the
-# left and the outlet (z=9.2) on the right, with the branch pointing up.
-def camera_xz_slice():
-    return [(-6.0, 0.35, 4.6), (0.0, 0.35, 4.6), (0.0, 1.0, 0.0)]
+# Cameras are tuned for a pipe that runs along +z (length 6.9 m, half-domain)
+# with a branch pointing in +y.  For the 2-D centerline slice (x=0 plane) we
+# want z horizontal and y vertical.  Looking from -x with view-up = +y puts
+# the inlet (z=0) on the left and the outlet (z=6.9) on the right, with the
+# branch pointing up.
+WINDOW_ASPECT = WIDE[0] / WIDE[1]  # 1600 / 800 = 2.0
+
+
+def setup_xz_camera(p, mesh, *, margin: float = 1.05):
+    """Configure the plotter for an orthographic x=0 centreline view.
+
+    Uses parallel (orthographic) projection -- the standard for technical
+    2-D field plots -- with the parallel scale chosen so the mesh's
+    z-extent fills the viewport horizontally with a small margin.
+    """
+    b = mesh.bounds  # (xmin, xmax, ymin, ymax, zmin, zmax)
+    yc = 0.5 * (b[2] + b[3])
+    zc = 0.5 * (b[4] + b[5])
+    z_range = b[5] - b[4]
+    y_range = b[3] - b[2]
+    # Parallel scale = half the viewport height in world units.
+    # Viewport height needs to cover both:
+    #   horizontal fit:   z_range / WINDOW_ASPECT
+    #   vertical fit:     y_range
+    #   plus a margin
+    scale = max(z_range / WINDOW_ASPECT, y_range) * 0.5 * margin
+    p.camera_position = [(-2.0, yc, zc), (0.0, yc, zc), (0.0, 1.0, 0.0)]
+    p.camera.SetParallelProjection(True)
+    p.camera.SetParallelScale(scale)
 
 
 def camera_iso():
-    return [(-5.5, 3.0, -3.5), (0.0, 0.35, 4.6), (0.0, 1.0, 0.0)]
+    return [(-5.5, 3.0, -3.5), (0.0, 0.35, 3.45), (0.0, 1.0, 0.0)]
 
 
 def camera_outlet():
-    return [(0.0, 0.0, 12.0), (0.0, 0.0, 9.2), (0.0, 1.0, 0.0)]
+    cam_z = L_MAIN_HALF + 1.5
+    return [(0.0, 0.0, cam_z), (0.0, 0.0, L_MAIN_HALF), (0.0, 1.0, 0.0)]
 
 
 SBAR = dict(
@@ -114,6 +138,28 @@ def get_patch(ds, name: str):
         sub = ds[key]
         if isinstance(sub, pv.MultiBlock) and name in sub.keys():
             return sub[name]
+    return None
+
+
+def get_sym_patch(ds):
+    """Return the symmetryPlane boundary patch as a PyVista PolyData.
+
+    The half-domain in this campaign is clipped at x = 0 with a symmetryPlane
+    patch named ``sym``.  That patch IS the 2-D centreline mesh: every cell of
+    the 3-D volume that touches x = 0 contributes one face, with face values
+    interpolated from the touching cell.  Reading it directly side-steps the
+    two failure modes of a volume slice on snappyHexMesh polyhedra:
+      (i) non-conformal "white notch" gaps at the junction interface, and
+      (ii) zero-volume orphan cells inside the wedge between the main pipe
+           and the branch root, which never get a proper face on x = 0.
+
+    Returns None if no symmetry patch is present (in which case callers should
+    fall back to a triangulated volume slice).
+    """
+    for name in ("sym", "symmetry", "symmetryPlane"):
+        patch = get_patch(ds, name)
+        if patch is not None and getattr(patch, "n_cells", 0) > 0:
+            return patch
     return None
 
 
@@ -177,306 +223,377 @@ def fig_geometry(case: Path, out: Path):
 
 
 def fig_mesh_xz(ds, out: Path):
+    """Cell footprint at x = 0 -- the SAME mesh used for the field figures.
+
+    Reads the symmetryPlane patch directly (one face per touching 3-D cell)
+    so the cell outlines line up exactly with the H2 / |U| / p_rgh figures
+    rendered on the same patch.
+    """
     internal = get_internal(ds)
-    slc = internal.slice(normal="x", origin=(0.001, 0.0, 4.6))
+    patch = get_sym_patch(ds)
+    if patch is None:
+        patch = triangulated(ds).slice(normal="x",
+                                       origin=(0.001, 0.0, 0.5 * L_MAIN_HALF))
     p = pv.Plotter(off_screen=True, window_size=WIDE)
     p.set_background("white")
     p.add_mesh(
-        slc,
+        patch,
         color="white",
         show_edges=True,
         edge_color="#333333",
         line_width=0.25,
         lighting=False,
     )
-    p.camera_position = camera_xz_slice()
-    p.camera.zoom(1.25)
-    add_text(p, f"Mesh — x=0 slice  ({internal.n_cells:,} cells total)")
+    setup_xz_camera(p, patch)
+    add_text(
+        p,
+        f"Mesh -- x=0 symmetry plane  "
+        f"({patch.n_cells:,} faces / {internal.n_cells:,} volume cells)",
+    )
     save(p, out)
 
 
-def _slice_x0(ds):
-    internal = get_internal(ds)
-    tri = triangulated(ds)
-    # Triangulated slice has no polyhedral non-manifold gaps at the junction.
-    return internal, tri.slice(normal="x", origin=(0.005, 0.0, 4.6))
-
-
 # Geometry constants (post-R2 half-domain).  The branch radius is per-case
-# but for the gap-free H2 centreline figure we only need a conservative
-# upper bound; we default to 0.10 m which covers every DoE case.
+# but for orphan-cell branch keep-out we only need a conservative upper bound
+# (we default to 0.10 m which covers every DoE case).
 R_MAIN_HALF  = 0.23
 L_MAIN_HALF  = 6.90
 Z_JCT_HALF   = 2.30
 
 
-def _render_centerline_interp(internal, field: str, out: Path, *,
-                              title: str, cmap: str, clim=None,
-                              r_branch: float = 0.10, zjct: float = Z_JCT_HALF,
-                              l_branch: float = 1.15, x_plane: float = 0.05,
-                              alpha_deg: float = 90.0,
-                              outlier_pct: float | None = None,
-                              outlier_max: float | None = None,
-                              outlier_min: float | None = None,
-                              label: str | None = None):
-    """Render a scalar on the x=0 centreline plane via point-interpolation.
+def _get_xz_mesh(ds):
+    """Return a 2-D mesh at x = 0 carrying every cell-centred field.
 
-    k=4 inverse-distance-weighted interpolation from cell centres onto a
-    regular (y,z) image grid, masked by an analytical pipe-geometry mask.
-    Handles a branch that meets the main pipe at an arbitrary angle
-    `alpha_deg` (90 deg for the original geometry, 30 deg for forward-tilt,
-    150 deg for counter-flow).
+    Preference order:
+      1. The symmetryPlane patch (``sym``) -- exact face mesh of the x = 0
+         boundary.  Every cell in this 2-D mesh corresponds to a real face
+         on a real 3-D cell; values are face-interpolated, not extrapolated.
+         No interpolation, no fake fluid, no orphan dead-zones.
+      2. A triangulated volume slice at x = 0 -- VTK plane-cutter on a
+         triangulated copy of the volume mesh.  Equivalent to ParaView's
+         ``Slice`` filter with ``Triangulate the input first`` enabled, which
+         removes the "white notch" gaps that polyhedral cells leave at
+         non-conformal interfaces.
+
+    Both options use the SAME VTK pipeline that ParaView uses, so a PyVista
+    screenshot is pixel-identical to a ParaView screenshot of the same
+    camera/colormap.
     """
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
+    patch = get_sym_patch(ds)
+    if patch is not None:
+        return patch, "sym_patch"
+    tri = triangulated(ds)
+    slc = tri.slice(normal="x", origin=(0.001, 0.0, 0.5 * L_MAIN_HALF))
+    return slc, "tri_slice"
 
-    if field not in internal.cell_data:
-        raise SystemExit(f"field {field!r} not in internal cell data")
 
-    from scipy.spatial import cKDTree
-    global _CTR_CACHE_FIG
-    try:
-        _CTR_CACHE_FIG
-    except NameError:
-        _CTR_CACHE_FIG = {}
-    key = id(internal)
-    if key not in _CTR_CACHE_FIG:
-        _CTR_CACHE_FIG[key] = np.asarray(internal.cell_centers().points)
-    ctrs = _CTR_CACHE_FIG[key]
-    vals = np.asarray(internal.cell_data[field], dtype=float).copy()
+def _filter_field(mesh, field: str, *,
+                  outlier_pct: float | None = None,
+                  outlier_max: float | None = None,
+                  outlier_min: float | None = None,
+                  branch_keep: bool = False,
+                  alpha_deg: float = 90.0,
+                  r_branch: float = 0.10,
+                  zjct: float = Z_JCT_HALF,
+                  l_branch: float = 1.15):
+    """Extract cells of `mesh` that pass orphan-cell filters for `field`.
 
-    # Outlier rejection on the *cell values*.  snappyHexMesh leaves frozen-
-    # field "orphan" / dead-zone cells stuck at their initial-condition value
-    # (e.g. p_rgh = p_atm sitting ~270 kPa above the bulk fluid; H2 stuck at
-    # 1.0 instead of 0 from a left-over initialField).  Without rejection
-    # these contaminate the kNN.  Two filter knobs:
-    #   - outlier_pct : IQR multiplier k -- keeps [Q1-k*IQR, Q3+k*IQR].
-    #     Adapts to the field's natural variability (good for unimodal
-    #     fields like p_rgh).  Skipped when IQR == 0.
-    #   - outlier_max / outlier_min : hard caps -- drop cells with values
-    #     above / below the cap (good for bounded fields like mass fractions
-    #     where the orphan value is known a priori).
+    snappyHexMesh occasionally leaves a few zero-volume / disconnected
+    "orphan" cells stuck at their initial-condition value (H2 = 1.0,
+    p_rgh = p_atm reference, or |U| = 0).  These contaminate the colour
+    range when the rest of the pipe operates two orders of magnitude away.
+    We drop them at the cell level.
+
+    Knobs:
+      outlier_pct  IQR multiplier k -- keep [Q1 - k IQR, Q3 + k IQR].
+                   Adapts to the field's natural variability.
+      outlier_max  Hard cap -- drop cells with values > outlier_max.
+      outlier_min  Hard cap -- drop cells with values < outlier_min.
+      branch_keep  When True, spares cells that lie inside the analytical
+                   branch-pipe volume.  The branch legitimately carries
+                   H2 = 1.0; without this, a hard cap < 0.5 would erase
+                   the entire branch from the figure.
+    """
+    if field not in mesh.cell_data:
+        return mesh
+    vals = np.asarray(mesh.cell_data[field], dtype=float)
+    keep = np.ones(len(vals), dtype=bool)
+
+    in_branch = None
+    if branch_keep:
+        ctrs = np.asarray(mesh.cell_centers().points)
+        a_rad = math.radians(alpha_deg)
+        nb = np.array([0.0, math.sin(a_rad), -math.cos(a_rad)])
+        base = np.array([0.0, R_MAIN_HALF, zjct])
+        d = ctrs - base
+        s = d @ nb
+        perp = d - np.outer(s, nb)
+        rperp = np.linalg.norm(perp, axis=1)
+        in_branch = ((s >= -0.05) & (s <= l_branch + 0.05)
+                     & (rperp < r_branch * 1.05))
+
     if outlier_pct is not None and outlier_pct > 0.0:
-        k_iqr = float(outlier_pct)
         q1, q3 = np.nanpercentile(vals, [25.0, 75.0])
         iqr = q3 - q1
         if iqr > 0:
-            lo = q1 - k_iqr * iqr
-            hi = q3 + k_iqr * iqr
-            ok = (vals >= lo) & (vals <= hi)
-            ctrs = ctrs[ok]
-            vals = vals[ok]
-    # Spatial-aware hard caps: orphan cells stuck at the field's initial value
-    # need to be filtered, but the BRANCH PIPE legitimately holds extreme
-    # values (the branch_inlet sets H2 = 1.0, full hydrogen) so we must spare
-    # any cell that is geometrically inside the analytical branch volume.
-    if outlier_max is not None or outlier_min is not None:
-        a_rad = math.radians(alpha_deg)
-        sa_c, ca_c = math.sin(a_rad), math.cos(a_rad)
-        nb = np.array([0.0, sa_c, -ca_c])
-        base = np.array([0.0, R_MAIN_HALF, zjct])
-        dvec = ctrs - base
-        s_along = dvec @ nb
-        perp = dvec - np.outer(s_along, nb)
-        r_perp = np.linalg.norm(perp, axis=1)
-        in_branch_cell = (s_along >= -0.05) & (s_along <= l_branch + 0.05) \
-                         & (r_perp < r_branch * 1.05)
-        ok = np.ones_like(vals, dtype=bool)
-        if outlier_max is not None:
-            ok &= (vals < outlier_max) | in_branch_cell
-        if outlier_min is not None:
-            ok &= (vals > outlier_min) | in_branch_cell
-        ctrs = ctrs[ok]
-        vals = vals[ok]
-    tree = cKDTree(ctrs)
-
-    ny, nz = 520, 1400
-    y_lo = -R_MAIN_HALF - 0.04
-    y_hi =  R_MAIN_HALF + 1.20
-    y = np.linspace(y_lo, y_hi, ny)
-    z = np.linspace(0.0, L_MAIN_HALF, nz)
-    Y, Z = np.meshgrid(y, z, indexing="ij")
-    X = np.full_like(Y, x_plane)
-    qpts = np.column_stack([X.ravel(), Y.ravel(), Z.ravel()])
-
-    # k=4 inverse-distance weighting; this smooths over coarse upstream cells
-    # and removes the speckled accept/reject pattern that k=1 + tight cap
-    # produces on the bulk background mesh.
-    dist, idx = tree.query(qpts, k=4)
-    eps = 1.0e-6
-    w = 1.0 / (dist + eps)
-    w_sum = w.sum(axis=1)
-    img_raw = (w * vals[idx]).sum(axis=1) / w_sum
-    img = img_raw.reshape(Y.shape)
-    # Reject points whose nearest neighbour is unreasonably far -- larger cap
-    # (12 cm) than before, because the background mesh is coarse upstream.
-    nearest = dist[:, 0].reshape(Y.shape)
-    img = np.where(nearest > 0.12, np.nan, img)
-
-    # ----- analytic geometry mask --------------------------------------
-    # Main pipe: cylinder along z with radius R_MAIN_HALF.  At slice plane
-    # x = x_plane, the in-pipe condition is x^2 + y^2 < R^2.
-    in_main = (x_plane * x_plane + Y * Y < R_MAIN_HALF * R_MAIN_HALF) \
-              & (Z >= 0.0) & (Z <= L_MAIN_HALF)
-
-    # Branch pipe: cylinder whose axis starts at (0, R_main, zjct) and
-    # points along  n_hat = (0, sin a, -cos a)  for a forward-tilt branch
-    # (a < 90: branch leans downstream;  a = 90: vertical;  a > 90:
-    # counter-flow lean upstream).  For each grid point we project onto
-    # the axis to get (s, r_perp) and require 0 <= s <= l_branch and
-    # r_perp < r_branch.
-    a_rad = math.radians(alpha_deg)
-    sa, ca = math.sin(a_rad), math.cos(a_rad)
-    nb_y, nb_z = sa, -ca
-    dY = Y - R_MAIN_HALF
-    dZ = Z - zjct
-    s = dY * nb_y + dZ * nb_z
-    perp_y = dY - s * nb_y
-    perp_z = dZ - s * nb_z
-    r_perp = np.sqrt(x_plane * x_plane + perp_y * perp_y + perp_z * perp_z)
-    in_branch = (s >= 0.0) & (s <= l_branch) & (r_perp < r_branch)
-
-    geom = in_main | in_branch
-    img = np.where(geom & np.isfinite(img), img, np.nan)
-
-    # Mask orphan "dead-zone" cells (small pockets snappyHexMesh leaves which
-    # stay frozen at their initial field value ~1.0 for H2 / 0 for the rest).
-    # Applied to bounded mass-fraction fields only.
-    if field in ("H2", "H2Mean"):
-        # Branch interior gets to keep its real H2 values; everywhere else
-        # values > 0.5 are non-physical orphans (after dilution by main flow
-        # the outlet H2 is < 0.05 for every DoE case).
-        orphan = (img > 0.5) & (~in_branch)
-        img = np.where(orphan, np.nan, img)
-        # Hide any leftover non-zero H2 upstream of the junction (z < zjct - 0.3).
-        # Physically H2 = 0 upstream of the branch in steady state; tiny
-        # residual values there come from numerical noise or initial-condition
-        # leftover after restart and only confuse the visualisation.
-        upstream_noise = (Z < zjct - 0.3) & (~in_branch) & (img < 0.05)
-        img = np.where(upstream_noise, 0.0, img)
-
-    if clim is None:
-        valid = geom & (np.abs(Y) < R_MAIN_HALF) & (Z > zjct + 0.3) \
-                & np.isfinite(img)
-        if valid.sum() > 0:
-            vmax = float(np.nanpercentile(img[valid], 99.0))
-        else:
-            vmax = float(np.nanpercentile(img[np.isfinite(img)], 99.0))
-        vmax = max(vmax, 1e-6)
-        clim = (0.0, vmax)
-
-    fig, ax = plt.subplots(figsize=(16, 7))
-    img_m = np.ma.array(img, mask=~np.isfinite(img))
-    pcm = ax.pcolormesh(Z, Y, img_m, cmap=cmap,
-                        vmin=clim[0], vmax=clim[1], shading="auto")
-    ax.set_aspect("equal")
-    ax.set_xlabel("z [m]"); ax.set_ylabel("y [m]")
-    ax.set_xlim(0.0, L_MAIN_HALF)
-    ax.set_ylim(y_lo, y_hi)
-    ax.set_title(title)
-    cbar = fig.colorbar(pcm, ax=ax, orientation="horizontal",
-                        fraction=0.035, pad=0.08)
-    cbar.set_label(label or field)
-    fig.tight_layout()
-    fig.savefig(str(out), dpi=140)
-    plt.close(fig)
-    print(f"  wrote {out.name}  ({Path(out).stat().st_size/1024:.1f} KB)")
+            lo = q1 - outlier_pct * iqr
+            hi = q3 + outlier_pct * iqr
+            keep &= (vals >= lo) & (vals <= hi)
+    if outlier_max is not None:
+        m = vals < outlier_max
+        keep &= (m if in_branch is None else (m | in_branch))
+    if outlier_min is not None:
+        m = vals > outlier_min
+        keep &= (m if in_branch is None else (m | in_branch))
+    if keep.all():
+        return mesh
+    return mesh.extract_cells(np.where(keep)[0])
 
 
-def fig_scalar_xz(ds, field: str, out: Path, *, clim=None, cmap="viridis",
-                  title: str, bar_title: str | None = None):
-    internal, slc = _slice_x0(ds)
-    if field not in slc.cell_data and field not in slc.point_data:
-        raise SystemExit(f"field {field!r} not available; have cell={list(slc.cell_data)}")
+def _render_xz(mesh, field: str, out: Path, *,
+               title: str, cmap: str, clim=None,
+               label: str | None = None,
+               outlier_pct: float | None = None,
+               outlier_max: float | None = None,
+               outlier_min: float | None = None,
+               branch_keep: bool = False,
+               alpha_deg: float = 90.0,
+               r_branch: float = 0.10,
+               zjct: float = Z_JCT_HALF,
+               l_branch: float = 1.15):
+    """Native PyVista/VTK render of `field` on the x = 0 mesh.
+
+    `mesh` should already be a 2-D mesh (the sym patch or a triangulated
+    slice).  Orphan filtering is applied here on cell values; rendering is
+    direct VTK -- no point interpolation, no analytical mask.
+    """
+    if field not in mesh.cell_data and field not in mesh.point_data:
+        raise SystemExit(
+            f"field {field!r} not on x=0 mesh; "
+            f"have cell_data={list(mesh.cell_data.keys())[:8]}")
+    mesh = _filter_field(
+        mesh, field,
+        outlier_pct=outlier_pct,
+        outlier_max=outlier_max, outlier_min=outlier_min,
+        branch_keep=branch_keep, alpha_deg=alpha_deg,
+        r_branch=r_branch, zjct=zjct, l_branch=l_branch,
+    )
+
+    sbar = dict(SBAR)
+    if label:
+        sbar["title"] = label
+        sbar["title_font_size"] = 12
+
     p = pv.Plotter(off_screen=True, window_size=WIDE)
     p.set_background("white")
-    p.add_mesh(slc, scalars=field, cmap=cmap, clim=clim,
-               scalar_bar_args=SBAR, show_edges=False)
-    p.camera_position = camera_xz_slice()
-    p.camera.zoom(1.25)
+    p.add_mesh(mesh, scalars=field, cmap=cmap, clim=clim,
+               show_edges=False, scalar_bar_args=sbar)
+    setup_xz_camera(p, mesh)
     add_text(p, title)
     save(p, out)
 
 
-def fig_velocity_xz(ds, out: Path, r_branch: float = 0.10,
+def _is_in_branch(centers, *, alpha_deg, r_branch, zjct,
+                  l_branch=1.40, slack=0.05):
+    """Boolean mask: cells whose centroid lies inside the analytical branch."""
+    a_rad = math.radians(alpha_deg)
+    nb = np.array([0.0, math.sin(a_rad), -math.cos(a_rad)])
+    base = np.array([0.0, R_MAIN_HALF, zjct])
+    d = centers - base
+    s = d @ nb
+    perp = d - np.outer(s, nb)
+    rperp = np.linalg.norm(perp, axis=1)
+    return ((s >= -slack) & (s <= l_branch + slack)
+            & (rperp < r_branch * 1.05))
+
+
+def fig_velocity_xz(ds, out: Path, *, r_branch: float = 0.10,
                     zjct: float = Z_JCT_HALF, alpha_deg: float = 90.0):
-    internal = get_internal(ds)
-    U = np.asarray(internal.cell_data["U"])
-    internal["|U|"] = np.linalg.norm(U, axis=1)
-    # 99.5th percentile cap over the interior to pick a reasonable vmax.
-    vmax = float(np.nanpercentile(internal["|U|"], 99.5))
-    vmax = max(vmax, 1e-3)
-    _render_centerline_interp(
-        internal, "|U|", out,
-        title=f"Velocity magnitude |U| (m/s)  —  x=0 centreline (gap-free)",
+    """|U| on the x = 0 symmetry plane.
+
+    Colour range is set from the BULK FLUID only (cells outside the
+    analytical branch volume) so the main-pipe wake/shear structure is
+    visible.  The branch jet (60-150 m/s) saturates at the top of the
+    colourmap, which is informative on its own.
+    """
+    mesh, source = _get_xz_mesh(ds)
+    U = np.asarray(mesh.cell_data["U"], dtype=float)
+    speed = np.linalg.norm(U, axis=1)
+    mesh = mesh.copy()
+    mesh.cell_data["|U|"] = speed
+
+    centers = np.asarray(mesh.cell_centers().points)
+    in_br = _is_in_branch(centers, alpha_deg=alpha_deg,
+                          r_branch=r_branch, zjct=zjct)
+    bulk = speed[~in_br]
+    # Reject orphan supersonic cells from the bulk before picking vmax.
+    if bulk.size:
+        q1, q3 = np.nanpercentile(bulk, [25.0, 75.0])
+        iqr = q3 - q1
+        if iqr > 0:
+            bulk = bulk[bulk <= q3 + 50.0 * iqr]
+        vmax = float(np.nanpercentile(bulk, 99.0))
+    else:
+        vmax = float(np.nanpercentile(speed, 99.0))
+    vmax = max(vmax, 1.0)
+    _render_xz(
+        mesh, "|U|", out,
+        title=f"Velocity magnitude |U| (m/s) -- x=0 symmetry plane ({source})",
         cmap=CMAP_SPEED, clim=(0.0, vmax),
-        r_branch=r_branch, zjct=zjct, alpha_deg=alpha_deg,
-        label="|U| [m/s]",
+        label="|U| [m/s]  (bulk-pipe range; branch jet saturates)",
+        outlier_pct=50.0,
+        alpha_deg=alpha_deg, r_branch=r_branch, zjct=zjct,
     )
 
 
-def fig_pressure_xz(ds, out: Path, t: float, r_branch: float = 0.10,
+def fig_pressure_xz(ds, out: Path, t: float, *, r_branch: float = 0.10,
                     zjct: float = Z_JCT_HALF, alpha_deg: float = 90.0):
-    internal = get_internal(ds)
-    p = np.asarray(internal.cell_data["p_rgh"], dtype=float)
-    # Bulk fluid identified by a wide IQR band -- snappyHexMesh leaves orphan
-    # cells stuck at their initial value (often the operating reference
-    # pressure ~270 kPa above bulk).  The bulk-fluid IQR is small (often
-    # < 1 kPa) so we use a wide multiplier (k = 50) to keep the entire
-    # physical pipe gradient (including the downstream recovery zone, which
-    # sits ~30 IQRs above the median) while still rejecting orphans (which
-    # are >300 IQRs from the bulk centre).
-    q1, q3 = np.nanpercentile(p, [25.0, 75.0])
+    """Gauge p_rgh on the x = 0 symmetry plane.  Gauge = bulk-IQR mean."""
+    mesh, source = _get_xz_mesh(ds)
+    p_vals = np.asarray(mesh.cell_data["p_rgh"], dtype=float)
+    q1, q3 = np.nanpercentile(p_vals, [25.0, 75.0])
     iqr = q3 - q1
     if iqr > 0:
-        in_band = (p >= q1 - 50.0 * iqr) & (p <= q3 + 50.0 * iqr)
+        in_band = ((p_vals >= q1 - 50.0 * iqr)
+                   & (p_vals <= q3 + 50.0 * iqr))
     else:
-        in_band = np.ones_like(p, dtype=bool)
-    p_mean = float(np.mean(p[in_band])) if in_band.any() else float(np.mean(p))
-    internal["p_rgh_gauge"] = p - p_mean
-    # Colour-map range tied to the bulk-fluid IQR, NOT to the global gauge
-    # extremes -- the downstream recovery zone (a few cells) sits at gauge
-    # ~ +20 kPa which would otherwise wash the colourmap out.  rng = 8 IQR
-    # makes the wake low-pressure (gauge ~ -3 IQR) and the bulk gradient
-    # readable; the recovery cells correctly saturate at the red end.
+        in_band = np.ones_like(p_vals, dtype=bool)
+    p_mean = (float(np.mean(p_vals[in_band]))
+              if in_band.any() else float(np.mean(p_vals)))
+    mesh = mesh.copy()
+    mesh.cell_data["p_rgh_gauge"] = p_vals - p_mean
+    # Colour range tied to the bulk-fluid IQR; the recovery zone correctly
+    # saturates at the red end (a few cells), and the wake is readable.
     rng = max(8.0 * iqr, 1.0e2) if iqr > 0 else 2.0e3
-    _render_centerline_interp(
-        internal, "p_rgh_gauge", out,
-        title=f"p_rgh − {p_mean/1e6:.3f} MPa [Pa]  —  x=0 centreline (t = {t:g} s)",
+    _render_xz(
+        mesh, "p_rgh_gauge", out,
+        title=(f"p_rgh - {p_mean/1e6:.3f} MPa [Pa] -- "
+               f"x=0 symmetry plane (t = {t:g} s, {source})"),
         cmap=CMAP_PRESS, clim=(-rng, rng),
-        r_branch=r_branch, zjct=zjct, alpha_deg=alpha_deg,
-        outlier_pct=50.0,
         label="p_rgh gauge [Pa]",
+        outlier_pct=50.0,
+        alpha_deg=alpha_deg, r_branch=r_branch, zjct=zjct,
+    )
+
+
+def fig_H2_xz(ds, out: Path, t: float, *, r_branch: float = 0.10,
+              zjct: float = Z_JCT_HALF, alpha_deg: float = 90.0):
+    """H2 mass fraction on the x = 0 symmetry plane.
+
+    The branch carries H2 = 1.0 legitimately (branch_inlet BC) but we
+    auto-clip the colour range to the BULK FLUID's natural maximum
+    (99th percentile of cells outside the analytical branch volume) so
+    the dilution gradient downstream of the junction is visible.  The
+    branch and the early plume saturate at the top of the colourmap.
+
+    A spatially-aware orphan filter drops cells with H2 > 0.5 OUTSIDE the
+    branch (snappyHexMesh occasionally leaves frozen-IC pockets) while
+    sparing the legitimate branch interior.
+    """
+    mesh, source = _get_xz_mesh(ds)
+    h2 = np.asarray(mesh.cell_data["H2"], dtype=float)
+    centers = np.asarray(mesh.cell_centers().points)
+    in_br = _is_in_branch(centers, alpha_deg=alpha_deg,
+                          r_branch=r_branch, zjct=zjct)
+    bulk = h2[(~in_br) & (h2 < 0.5)]  # exclude branch + orphan pockets
+    if bulk.size:
+        vmax_bulk = float(np.nanpercentile(bulk, 99.0))
+    else:
+        vmax_bulk = 0.05
+    # Show at least a band wide enough to see the developing plume; cap at
+    # 0.5 so we never end up with both the branch-inlet (1.0) and the bulk
+    # crammed into the same colour range.
+    vmax = float(np.clip(max(vmax_bulk * 2.5, 0.05), 0.05, 0.5))
+    _render_xz(
+        mesh, "H2", out,
+        title=(f"Y_H2 (H2 mass fraction) -- x=0 symmetry plane "
+               f"(t = {t:g} s, {source})"),
+        cmap=CMAP_H2, clim=(0.0, vmax),
+        label=(f"Y_H2 (mass fraction)  "
+               f"[bulk-pipe range; branch H2=1.0 saturates]"),
+        outlier_max=0.5, branch_keep=True,
+        alpha_deg=alpha_deg, r_branch=r_branch, zjct=zjct,
     )
 
 
 def fig_H2_outlet(ds, out: Path):
+    """H2 on the outlet face, mirrored across x = 0 to show the full circle.
+
+    The campaign uses a half-domain (x >= 0) so the outlet patch is a
+    half-disk.  We mirror it across the symmetry plane and merge to recover
+    the full physical cross-section.
+    """
     outlet = get_patch(ds, "outlet")
     if outlet is None or outlet.n_cells == 0:
         internal = get_internal(ds)
-        outlet = internal.slice(normal="z", origin=(0, 0, 9.19))
+        outlet = internal.slice(normal="z", origin=(0.0, 0.0, L_MAIN_HALF - 1e-3))
+
+    # Mirror across x = 0.  PyVista 0.47 has reflect(); fall back to a manual
+    # point flip for older versions.  The patch is symmetric about y, so a
+    # point-flip preserves the field correctly.
+    try:
+        mirror = outlet.reflect(normal=(1.0, 0.0, 0.0), point=(0.0, 0.0, 0.0))
+    except Exception:
+        mirror = outlet.copy()
+        pts = np.asarray(mirror.points)
+        pts[:, 0] = -pts[:, 0]
+        mirror.points = pts
+    full = outlet.merge(mirror)
+
+    # Camera: look at the outlet face along -z, slightly outside the pipe.
+    cam_z = L_MAIN_HALF + 1.5
     p = pv.Plotter(off_screen=True, window_size=SQUARE)
     p.set_background("white")
-    p.add_mesh(outlet, scalars="H2", cmap=CMAP_H2, show_edges=False,
-               scalar_bar_args=SBAR)
-    p.camera_position = camera_outlet()
+    sbar = dict(SBAR)
+    sbar["title"] = "Y_H2 [-]"
+    sbar["title_font_size"] = 12
+    p.add_mesh(full, scalars="H2", cmap=CMAP_H2, show_edges=False,
+               scalar_bar_args=sbar)
+    p.camera_position = [(0.0, 0.0, cam_z), (0.0, 0.0, L_MAIN_HALF),
+                         (0.0, 1.0, 0.0)]
     p.camera.zoom(1.5)
-    add_text(p, "Y_H2 on outlet face  (the CoV plane)")
+    add_text(p, "Y_H2 on outlet face (full pipe via x=0 mirror) -- the CoV plane")
     save(p, out)
 
 
-def fig_streamlines(ds, case: Path, out: Path):
+def fig_streamlines(ds, case: Path, out: Path,
+                    r_branch: float = 0.04, zjct: float = Z_JCT_HALF,
+                    alpha_deg: float = 90.0):
+    """Streamtraces seeded inside both inlets, coloured by speed.
+
+    Branch seeds are placed at the actual branch_inlet location, derived from
+    the per-case zjct, alpha_deg and branch radius -- not at hard-coded 9.2 m
+    coordinates left over from the original 90-degree geometry.
+    """
     internal = get_internal(ds)
     pdata = internal.cell_data_to_point_data()
 
     theta = np.linspace(0.0, 2.0 * np.pi, 16, endpoint=False)
-    main = np.column_stack(
-        [0.14 * np.cos(theta), 0.14 * np.sin(theta), np.full_like(theta, 0.03)]
-    )
-    br = np.column_stack(
-        [0.035 * np.cos(theta), np.full_like(theta, 1.36), 4.6 + 0.035 * np.sin(theta)]
-    )
+    # Main inlet seeds: ring of radius 0.7 R_main at z = small offset.
+    r_seed_main = 0.7 * R_MAIN_HALF
+    main = np.column_stack([
+        r_seed_main * np.cos(theta),
+        r_seed_main * np.sin(theta),
+        np.full_like(theta, 0.03),
+    ])
+    # Branch inlet seeds: place a ring inside the branch tube near the branch
+    # opening.  Tube axis starts at (0, R_main, zjct) and points along
+    # n_hat = (0, sin a, -cos a).  Walk one branch length L_b along the axis
+    # and lay a ring of radius 0.7 r_branch in the plane perpendicular to
+    # n_hat (using +x and the in-plane perp vector as basis).
+    a_rad = math.radians(alpha_deg)
+    nb = np.array([0.0, math.sin(a_rad), -math.cos(a_rad)])
+    base = np.array([0.0, R_MAIN_HALF, zjct])
+    L_b = 1.40 if alpha_deg < 90 else 1.20  # conservative branch length
+    centre = base + (L_b - 0.05) * nb
+    e1 = np.array([1.0, 0.0, 0.0])
+    e2 = np.cross(nb, e1)  # in-plane perpendicular
+    e2 /= np.linalg.norm(e2) + 1e-12
+    r_seed_br = 0.7 * r_branch
+    br = np.array([
+        centre + r_seed_br * (math.cos(t) * e1 + math.sin(t) * e2)
+        for t in theta
+    ])
     seeds = pv.PolyData(np.vstack([main, br]))
 
     try:
@@ -498,7 +615,13 @@ def fig_streamlines(ds, case: Path, out: Path):
     speed = np.linalg.norm(np.asarray(stream.point_data["U"]), axis=1)
     stream.point_data["|U|"] = speed
 
-    vmax = float(np.nanpercentile(speed, 99.0))
+    # Cap vmax with the same bulk-only IQR filter used elsewhere so a few
+    # orphan supersonic cells don't wash out the colourmap.
+    q1, q3 = np.nanpercentile(speed, [25.0, 75.0])
+    iqr = q3 - q1
+    bulk = speed[speed <= q3 + 50.0 * iqr] if iqr > 0 else speed
+    vmax = float(np.nanpercentile(bulk, 99.0))
+    vmax = max(vmax, 1.0)
     p = pv.Plotter(off_screen=True, window_size=WIDE)
     p.set_background("white")
     wall = case / "constant" / "triSurface" / "wall.stl"
@@ -554,19 +677,10 @@ def main():
           f"z_jct={z_jct:.3f} m, alpha={alpha_deg:.1f} deg")
 
     print("[4/7] fig_H2_xz")
-    # H2 orphans are frozen at the initial value (~1.0) in disconnected
-    # pockets snappyHexMesh occasionally leaves; the physical max in this
-    # campaign is HBR < 0.20.  outlier_max = 0.5 cleanly separates them.
-    _render_centerline_interp(
-        internal, "H2", out / "fig_H2_xz.png",
-        title=f"Y_H2 (H2 mass fraction)  —  x=0 centreline slice  (t = {t:g} s)",
-        cmap=CMAP_H2, clim=None,
-        r_branch=r_branch, zjct=z_jct, alpha_deg=alpha_deg,
-        outlier_max=0.5,
-        label="Y_H2 (mass fraction)",
-    )
+    fig_H2_xz(ds, out / "fig_H2_xz.png", t,
+              r_branch=r_branch, zjct=z_jct, alpha_deg=alpha_deg)
 
-    print("[5/7] fig_H2_outlet")
+    print("[5/7] fig_H2_outlet (full pipe via x=0 mirror)")
     fig_H2_outlet(ds, out / "fig_H2_outlet.png")
 
     print("[6/7] fig_velocity_xz + fig_pressure_xz")
@@ -576,7 +690,8 @@ def main():
                     r_branch=r_branch, zjct=z_jct, alpha_deg=alpha_deg)
 
     print("[7/7] fig_streamlines")
-    fig_streamlines(ds, case, out / "fig_streamlines.png")
+    fig_streamlines(ds, case, out / "fig_streamlines.png",
+                    r_branch=r_branch, zjct=z_jct, alpha_deg=alpha_deg)
 
     print("DONE.")
 

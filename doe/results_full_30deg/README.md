@@ -20,14 +20,18 @@ results_full_30deg/
 |       +-- metrics_out/
 |       |   +-- all_metrics.csv     # 3 snapshots + AVG row, all weights
 |       |   \-- ALL_METRICS.md      # human-readable per-case summary
-|       \-- figures/
-|           +-- fig_geometry.png    # patch view of the STL surfaces
-|           +-- fig_mesh_xz.png     # mesh cells on x = 0 symmetry plane
-|           +-- fig_H2_xz.png       # Y_H2 field on the symmetry plane
-|           +-- fig_H2_outlet.png   # Y_H2 on outlet face (CoV plane)
-|           +-- fig_velocity_xz.png # |U| with in-plane glyphs
-|           +-- fig_pressure_xz.png # p_rgh field
-|           \-- fig_streamlines.png # streamtraces seeded from both inlets
+|       \-- figures/                # PyVista (VTK) renders -- equivalent to
+|           |                       # ParaView; read directly from the
+|           |                       # symmetryPlane patch, no kNN, no mask
+|           +-- fig_geometry.png    # STL patches in isometric view
+|           +-- fig_mesh_xz.png     # cell faces on the x=0 symmetry plane
+|           +-- fig_H2_xz.png       # Y_H2 on the symmetry plane (bulk-pipe
+|           |                       #   colour range; branch H2=1 saturates)
+|           +-- fig_H2_outlet.png   # Y_H2 on outlet face, mirrored across
+|           |                       #   x=0 to show the FULL physical circle
+|           +-- fig_velocity_xz.png # |U| (bulk-pipe range; jet saturates)
+|           +-- fig_pressure_xz.png # p_rgh gauge (bulk-IQR colour range)
+|           \-- fig_streamlines.png # streamtraces from main + branch inlets
 +-- summary/
 |   +-- doe_summary_30deg.csv       # joined design + metrics, machine-readable
 |   +-- DOE_SUMMARY_30DEG.md        # text summary with best/worst cases
@@ -95,3 +99,30 @@ done
 
 The single dominant effect on mixing is the velocity ratio VR = $u_{branch}/u_{main}$:
 the case with VR = 5.8 mixes 70x better than the cases with VR < 1.5 at comparable d/D.
+
+## Notes on the rendering pipeline (`tools/make_figures.py`)
+
+PyVista is used as the rendering library; under the hood it drives the same
+VTK pipeline that ParaView uses (same `vtkOpenFOAMReader`, same plane-cutter,
+same scalar-bar widget).  The output is pixel-equivalent to a ParaView
+screenshot taken with the same camera and colour map.
+
+The centreline figures (`fig_H2_xz`, `fig_velocity_xz`, `fig_pressure_xz`,
+`fig_mesh_xz`) read the **symmetryPlane patch (`sym`) directly** -- the patch
+IS the 2-D cell mesh at x = 0, so we get face-interpolated values with no
+kNN/IDW step and no analytical pipe-shape mask.  If a case is missing the
+`sym` patch (legacy or full-domain runs) we fall back to a triangulated VTK
+slice on a triangulated copy of the volume mesh, which avoids the polyhedral
+non-conformal "white-notch" gaps.
+
+Field colour ranges are set from the **bulk fluid only** (cells outside the
+analytical branch volume) so the dilution gradient and wake structure are
+visible -- the branch (H2=1.0) and the high-speed jet (60-150 m/s) saturate
+at the top of the colour map.  Orphan cells stuck at their initial-condition
+value (snappyHexMesh occasionally leaves a few of these) are filtered with a
+spatially-aware cell-extract before rendering.
+
+`fig_H2_outlet.png` is mirrored across x = 0 so the outlet plane is shown as
+the full physical circle, not the half-disk of the simulated half-domain.
+The other 3-D views (geometry, streamlines) are kept on the half-domain to
+preserve the symmetry-plane visibility.
