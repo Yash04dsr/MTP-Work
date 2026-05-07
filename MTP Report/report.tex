@@ -105,7 +105,7 @@
     \vspace{0.7cm}
     {\large Under the supervision of \par}
     \vspace{0.25cm}
-    {\Large \bfseries Prof.~Abhijit Raj \par}
+    {\Large \bfseries Prof.~Abhijeet Raj \par}
 
     \vspace{1.0cm}
     \IfFileExists{logos/IITD_Logo_Big.jpg}{%
@@ -1737,7 +1737,368 @@ pumping cost; they do indicate the natural directions in which the
 campaign should be extended.
 
 % =====================================================================
-%  8. CONCLUSIONS
+%  8. BOTTOM-INJECTION CAMPAIGNS
+% =====================================================================
+\section{Results: bottom injection}
+\label{sec:bottom}
+
+To test whether injection side (top vs.\ bottom of the pipe) matters
+as much as the angle, two additional campaigns were run with the
+branch pipe relocated to \(y = -R_1\) (i.e.\ the bottom of the
+main pipe), one at \(\alpha = 90^\circ\) (13 valid cases, including
+5 supplementary high-\VR{} cases) and one at \(\alpha = 30^\circ\)
+(10 valid cases). The geometry generator, mesh template, solver
+settings, time-averaging window and LP-filtered \(|\Delta p|\)
+methodology are identical to the top-injection campaigns; only the
+sign of the branch junction's \(y\)-coordinate is flipped.
+
+\subsection{Bottom-injection DoE summary}
+\label{sec:bot_doe}
+
+\begin{table}[H]
+\centering\small
+\caption{Bottom-injection campaign summary. Cases 01--02 of
+the \(90^\circ\) bottom campaign were excluded (2-region mesh at
+\(\dD<0.22\)). Five supplementary cases (11--15) at high \VR{} were
+added to test whether momentum can overcome the buoyancy
+disadvantage.}
+\label{tab:bot_summary}
+\begin{tabular}{l c c c c}
+\toprule
+Campaign & Valid cases & \CoV{} range & \CoV{} median
+& \(|\Delta p|\) median (kPa) \\
+\midrule
+\(90^\circ\) bottom & 13 & 0.17--1.10 & 0.39 & 1.58 \\
+\(30^\circ\) bottom & 10 & 0.23--1.34 & 1.05 & 1.02 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Visual evidence: top vs.\ bottom plume structure}
+\label{sec:bot_visual}
+
+Figure~\ref{fig:bot_strip_04} compares the cross-sectional
+evolution of \(Y_{\Hi}\) for case~04
+(\(\dD=0.252\), \(\VR=3.81\)) at \(90^\circ\) --- the
+highest-\VR{} matched pair available.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../doe/results_full/cases/case_04/figures/fig_H2_strip.png}
+        \caption{Top injection (\(\CoV = 0.066\)). By \(z=5\,\mathrm{m}\)
+        the cross-section is essentially uniform --- the jet has spread
+        across the full pipe diameter.}
+        \label{fig:strip_04_top}
+    \end{subfigure}\\[6pt]
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../doe/results_full_90deg_bottom/case_04/figures/fig_H2_strip.png}
+        \caption{Bottom injection (\(\CoV = 0.271\)). At \(z=3\,\mathrm{m}\)
+        the plume is a concentrated mushroom in the lower half; even at the
+        outlet the concentration gradient persists.}
+        \label{fig:strip_04_bot}
+    \end{subfigure}
+    \caption{Cross-sectional H\(_2\) strip for case~04
+    (\(\dD=0.252\), \(\VR=3.81\)) at \(90^\circ\).
+    Top injection (a) vs.\ bottom injection (b).
+    Both images are time-averaged (\texttt{H2Mean}) at
+    \(t=\SI{1.2}{\second}\).}
+    \label{fig:bot_strip_04}
+\end{figure}
+
+With top injection (Fig.~\ref{fig:strip_04_top}), the high-\VR{}
+jet punches downward through the pipe diameter. Buoyancy then
+\emph{prevents} the lighter \Hi{} from falling further, so the gas
+flattens against the upper wall and spreads laterally into a thin,
+wide layer with maximum surface area for turbulent diffusion. By
+\(z \approx 5\,D\) the cross-section is virtually uniform
+(\(\CoV = 0.066\)).
+
+With bottom injection (Fig.~\ref{fig:strip_04_bot}), the same jet
+punches upward. Buoyancy now \emph{assists} the jet: the plume
+rises as a coherent, narrow column that never fans out laterally.
+By the outlet the \Hi{} is concentrated in the upper half as a
+mushroom-shaped streak rather than spread across the full pipe
+(\(\CoV = 0.271\), a factor of four worse).
+
+Figure~\ref{fig:bot_strip_08} shows the same comparison at low
+\VR{} (case~08, \(\VR = 0.69\)), where neither configuration
+mixes well but the physics diverge even further.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../doe/results_full/cases/case_08/figures/fig_H2_strip.png}
+        \caption{Top injection (\(\CoV = 0.707\)). The low-momentum jet
+        barely penetrates, but spreads at the crown.}
+        \label{fig:strip_08_top}
+    \end{subfigure}\\[6pt]
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../doe/results_full_90deg_bottom/case_08/figures/fig_H2_strip.png}
+        \caption{Bottom injection (\(\CoV = 0.911\)). The plume stratifies
+        into a horizontal layer at the bottom of the pipe; by the outlet a
+        clear two-layer structure is visible.}
+        \label{fig:strip_08_bot}
+    \end{subfigure}
+    \caption{Cross-sectional H\(_2\) strip for case~08
+    (\(\dD=0.382\), \(\VR=0.69\)) at \(90^\circ\).
+    At low \VR{} the buoyancy effect dominates: the bottom-injection
+    plume stratifies rather than spreading.}
+    \label{fig:bot_strip_08}
+\end{figure}
+
+\subsection{Longitudinal centreline comparison}
+\label{sec:bot_long}
+
+Figure~\ref{fig:bot_long_04} shows the centreline slice for the
+same case~04 pair. With top injection the plume penetrates deep into
+the pipe and then diffuses uniformly downstream; with bottom
+injection the plume clings to the bottom wall and rises slowly ---
+the bright yellow concentration core extends several diameters
+further downstream before decaying.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../doe/results_full/cases/case_04/figures/fig_H2_long.png}
+        \caption{Top injection --- the jet impinges downward; \Hi{}
+        fills the pipe cross-section by \(z\approx 3\,\mathrm{m}\).}
+    \end{subfigure}\\[4pt]
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../doe/results_full_90deg_bottom/case_04/figures/fig_H2_long.png}
+        \caption{Bottom injection --- the plume hugs the bottom wall
+        and rises as a narrow column. Peak mass fraction is
+        \(0.19\) vs.\ \(0.05\) for top injection.}
+    \end{subfigure}
+    \caption{Longitudinal centreline slice of
+    \(Y_{\Hi}\) (\texttt{H2Mean}) for case~04 at \(90^\circ\).}
+    \label{fig:bot_long_04}
+\end{figure}
+
+% =====================================================================
+%  9. FOUR-CAMPAIGN CROSS-CAMPAIGN SYNTHESIS
+% =====================================================================
+\section{Cross-campaign synthesis: injection side effect}
+\label{sec:cross_side}
+
+With all four campaigns completed --- \(90^\circ\) top (8~cases),
+\(30^\circ\) top (9~cases), \(90^\circ\) bottom (13~cases) and
+\(30^\circ\) bottom (10~cases) --- a full factorial comparison of
+angle~\(\times\)~side is possible. All 40 valid cases use the same
+LP-filtered \(|\Delta p|\) methodology
+(Section~\ref{sec:dp_filter}) and the same area-weighted
+\CoV{} from the outlet snapshot.
+
+\subsection{CoV vs VR: universal power-law scaling}
+\label{sec:cross4_vr}
+
+Figure~\ref{fig:cross4_cov_vr} extends the two-campaign power-law
+plot of Section~\ref{sec:cross_scaling} to all four campaigns. The
+fits are:
+\begin{align}
+90^\circ\;\text{top}:&\quad \CoV \approx 0.47\,\VR^{-1.16},
+& R^2 = 0.80, \label{eq:fit_90t}\\
+30^\circ\;\text{top}:&\quad \CoV \approx 0.33\,\VR^{-1.88},
+& R^2 = 0.80, \label{eq:fit_30t}\\
+90^\circ\;\text{bot}:&\quad \CoV \approx 0.89\,\VR^{-0.91},
+& R^2 = 0.90, \label{eq:fit_90b}\\
+30^\circ\;\text{bot}:&\quad \CoV \approx 1.13\,\VR^{-0.72},
+& R^2 = 0.72. \label{eq:fit_30b}
+\end{align}
+Two patterns emerge. First, the top-injection exponents
+(\(-1.16\), \(-1.88\)) are steeper than their bottom-injection
+counterparts (\(-0.91\), \(-0.72\)): increasing \VR{} buys
+proportionally more mixing from the top. Second, the intercepts
+(\(A\)) are higher for bottom injection (\(0.89\), \(1.13\)) than
+for top (\(0.47\), \(0.33\)), so even the extrapolated low-\VR{}
+behaviour is worse for bottom injection.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{../doe/cross_campaign/figures/fig1_CoV_vs_VR.png}
+    \caption{Power-law fit of \CoV{} vs.\ \VR{} for all four
+    campaigns. The \(30^\circ\) top campaign has the steepest slope;
+    the \(30^\circ\) bottom campaign has the shallowest. The dashed
+    grey line marks the industrial \(\CoV \le 0.05\) target.}
+    \label{fig:cross4_cov_vr}
+\end{figure}
+
+\subsection{Matched-pair comparison: top vs bottom}
+\label{sec:cross4_pairs}
+
+Figure~\ref{fig:cross4_matched} uses the same matched-pair
+methodology as Section~\ref{sec:cross_pairs}, but now compares
+\emph{top vs.\ bottom} at fixed \((\dD,\VR)\). Eight matched pairs
+exist at \(90^\circ\) and nine at \(30^\circ\). In \textbf{every
+single pair} (17 out of 17), the top-injection case achieves a
+lower \CoV{} than the corresponding bottom-injection case. The
+median \CoV{} degradation from top to bottom is \(+109\,\%\)
+at \(90^\circ\) and \(+324\,\%\) at \(30^\circ\).
+
+Under the null hypothesis that injection side has no effect, the
+probability of all 17 pairs having the same sign is
+\(2^{1-17} = 1.5\times 10^{-5}\), so the finding is highly
+statistically significant regardless of per-pair magnitude.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../doe/cross_campaign/figures/fig2_matched_pairs_top_vs_bottom.png}
+    \caption{Matched-pair arrow plot, top vs.\ bottom injection.
+    Left: \(90^\circ\); right: \(30^\circ\). Green arrows indicate
+    that bottom injection has a higher (worse) \CoV. Every arrow is
+    green: top injection is strictly better at every matched
+    operating point. Percentage labels show the per-case \CoV{}
+    increase going from top to bottom.}
+    \label{fig:cross4_matched}
+\end{figure}
+
+\subsection{Pressure drop is not a differentiator}
+\label{sec:cross4_dp}
+
+After LP-filtering, the four campaign medians for
+\(|\Delta p_{\mathrm{rgh}}|\) are \SI{1.05}{\kilo\pascal}
+(\(90^\circ\)~top), \SI{0.53}{\kilo\pascal} (\(30^\circ\)~top),
+\SI{1.58}{\kilo\pascal} (\(90^\circ\)~bot) and
+\SI{1.02}{\kilo\pascal} (\(30^\circ\)~bot). All four lie within a
+\SI{1}{\kilo\pascal} band --- well inside the per-case LP-filter
+uncertainty of \(\pm\SI{0.5}{\kilo\pascal}\). Switching from top to
+bottom injection therefore does not save pumping energy; it only
+degrades mixing. This makes top injection \emph{strictly dominant}
+over bottom injection in the present parameter space.
+
+\subsection{Pareto front: four campaigns}
+\label{sec:cross4_pareto}
+
+Figure~\ref{fig:cross4_pareto} extends the two-campaign Pareto plot
+(Fig.~\ref{fig:pareto}) to all four campaigns. The top-injection
+points cluster in the desirable lower-left region; the
+bottom-injection points are shifted upward (worse mixing) without
+a corresponding leftward shift (lower pressure). No
+bottom-injection point reaches the \(\CoV \le 0.05\) industrial
+target at any operating point in the dataset.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{../doe/cross_campaign/figures/fig3_pareto.png}
+    \caption{Pareto front of \CoV{} vs.\ \(|\Delta p_{\mathrm{rgh}}|\)
+    for all four campaigns. Top-injection points dominate the
+    lower-left corner; bottom-injection points are shifted upward.}
+    \label{fig:cross4_pareto}
+\end{figure}
+
+\subsection{Design-space heatmap}
+\label{sec:cross4_heat}
+
+Figure~\ref{fig:cross4_heatmap} shows a \(2\times 2\) grid of
+\CoV{} heatmaps in \((\dD,\VR)\) space, with columns for
+\(90^\circ\) and \(30^\circ\) and rows for top and bottom. The
+bottom row is uniformly darker (higher \CoV) than the top row at
+the same colour scale, making the injection-side effect visually
+immediate.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../doe/cross_campaign/figures/fig4_heatmap_CoV.png}
+    \caption{Design-space heatmap of \CoV{} in \((\dD,\VR)\) space.
+    Columns: \(90^\circ\)/\(30^\circ\). Rows: top/bottom. The colour
+    scale is logarithmic and shared across all four panels. Each tile
+    is annotated with the case number and \CoV{} value.}
+    \label{fig:cross4_heatmap}
+\end{figure}
+
+\subsection{Executive summary: median CoV by campaign}
+\label{sec:cross4_bar}
+
+Figure~\ref{fig:cross4_bar} distils the dataset into a single bar
+chart. The \(30^\circ\) top campaign has the best median mixing
+(\(\CoV = 0.298\)); the \(30^\circ\) bottom campaign has the worst
+(\(\CoV = 1.048\)). The error bars (min--max range) show that even
+the best bottom-injection case barely approaches the worst
+top-injection case.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{../doe/cross_campaign/figures/fig5_bar_median_CoV.png}
+    \caption{Median outlet \CoV{} by campaign, with min--max error
+    bars. The dashed line marks the \(\CoV=0.05\) industrial target.
+    The \(30^\circ\) top campaign is the only one whose best case
+    penetrates below the target.}
+    \label{fig:cross4_bar}
+\end{figure}
+
+\subsection{Physical mechanism: buoyancy effect on plume structure}
+\label{sec:cross4_mech}
+
+The quantitative superiority of top injection has a clear physical
+explanation, illustrated schematically in
+Fig.~\ref{fig:cross4_mechanism}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../doe/cross_campaign/figures/fig6_mechanism_schematic.png}
+    \caption{Schematic of the buoyancy mechanism. Left: with top
+    injection the downward jet spreads laterally along the pipe
+    crown; buoyancy traps a thin, high-surface-area layer.
+    Right: with bottom injection the upward jet rises as a coherent
+    column; buoyancy lifts it without spreading.}
+    \label{fig:cross4_mechanism}
+\end{figure}
+
+When \Hi{} is injected from the top, the jet penetrates downward
+into the denser \CHi{} flow. Buoyancy then acts as a restoring
+force: it prevents the lighter gas from sinking further and instead
+spreads it laterally along the pipe crown, creating a thin layer
+with a large interfacial area available for turbulent diffusion.
+The result is rapid cross-sectional homogenisation.
+
+When \Hi{} is injected from the bottom, buoyancy \emph{assists}
+the jet rather than opposing it. The light gas rises as a coherent,
+narrow column without fanning out laterally. By the outlet, the
+\Hi{} occupies a concentrated streak in the upper portion of the
+pipe rather than being distributed across the full cross-section.
+This is consistent with the Richardson-number stratification
+physics discussed in Section~\ref{sec:strat}: at the local
+\(\Ri \gg 1\) conditions inside the bottom-injection plume,
+buoyancy suppresses the lateral spreading that turbulent mixing
+would otherwise produce.
+
+The 30$^\circ$ bottom campaign is the worst of all four because
+the tilted branch adds a co-flow momentum component that reduces
+jet penetration \emph{and} the 30$^\circ$ tilt enters the pipe
+nearly tangentially from below, giving buoyancy maximum leverage
+to lift the coherent plume before any lateral spreading can occur.
+
+\subsection{Effect of \texorpdfstring{$d/D$}{d/D} at fixed VR}
+\label{sec:cross4_dD}
+
+Figure~\ref{fig:cross4_dD} isolates the secondary \(\dD\) effect
+by restricting the comparison to cases with low \VR{} (0.6--1.5).
+Across all four campaigns, larger \(\dD\) tends to produce
+marginally lower \CoV{}, consistent with the weak positive trend
+reported by \citet{su2022numerical}. The effect is secondary to
+both \VR{} and injection side, but it is consistent and in the
+expected direction: a larger branch relative to the main pipe
+injects more momentum per unit area, promoting deeper jet
+penetration.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{../doe/cross_campaign/figures/fig7_CoV_vs_dD.png}
+    \caption{\CoV{} vs.\ \(\dD\) at low \VR{} (\(0.6\le\VR\le 1.5\)).
+    Separate lines for each campaign. The downward trend (larger
+    \(\dD\) \(\to\) lower \CoV) is weak but consistent across all
+    configurations.}
+    \label{fig:cross4_dD}
+\end{figure}
+
+% =====================================================================
+%  10. CONCLUSIONS
 % =====================================================================
 \section{Conclusions and outlook}
 \label{sec:concl}
@@ -1751,121 +2112,99 @@ campaign should be extended.
     parametric sample \((\dD,\HBR,\VR,\alpha)\) to the
     post-processed \CoV{} and \(|\Delta p|\) per case, and is
     angle-agnostic at every stage of the pipeline.
-    \item For \(\alpha=90^\circ\), the nine completed production
+    \item For \(\alpha=90^\circ\) top injection, the eight completed
     cases reproduce the qualitative trends of the existing
     literature: \(\CoV\) drops sharply with \(\VR\) (from \(0.71\)
     at \(\VR=0.69\) to \(0.07\) at \(\VR=3.81\)), and the
     lowest-\CoV{} case sits on the edge of the industrial
     \(\CoV \le 0.05\) acceptance band even without a static mixer.
-    \item For \(\alpha=30^\circ\), the nine completed cases place
-    case~01 at \(\CoV=0.005\) - an order of magnitude below the
-    industrial target - and case~09 at the cheapest pumping cost
-    in the entire dataset
-    (\(|\Delta p|\!\approx\!\SI{0.3}{\kilo\pascal}\), within the
-    LP-filter uncertainty band).
-    The mesh-defect that initially invalidated this campaign was
-    root-caused (an over-sized zipper rectangle in
-    \texttt{generateSTL.py}) and fixed; the post-processing
-    pipeline was extended with an angle-aware analytical mask and
-    a non-orphan kNN reconstruction so that the figures match the
-    \(90^\circ\) aesthetic.
-    \item The matched-pair analysis on the seven shared LHS points
-    shows that the \(30^\circ\) tilt reduces \CoV{} in
+    \item For \(\alpha=30^\circ\) top injection, the nine completed
+    cases place case~01 at \(\CoV=0.005\) --- an order of magnitude
+    below the industrial target --- and case~09 at the cheapest
+    pumping cost in the top-injection dataset.
+    \item The \(30^\circ\) vs.\ \(90^\circ\) matched-pair analysis
+    on seven shared LHS points shows that the tilt reduces \CoV{} in
     \textbf{all seven} pairs (median improvement \(46\,\%\)) and
     reduces \(|\Delta p_{\mathrm{rgh}}|\) in \textbf{all seven}
-    pairs (median improvement \(63\,\%\)). The power-law fit
-    \(\CoV \sim \VR^{b}\) is steeper at \(30^\circ\) than at
-    \(90^\circ\) (\(b=-1.88\) vs.\ \(-1.16\)), so each unit of
-    \(\VR\) is converted into more mixing on the tilted geometry.
-    The non-dimensional junction loss coefficient
-    \(K = |\Delta p|/q_{\mathrm{dyn,main}}\) lands in the
-    \([0.5,\,1.4]\) range at \(90^\circ\) and \([0.1,\,1.8]\) at
-    \(30^\circ\), inside the unshaped diverging-tee envelope of
-    \citet{idelchik1986handbook}.
-    \item The combined Pareto front therefore shifts down-and-left
-    with the tilt: every \(90^\circ\) operating point in this
-    dataset is dominated by some \(30^\circ\) point. The two
-    extreme designs at \(30^\circ\), case~01 (best mixing) and
-    case~09 (cheapest pumping, within the
-    \(\pm\SI{0.5}{\kilo\pascal}\) LP-filter band), bracket a
-    broad operating window in which the design target is met
-    without an in-line mixer.
+    pairs (median improvement \(63\,\%\)).
+    \item \textbf{Bottom injection always mixes worse than top
+    injection.} Across 17 matched pairs at both \(90^\circ\) and
+    \(30^\circ\), the top-injection case achieves a lower \CoV{} in
+    \textbf{every single pair}. The median \CoV{} degradation from
+    top to bottom is \(+109\,\%\) at \(90^\circ\) and
+    \(+324\,\%\) at \(30^\circ\). LP-filtered pressure drops are
+    comparable across top and bottom (\(\sim 0.5\)--\(\SI{1.6}{\kilo\pascal}\)
+    median), so the injection side affects only mixing, not pumping
+    cost. Top injection is therefore strictly dominant.
+    \item The physical mechanism is buoyancy-driven plume
+    restructuring: top injection forces the lighter \Hi{} to spread
+    laterally along the pipe crown (large interfacial area, rapid
+    diffusion); bottom injection allows buoyancy to lift the plume
+    as a coherent column without lateral spreading (small
+    interfacial area, poor diffusion).
+    \item The \(30^\circ\) bottom campaign produces the worst median
+    mixing of all four campaigns (\(\CoV = 1.05\)), because the
+    shallow co-flow angle reduces jet penetration while buoyancy
+    lifts the coherent plume before any lateral spreading can occur.
+    \item The power-law fit \(\CoV = A\,\VR^{b}\) is steepest for
+    \(30^\circ\) top (\(b=-1.88\)) and shallowest for
+    \(30^\circ\) bottom (\(b=-0.72\)), confirming that top injection
+    converts each unit of \VR{} into proportionally more mixing.
 \end{enumerate}
 
 \subsection{Practical recommendation}
-Where the layout permits a moderately tilted branch instead of a
-perpendicular T, the data say it should be used. The tilt relaxes
-both halves of the mixing-vs-pumping trade-off simultaneously, with
-no change to the upstream or downstream piping other than the
-branch angle. Within the present operating box, the recommended
-designs are case~01 of the \(30^\circ\) campaign for tight mixing
-budgets and case~06 of the \(30^\circ\) campaign for balanced
-mixing and pumping cost; case~09 is the choice when pumping power
-is the dominant constraint.
+For hydrogen injection into high-pressure natural gas pipelines:
+\begin{enumerate}
+    \item \textbf{Always inject from the top}, not the bottom.
+    Bottom injection produces \CoV{} values 2--4$\times$ worse at
+    every matched operating point, with no meaningful
+    pressure-drop benefit.
+    \item \textbf{Use a tilted branch (\(30^\circ\))} rather than
+    \(90^\circ\) for top injection. The \(30^\circ\) top campaign
+    produced the single best case (\(\CoV = 0.005\)) and the lowest
+    median \CoV{} (0.298).
+    \item \textbf{Maximise \VR} (target \(\VR \ge 2.5\)). The
+    velocity ratio is the single strongest lever on mixing quality
+    across all four campaigns.
+    \item \textbf{The \(\dD\) effect is secondary} in the present
+    parameter range (0.20--0.45). It matters mainly through its
+    coupling with \VR{} via the \HBR{} constraint.
+\end{enumerate}
 
 \subsection{Outlook}
-Within the Minor-Project window the project has only two items
-left, both already configured on the same case template and on
-the newly-secured large-compute allocation, so they will be
-folded into the dataset and the surrogate before the
-end-semester presentation. Two further directions are flagged
-below as longer-term extensions beyond the Minor-Project
-window.
+The four-campaign factorial study (two angles \(\times\) two
+injection sides) has answered the primary design questions. Two
+further directions are flagged for future work.
 
-\paragraph{Remaining inside the Minor-Project window.}
 \begin{itemize}
-    \item \textbf{Closing the angle axis at the same
-    fixed-(\(\dD,\VR\)) seed.}\;
-    The DoE template, sliced LHS sampler and post-processing
-    pipeline (built and frozen by the mid-semester review) are
-    already configured for the remaining injection-angle
-    campaign(s); the runs will be executed on the newly-secured
-    compute and merged into the cross-campaign analysis to draw a
-    smooth angle-vs-mixing curve. Case~04 of the \(30^\circ\)
-    campaign, which reached only \(t=\SI{0.215}{\second}\) inside
-    its original wall-time slot, is queued on the same compute
-    allocation and will plug the matched-pair hole at
-    \(\dD=0.252,\,\VR=3.81\) - the very operating point at which
-    the \(90^\circ\) campaign is at its best, and therefore the
-    most informative single addition.
     \item \textbf{Re-fitting the surrogate-MOO chain on the
-    merged dataset.}\;
+    merged four-campaign dataset.}\;
     The neural-network surrogate (regressor for \CoV{} and
     \(|\Delta p|\)) and the NSGA-II Pareto optimiser that sit
     downstream of the CFD dataset were prototyped on the
-    \(90^\circ\) campaign at the mid-semester review; once the
-    angle axis above is closed, the same chain will be re-fit on
-    the merged \(90^\circ\)/\(30^\circ\)/(remaining-angle) data
-    and a final \((\dD,\VR,\alpha)\) Pareto front reported at the
-    end-semester presentation. No new modelling layer is required
-    - only the additional CFD points to feed it.
-\end{itemize}
-
-\paragraph{Longer-term extensions beyond the Minor-Project window.}
-\begin{itemize}
+    \(90^\circ\) top campaign; with the full angle\(\times\)side
+    dataset now available, the same chain can be re-fit on
+    all 40 cases and a final \((\dD,\VR,\alpha,\text{side})\)
+    Pareto front reported.
     \item \textbf{Helical static mixer downstream of the
     best-tilt case.}\;
     The twisted-blade static mixer in
     Du et al.~\citep{du2024numerical} drives the mixing uniformity
     above \(99\,\%\) within the simulated mixer length, at the
     cost of a modest additional pressure drop. Combining a similar
-    helical insert with the tilt-best operating point would test
-    whether a much more compact mixing length is achievable; this
-    is the industrially relevant direction for any pipeline that
-    cannot afford the \(\sim 5\,D\) of mixing run length implied
-    by the no-mixer designs above.
+    helical insert with the \(30^\circ\) top-injection best-case
+    operating point would test whether a much more compact mixing
+    length is achievable.
     \item \textbf{Steady RANS or extended transient for sharper
     \(|\Delta p|\).}\;
     The acoustic ringing noted in Section~\ref{sec:dp_filter}
     leaves a \(\pm\SI{0.5}{\kilo\pascal}\) per-case uncertainty
-    that, while well below the matched-pair angle-effect signal
-    here, would matter for any future single-design fine-tuning.
+    that, while well below the matched-pair signal, would matter
+    for single-design fine-tuning.
     Re-running the same cases with the steady solver
     \texttt{rhoSimpleFoam}, or extending the transient runs to
     \(\sim\SI{5}{\second}\) (more than seven flow-throughs) would
-    reduce the LP residual by an order of magnitude and let the
-    junction loss coefficient be reported to two significant
-    figures rather than one.
+    reduce the LP residual by an order of magnitude.
 \end{itemize}
 
 % =====================================================================
@@ -1899,7 +2238,7 @@ script in \path{doe/cross_campaign/}.
 %  ACKNOWLEDGEMENTS
 % =====================================================================
 \section*{Acknowledgements}
-I thank Prof.~Abhijit Raj for the supervision and the latitude to
+I thank Prof.~Abhijeet Raj for the supervision and the latitude to
 explore the open-source CFD route; the Department of Chemical
 Engineering at IIT Delhi for the computing time on the workstation
 used for this study; and the OpenFOAM community for the

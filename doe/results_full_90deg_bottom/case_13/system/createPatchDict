@@ -1,0 +1,31 @@
+/*--------------------------------*- C++ -*----------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      createPatchDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Merge any faces that snappyHexMesh couldn't assign to a named STL
+// (the 'allBoundary' fallback) into the physical branch_inlet patch.
+// This only fires when the mesh actually has an allBoundary patch --
+// Allrun guards the createPatch call with a grep check on boundary file.
+
+pointSync false;
+
+patches
+(
+    {
+        name            branch_inlet;
+        patchInfo
+        {
+            type        patch;
+        }
+        constructFrom   patches;
+        patches         (allBoundary);
+    }
+);
+
+// ************************************************************************* //

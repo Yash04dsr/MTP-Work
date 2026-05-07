@@ -1,0 +1,252 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+
+application         rhoReactingBuoyantFoam;
+
+startFrom           startTime;
+startTime           0;
+stopAt              endTime;
+
+// endTime : 1.2 s  -- ~2 main-pipe flow-throughs of the shortened (R2)
+// domain (L_main / U_main = 6.9 / 10 = 0.69 s).   First 0.6 s is the
+// start-up transient; time-averaging runs from 0.6 s to 1.2 s (0.6 s of
+// averaging = ~0.9 flow-throughs, sufficient for mean-flow convergence of
+// CoV and Delta p per Ayach 2017).
+endTime             1.2;
+
+deltaT              1e-5;
+
+writeControl        adjustable;
+writeInterval       0.1;
+purgeWrite          3;
+writeFormat         ascii;
+writePrecision      10;
+writeCompression    off;
+timeFormat          general;
+timePrecision       8;
+runTimeModifiable   true;
+
+// Courant-based adaptive time step; maxCo 3.5 is comfortable for
+// transient PIMPLE with 2 inner correctors.
+adjustTimeStep      yes;
+maxCo               4.5;
+maxDeltaT           0.01;
+
+functions
+{
+    // -----------------------------------------------------------------
+    //   [1] Residuals and diagnostics (every step)
+    // -----------------------------------------------------------------
+    residuals
+    {
+        type                solverInfo;
+        libs                ("libutilityFunctionObjects.so");
+        fields              (U p_rgh H2 k omega);
+        writeControl        timeStep;
+        writeInterval       1;
+    }
+
+    // R4 : y+ audit at every step on the wall patch.  Writes min/max/avg
+    // to the log and the full y+ volScalarField at each write interval so
+    // we can render the field in post-processing.
+    yPlusAudit
+    {
+        type                yPlus;
+        libs                ("libfieldFunctionObjects.so");
+        writeControl        runTime;
+        writeInterval       0.1;
+        log                 true;
+    }
+
+    // -----------------------------------------------------------------
+    //   [2] Mass balance (inlet + branch + outlet phi)
+    // -----------------------------------------------------------------
+    mainInletFlux
+    {
+        type                surfaceFieldValue;
+        libs                ("libfieldFunctionObjects.so");
+        fields              (phi);
+        operation           sum;
+        regionType          patch;
+        name                main_inlet;
+        writeFields         false;
+        log                 true;
+        writeControl        timeStep;
+        writeInterval       20;
+    }
+
+    // branchInletFlux disabled for parallel runs where branch_inlet
+    // patch may not exist on all processors (small d/D cases).
+    // Mass balance is captured by all_metrics.py instead.
+    /*
+    branchInletFlux
+    {
+        type                surfaceFieldValue;
+        libs                ("libfieldFunctionObjects.so");
+        fields              (phi);
+        operation           sum;
+        regionType          patch;
+        name                branch_inlet;
+        writeFields         false;
+        log                 true;
+        writeControl        timeStep;
+        writeInterval       20;
+    }
+    */
+
+    outletFlux
+    {
+        type                surfaceFieldValue;
+        libs                ("libfieldFunctionObjects.so");
+        fields              (phi);
+        operation           sum;
+        regionType          patch;
+        name                outlet;
+        writeFields         false;
+        log                 true;
+        writeControl        timeStep;
+        writeInterval       20;
+    }
+
+    // -----------------------------------------------------------------
+    //   [3] Pressure drop + outlet mixing (area-weighted, every step)
+    // -----------------------------------------------------------------
+    H2_outletAvg
+    {
+        type                surfaceFieldValue;
+        libs                ("libfieldFunctionObjects.so");
+        fields              (H2);
+        operation           areaAverage;
+        regionType          patch;
+        name                outlet;
+        writeFields         false;
+        log                 true;
+        writeControl        timeStep;
+        writeInterval       20;
+    }
+
+    p_rgh_inlet
+    {
+        type                surfaceFieldValue;
+        libs                ("libfieldFunctionObjects.so");
+        fields              (p_rgh);
+        operation           areaAverage;
+        regionType          patch;
+        name                main_inlet;
+        writeFields         false;
+        log                 true;
+        writeControl        timeStep;
+        writeInterval       20;
+    }
+
+    p_rgh_outlet
+    {
+        type                surfaceFieldValue;
+        libs                ("libfieldFunctionObjects.so");
+        fields              (p_rgh);
+        operation           areaAverage;
+        regionType          patch;
+        name                outlet;
+        writeFields         false;
+        log                 true;
+        writeControl        timeStep;
+        writeInterval       20;
+    }
+
+    // -----------------------------------------------------------------
+    //   [4] R5 : plane-sampled CoV/Delta-p at 4 downstream stations
+    //            z = 3.0, 4.0, 5.0, 6.0  (post-R2 coordinates)
+    //       = 0.7, 1.7, 2.7, 3.7 m downstream of junction (z_jct = 2.3)
+    //       = 1.5, 3.7, 5.9, 8.0 D_main downstream
+    //   Each station writes:
+    //       H2 area-average  -> mean H2 at that plane
+    //       H2 area-average of sqr(H2) -> second moment (enables CoV calc)
+    //       p_rgh area-average -> local pressure level
+    // -----------------------------------------------------------------
+    plane_z3_H2
+    {
+        type            surfaceFieldValue;
+        libs            (fieldFunctionObjects);
+        writeControl    timeStep;
+        writeInterval   20;
+        log             true;
+        writeFields     false;
+        regionType      sampledSurface;
+        name            planeZ3;
+        sampledSurfaceDict
+        {
+            type        plane;
+            planeType   pointAndNormal;
+            pointAndNormalDict { point (0 0 3.0); normal (0 0 1); }
+            interpolate true;
+        }
+        operation       areaAverage;
+        fields          (H2);
+    }
+    plane_z4_H2
+    {
+        $plane_z3_H2;
+        name            planeZ4;
+        sampledSurfaceDict
+        {
+            type        plane;
+            planeType   pointAndNormal;
+            pointAndNormalDict { point (0 0 4.0); normal (0 0 1); }
+            interpolate true;
+        }
+    }
+    plane_z5_H2
+    {
+        $plane_z3_H2;
+        name            planeZ5;
+        sampledSurfaceDict
+        {
+            type        plane;
+            planeType   pointAndNormal;
+            pointAndNormalDict { point (0 0 5.0); normal (0 0 1); }
+            interpolate true;
+        }
+    }
+    plane_z6_H2
+    {
+        $plane_z3_H2;
+        name            planeZ6;
+        sampledSurfaceDict
+        {
+            type        plane;
+            planeType   pointAndNormal;
+            pointAndNormalDict { point (0 0 6.0); normal (0 0 1); }
+            interpolate true;
+        }
+    }
+
+    plane_z3_p { $plane_z3_H2; name planeZ3p; fields (p_rgh); }
+    plane_z4_p { $plane_z4_H2; name planeZ4p; fields (p_rgh); }
+    plane_z5_p { $plane_z5_H2; name planeZ5p; fields (p_rgh); }
+    plane_z6_p { $plane_z6_H2; name planeZ6p; fields (p_rgh); }
+
+    // -----------------------------------------------------------------
+    //   [5] Time-averaged fields (volFieldValue) -- CoV uses mean H2.
+    //       Starts at t = 0.6 s (start-up transient discarded).
+    // -----------------------------------------------------------------
+    fieldAverage
+    {
+        type            fieldAverage;
+        libs            ("libfieldFunctionObjects.so");
+        writeControl    writeTime;
+        timeStart       0.6;
+        fields
+        (
+            U     { mean on; prime2Mean off; base time; }
+            H2    { mean on; prime2Mean on;  base time; }
+            CH4   { mean on; prime2Mean on;  base time; }
+            p_rgh { mean on; prime2Mean off; base time; }
+            k     { mean on; prime2Mean off; base time; }
+        );
+    }
+}

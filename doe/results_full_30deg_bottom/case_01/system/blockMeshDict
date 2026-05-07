@@ -1,0 +1,92 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+
+// -----------------------------------------------------------------------------
+//  DoE baseline: half-domain (x >= 0) + shortened main pipe.
+//
+//    R2 : upstream main pipe shortened from 4.6 m -> 2.3 m
+//         z-range: [-0.05, 6.95] ; junction stays at z = 2.30
+//    SYM: x-range clipped to [0, 0.30]; x = 0 face becomes a symmetryPlane
+//         patch ("sym"). All cells/faces outside x = 0 are omitted.
+//
+//  Background cell target  (half-domain, post-R2):
+//       x-dim  [0.00, 0.30]    = 10 cells  (30 mm each, same as full domain)
+//       y-dim  [-0.30, 1.80]   = 70 cells  (30 mm each)
+//       z-dim  [-0.15, 6.95]   = 237 cells (30 mm each)
+//    -> background = 10 x 70 x 237 = 165,900 cells   (~44 % of old 372 k)
+//
+//  The y/z bounds are generous enough to contain the branch STL for any
+//  injection angle ALPHA_DEG in [25, 90] deg without touching blockMeshDict:
+//      - at ALPHA=90 the branch tip sits at y=R1+L_BRANCH ~= 1.61 -> fits in 1.80
+//      - at ALPHA=25 the branch tip sits at z=Z_JCT - L_BRANCH*cos(25) ~= 1.05 -> fits in -0.15
+//  Outside this range regen blockMeshDict with wider bounds.
+//
+//  After snappy (level 1 wall + level 2 junction sphere + level 3 core +
+//  level 1 cylinder), the medium-class DoE mesh sits at ~500 - 550 k cells.
+// -----------------------------------------------------------------------------
+
+scale   1;
+
+xMin    0.00;
+xMax    0.30;
+yMin   -1.80;
+yMax    0.30;
+zMin   -0.15;
+zMax    6.95;
+
+vertices
+(
+    ($xMin $yMin $zMin)   // 0
+    ($xMax $yMin $zMin)   // 1
+    ($xMax $yMax $zMin)   // 2
+    ($xMin $yMax $zMin)   // 3
+    ($xMin $yMin $zMax)   // 4
+    ($xMax $yMin $zMax)   // 5
+    ($xMax $yMax $zMax)   // 6
+    ($xMin $yMax $zMax)   // 7
+);
+
+// Uniform 30 mm cells in all three directions (isotropic base mesh).
+blocks
+(
+    hex (0 1 2 3 4 5 6 7) (10 70 237) simpleGrading (1 1 1)
+);
+
+edges ();
+
+boundary
+(
+    // x = 0 face -> symmetryPlane (the mirror plane for the T-junction).
+    //   Faces: (0, 4, 7, 3) -- the xMin face of the hex block.
+    sym
+    {
+        type        symmetryPlane;
+        faces
+        (
+            (0 4 7 3)
+        );
+    }
+
+    // All other background-mesh faces are thrown into a catch-all patch;
+    // snappy will re-assign wall / inlet / outlet to their proper patches
+    // via the refinementSurfaces block.
+    allBoundary
+    {
+        type        patch;
+        faces
+        (
+            (0 3 2 1)   // zMin
+            (4 5 6 7)   // zMax
+            (0 1 5 4)   // yMin
+            (3 7 6 2)   // yMax
+            (1 2 6 5)   // xMax
+        );
+    }
+);
+
+mergePatchPairs ();
