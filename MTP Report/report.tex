@@ -1165,6 +1165,38 @@ penetration into the bulk.
     \label{fig:case08_xz}
 \end{figure}
 
+\noindent The spatial evolution of mixing along the pipe is
+quantified in Figure~\ref{fig:cov_zD_90}, which plots \CoV{}
+vs.\ downstream distance \(z/D\) for both cases.  Case~04
+exhibits a steep, monotonic decay from \(\CoV \approx 0.7\) near
+the junction to \(0.06\) at the outlet, approaching the
+\(\CoV = 0.05\) industrial threshold.  Case~08 decays much more
+slowly, remaining above \(0.4\) at the outlet due to persistent
+crown-layer stratification.
+
+\begin{figure}[H]
+    \centering
+    \begin{minipage}[t]{0.48\textwidth}
+       \centering
+       \includegraphics[width=\textwidth]{../doe/results_full/cases/case_04/figures/fig_CoV_vs_zD.png}
+    \end{minipage}\hfill
+    \begin{minipage}[t]{0.48\textwidth}
+       \centering
+       \includegraphics[width=\textwidth]{../doe/results_full/cases/case_08/figures/fig_CoV_vs_zD.png}
+    \end{minipage}
+    \caption{Mixing uniformity decay along the pipe:
+    \CoV{} vs.\ downstream distance \(z/D\) for the best
+    (case~04, left) and worst (case~08, right) cases of the
+    \(90^\circ\) campaign.  The green band marks
+    \(\CoV < 0.05\) (well-mixed).  Case~04 nearly reaches the
+    threshold; case~08 remains far above it.  Values are
+    computed from PyVista cross-section slices with uniform
+    weighting and should be read as qualitative trend indicators;
+    the official \CoV{} numbers in Table~\ref{tab:90deg_summary}
+    use OpenFOAM's area-weighted \texttt{surfaceFieldValue}.}
+    \label{fig:cov_zD_90}
+\end{figure}
+
 \subsection{Effect of diameter ratio on mixing}
 \label{sec:results_90_dD}
 At fixed \HBR{} the influence of \(\dD\) on mixing is weak in this
@@ -1492,7 +1524,7 @@ case & \(\dD\) & \(\VR\) & \(\HBR\) &
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{../doe/cross_campaign/figures/fig_paired_comparison.png}
+    \includegraphics[width=\textwidth]{../doe/cross_campaign/figures/fig2_matched_pairs_top_vs_bottom.png}
     \caption{Matched-pair angle effect. Each pair shares the
     independent \((\dD,\VR)\) (and therefore the derived \HBR);
     only \(\alpha\) differs. Green arrows indicate that the
@@ -1549,7 +1581,7 @@ quality.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.85\textwidth]{../doe/cross_campaign/figures/fig_powerlaw_CoV_vs_VR.png}
+    \includegraphics[width=0.85\textwidth]{../doe/cross_campaign/figures/fig1_CoV_vs_VR.png}
     \caption{Power-law fit of \CoV{} vs.\ \VR{} for the two
     campaigns. The \(30^\circ\) slope is steeper than the
     \(90^\circ\) slope, so each unit of \(\VR\) buys more mixing
@@ -1593,7 +1625,7 @@ less than half the pumping cost (\(\SI{1.3}{\kilo\pascal}\)).
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.85\textwidth]{../doe/cross_campaign/figures/fig_pareto.png}
+    \includegraphics[width=0.85\textwidth]{../doe/cross_campaign/figures/fig3_pareto.png}
     \caption{Pareto front of \CoV{} vs.\ \(|\Delta p_{\mathrm{rgh}}|\)
     for the two campaigns. Each point is a completed case;
     lower-left is better. Every \(90^\circ\) point is dominated by
@@ -1613,7 +1645,7 @@ cannot match anywhere in the \((\dD,\VR)\) box.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{../doe/cross_campaign/figures/fig_heatmap_CoV.png}
+    \includegraphics[width=\textwidth]{../doe/cross_campaign/figures/fig4_heatmap_CoV.png}
     \caption{Design-space heatmap of \CoV{} in the \((\dD,\VR)\)
     plane, \(90^\circ\) on the left and \(30^\circ\) on the right.
     Each tile is annotated with the case number and \CoV{} value.
@@ -1654,7 +1686,7 @@ term that the perpendicular T cannot avoid.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.85\textwidth]{../doe/cross_campaign/figures/fig_loss_coefficient.png}
+    \includegraphics[width=0.85\textwidth]{../doe/cross_campaign/figures/fig8_dP_vs_VR_errorbars.png}
     \caption{Junction loss coefficient
     \(K = |\Delta p_{\mathrm{rgh}}|/q_{\mathrm{dyn,main}}\) plotted
     against \HBR. The \(30^\circ\) tilt sits below the \(90^\circ\)
@@ -1694,13 +1726,20 @@ momentum is already partially aligned with the main flow.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{../doe/cross_campaign/figures/fig_xz_montage.png}
-    \caption{Side-by-side \(Y_{\Hi}\) field on the \(x=0\) plane
-    for matched \(\dD\) bins. Left column: \(\alpha=90^\circ\).
-    Right column: \(\alpha=30^\circ\). Per-row title gives the
-    case number and the corresponding \CoV. The tilted plume
-    diffuses across the cross-section significantly earlier than
-    the perpendicular plume at every matched bin.}
+    \begin{subfigure}[b]{0.48\textwidth}
+       \centering
+       \includegraphics[width=\textwidth]{../doe/results_full/cases/case_06/figures/fig_H2_long.png}
+       \caption{\(90^\circ\), case~06 (\(\CoV=0.20\))}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+       \centering
+       \includegraphics[width=\textwidth]{../doe/results_full_30deg/cases/case_06/figures/fig_H2_long.png}
+       \caption{\(30^\circ\), case~06 (\(\CoV=0.09\))}
+    \end{subfigure}
+    \caption{Longitudinal centreline \(Y_{\Hi}\) comparison for a
+    matched pair (case~06, \(\dD=0.296\), \(\VR=2.61\)).
+    The \(30^\circ\) plume diffuses across the cross-section
+    significantly earlier than the \(90^\circ\) plume.}
     \label{fig:xz_montage}
 \end{figure}
 
@@ -1881,6 +1920,32 @@ further downstream before decaying.
     \label{fig:bot_long_04}
 \end{figure}
 
+\noindent Figure~\ref{fig:cov_zD_topbot} compares the \CoV{} decay
+along the pipe for the same case~04 pair.  With top injection
+\CoV{} decays steeply (reaching \(\sim\!0.07\) at the outlet);
+with bottom injection the decay is much slower, levelling off near
+\(\CoV \sim 0.28\) as the coherent rising plume fails to spread
+laterally.
+
+\begin{figure}[H]
+    \centering
+    \begin{minipage}[t]{0.48\textwidth}
+       \centering
+       \includegraphics[width=\textwidth]{../doe/results_full/cases/case_04/figures/fig_CoV_vs_zD.png}
+    \end{minipage}\hfill
+    \begin{minipage}[t]{0.48\textwidth}
+       \centering
+       \includegraphics[width=\textwidth]{../doe/results_full_90deg_bottom/case_04/figures/fig_CoV_vs_zD.png}
+    \end{minipage}
+    \caption{\CoV{} vs.\ downstream distance \(z/D\) for case~04
+    (\(\VR=3.81\)) at \(90^\circ\): top injection (left) vs.\
+    bottom injection (right).  Top injection reaches near the
+    \(\CoV = 0.05\) threshold; bottom injection plateaus at
+    \(\sim\!5\times\) higher \CoV.  Green band =
+    \(\CoV < 0.05\).}
+    \label{fig:cov_zD_topbot}
+\end{figure}
+
 % =====================================================================
 %  9. FOUR-CAMPAIGN CROSS-CAMPAIGN SYNTHESIS
 % =====================================================================
@@ -1958,19 +2023,180 @@ statistically significant regardless of per-pair magnitude.
     \label{fig:cross4_matched}
 \end{figure}
 
-\subsection{Pressure drop is not a differentiator}
+\subsection{Pressure-drop trends across all four campaigns}
 \label{sec:cross4_dp}
 
-After LP-filtering, the four campaign medians for
-\(|\Delta p_{\mathrm{rgh}}|\) are \SI{1.05}{\kilo\pascal}
-(\(90^\circ\)~top), \SI{0.53}{\kilo\pascal} (\(30^\circ\)~top),
+Unlike the mixing metric \CoV, the LP-filtered pressure drop
+\(|\Delta p_{\mathrm{rgh}}|\) carries a large acoustic uncertainty.
+The compressible solver (\texttt{rhoReactingBuoyantFoam}) captures
+high-frequency pressure waves whose standard deviation after LP
+filtering is \(\sigma \approx 10\)-\(\SI{23}{\kilo\pascal}\),
+while the LP-filtered \emph{mean} \(|\Delta p|\) is only
+\(0\)-\(\SI{8}{\kilo\pascal}\) (signal-to-noise ratio typically
+\(\sim 0.05\)-\(0.19\)). The analysis below should therefore be
+read as trend-level; case-to-case precision is
+\(\pm\SI{0.5}{\kilo\pascal}\) at best.
+
+\subsubsection{Injection side does not affect pressure drop}
+
+Figure~\ref{fig:cross4_bar_dP} shows the median
+\(|\Delta p_{\mathrm{rgh}}|\) by campaign. The four medians are
+\SI{1.05}{\kilo\pascal} (\(90^\circ\)~top),
+\SI{0.53}{\kilo\pascal} (\(30^\circ\)~top),
 \SI{1.58}{\kilo\pascal} (\(90^\circ\)~bot) and
-\SI{1.02}{\kilo\pascal} (\(30^\circ\)~bot). All four lie within a
-\SI{1}{\kilo\pascal} band --- well inside the per-case LP-filter
-uncertainty of \(\pm\SI{0.5}{\kilo\pascal}\). Switching from top to
-bottom injection therefore does not save pumping energy; it only
-degrades mixing. This makes top injection \emph{strictly dominant}
-over bottom injection in the present parameter space.
+\SI{1.02}{\kilo\pascal} (\(30^\circ\)~bot) --- all within a
+\(\sim\SI{1}{\kilo\pascal}\) band. Switching from top to bottom
+injection therefore does \emph{not} save pumping energy; it only
+degrades mixing. Top injection is strictly dominant in the present
+parameter space.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{../doe/cross_campaign/figures/fig11_bar_median_dP.png}
+    \caption{Median \(|\Delta p_{\mathrm{rgh}}|\) by campaign with
+    min--max error bars. The light-red band indicates the typical
+    \(\pm 1\sigma\) acoustic noise (\(\approx\SI{15}{\kilo\pascal}\)),
+    confirming that all four medians are small relative to the
+    acoustic floor. The inter-campaign differences are within the
+    noise band and therefore not statistically significant.}
+    \label{fig:cross4_bar_dP}
+\end{figure}
+
+\textbf{Physical justification.} The junction pressure loss is set
+by the local momentum budget at the T-junction: the abrupt area
+expansion and the turning of the branch flow into the main pipe.
+These are determined by the branch-to-main area ratio \((\dD)^2\)
+and the geometric turning angle \(\alpha\), both of which are
+\emph{identical} for top and bottom injection. Flipping the branch
+from top to bottom changes the direction of the buoyancy force on
+the \emph{downstream} plume but does not alter the junction
+geometry, so the junction loss coefficient
+\(K = |\Delta p|/q_{\mathrm{dyn,main}}\) is unchanged.
+
+\subsubsection{The \texorpdfstring{$30^\circ$}{30 deg} tilt reduces pressure drop}
+
+Comparing the two angles at the same injection side:
+\(30^\circ\)~top (\SI{0.53}{\kilo\pascal}) is roughly half of
+\(90^\circ\)~top (\SI{1.05}{\kilo\pascal}); \(30^\circ\)~bot
+(\SI{1.02}{\kilo\pascal}) is below \(90^\circ\)~bot
+(\SI{1.58}{\kilo\pascal}). This is consistent with the
+matched-pair finding in Section~\ref{sec:cross_pairs} and with
+the classical handbook result of
+\citet{idelchik1986handbook}: the junction loss coefficient for a
+diverging tee decreases monotonically as the branch angle
+decreases from \(90^\circ\) toward \(0^\circ\) (co-flow), because
+the branch jet at \(30^\circ\) enters with a large streamwise
+momentum component and only needs to turn through \(30^\circ\)
+instead of \(90^\circ\). The \(60^\circ\) of saved turning loss is
+never generated.
+
+\subsubsection{\texorpdfstring{$|\Delta p|$}{|dP|} vs velocity ratio}
+
+Figure~\ref{fig:cross4_dP_vr} plots the LP-filtered
+\(\Delta p_{\mathrm{rgh}}\) against \VR{} with \(\pm 1\sigma\)
+acoustic error bars.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{../doe/cross_campaign/figures/fig8_dP_vs_VR_errorbars.png}
+    \caption{LP-filtered \(\Delta p_{\mathrm{rgh}}\) vs.\ \VR{}
+    for all four campaigns. Error bars show \(\pm 1\sigma\) of the
+    LP-filtered acoustic ringing (\(\sim 10\)-\(\SI{23}{\kilo\pascal}\)).
+    The data points cluster near zero relative to the error bars,
+    confirming that pressure drop is a weak signal in the present
+    simulation window.}
+    \label{fig:cross4_dP_vr}
+\end{figure}
+
+Despite the noise, two trends are visible. For
+\textbf{top injection} (both angles), \(|\Delta p|\) increases
+with \VR{} (\(r = 0.53\) at \(90^\circ\), \(r = 0.98\) at
+\(30^\circ\)). This is expected: the junction loss scales as
+\(K \cdot q_{\mathrm{branch}} = K \cdot \tfrac{1}{2}\rho
+u_{\mathrm{branch}}^{2}\), and since
+\(\VR = u_{\mathrm{branch}}/u_{\mathrm{main}}\), higher \VR{}
+directly increases the branch dynamic pressure and therefore the
+total junction loss. The correlation is stronger at \(30^\circ\)
+because the co-flow momentum component grows with \VR{}: at low
+\VR{} the tilted jet barely contributes to the streamwise pressure
+field, while at high \VR{} it adds significant momentum.
+
+For \textbf{bottom injection}, the correlation breaks down
+(\(r = 0.26\) at \(90^\circ\), \(r = -0.78\) at \(30^\circ\)).
+The coherent buoyant plume rising from the bottom acts as a
+partial obstruction to the main flow, redistributing pressure in
+ways that do not scale simply with \VR.
+
+\subsubsection{\texorpdfstring{$|\Delta p|$}{|dP|} vs \texorpdfstring{$d/D$}{d/D}}
+
+Figure~\ref{fig:cross4_dP_dD} shows \(|\Delta p|\) against \(\dD\)
+at low \VR{} (\(0.6 \le \VR \le 1.5\)).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{../doe/cross_campaign/figures/fig10_dP_vs_dD.png}
+    \caption{\(|\Delta p_{\mathrm{rgh}}|\) vs.\ \(\dD\) at low
+    \VR{} (\(0.6\)-\(1.5\)). At \(90^\circ\) (both top and
+    bottom), larger \(\dD\) generally produces higher
+    \(|\Delta p|\). At \(30^\circ\), the trend is weaker because
+    the co-flow alignment absorbs the additional momentum without
+    extra turning loss.}
+    \label{fig:cross4_dP_dD}
+\end{figure}
+
+At \(90^\circ\), larger \(\dD\) increases \(|\Delta p|\) (from
+\(\sim 0.5\,\si{\kilo\pascal}\) at \(\dD = 0.25\) to
+\(\sim 1.3\)-\(\SI{2.7}{\kilo\pascal}\) at \(\dD = 0.40\)).
+A larger branch port injects more mass (and therefore momentum) at
+fixed \VR{}, and at \(90^\circ\) all of this momentum must turn
+through a right angle. At \(30^\circ\), the co-flow alignment
+absorbs the additional momentum without generating proportional
+turning loss, so the \(\dD\) effect on \(|\Delta p|\) is much
+weaker.
+
+\subsubsection{Acoustic ringing as a secondary mixing diagnostic}
+\label{sec:acoustic_proxy}
+
+An unexpected but physically meaningful finding is that the
+\emph{amplitude} of the acoustic ringing (the LP-filter standard
+deviation \(\sigma_{|\Delta p|}\)) itself correlates with the
+injection configuration
+(Fig.~\ref{fig:cross4_acoustic_noise}).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{../doe/cross_campaign/figures/fig9_acoustic_noise_vs_VR.png}
+    \caption{Acoustic ringing amplitude
+    (\(\sigma_{|\Delta p|}\)) vs.\ \VR. For \(90^\circ\)~top
+    (blue), higher \VR{} \emph{decreases} the noise (\(r=-0.94\)):
+    the well-mixed pipe is acoustically quiet. For
+    \(90^\circ\)~bottom (red), higher \VR{} \emph{increases} the
+    noise (\(r=+0.90\)): the persistent buoyant plume scatters
+    acoustic waves.}
+    \label{fig:cross4_acoustic_noise}
+\end{figure}
+
+For \textbf{\(90^\circ\)~top}, the acoustic noise \emph{drops}
+from \(\sim\SI{15}{\kilo\pascal}\) at \(\VR = 0.7\) to
+\(\sim\SI{8}{\kilo\pascal}\) at \(\VR = 3.8\) (\(r = -0.94\)).
+When the high-\VR{} jet mixes well (\(\CoV \to 0.07\)), the pipe
+becomes compositionally uniform: a uniform-density pipe is
+acoustically simple, and pressure waves propagate without
+scattering.
+
+For \textbf{\(90^\circ\)~bottom}, the noise \emph{rises} from
+\(\sim\SI{14}{\kilo\pascal}\) to \(\sim\SI{23}{\kilo\pascal}\)
+(\(r = +0.90\)). The coherent buoyant \Hi{} column creates a
+persistent density discontinuity in the pipe cross-section. This
+density gradient acts as a partial acoustic reflector, exciting
+standing-wave modes and amplifying pressure oscillations. The worse
+the mixing (higher \CoV), the sharper the density gradient, the
+louder the acoustics.
+
+This correlation provides a secondary validation of the mixing
+physics: the acoustic noise amplitude tracks \CoV{} as expected
+from the density-stratification mechanism, confirming that the
+solver is correctly capturing the buoyancy-driven plume dynamics.
 
 \subsection{Pareto front: four campaigns}
 \label{sec:cross4_pareto}
@@ -2100,6 +2326,240 @@ penetration.
 % =====================================================================
 %  10. CONCLUSIONS
 % =====================================================================
+% =====================================================================
+%  SURROGATE MODELLING AND OPTIMISATION
+% =====================================================================
+\section{Surrogate modelling and multi-objective optimisation}
+\label{sec:surrogate}
+
+As proposed in the project plan, the 40-case cross-campaign CFD
+dataset is used to train surrogate models that approximate the
+mapping from the design variables to both objective functions.
+The trained surrogate replaces the expensive CFD evaluation
+(\(\sim\SI{40}{\minute}\) per case on 20~cores) with a prediction
+that costs \(\sim\SI{1}{\milli\second}\), enabling the NSGA-II
+evolutionary optimiser to explore the design space
+exhaustively.
+
+\subsection{Feature encoding}
+\label{sec:surr_encoding}
+Following the scheme of \citet{Su2022}, the five design
+parameters are encoded into a six-dimensional feature vector:
+\[
+   \mathbf{x}
+   = [\,\underbrace{x_1,\, x_2}_{\text{One-Hot}(P_{\mathrm{inj}})},\;
+      \underbrace{x_3}_{\alpha},\;
+      \underbrace{x_4}_{d/D},\;
+      \underbrace{x_5}_{\VR},\;
+      \underbrace{x_6}_{\HBR}\,]
+   \in \mathbb{R}^{6},
+\]
+where the injection side is one-hot encoded as
+\(P_{\mathrm{inj}}^{\text{top}}=[1,0]\),
+\(P_{\mathrm{inj}}^{\text{bot}}=[0,1]\).
+All features are MinMax-scaled to \([0,1]\) using the training-set
+statistics; the two targets (\CoV, \(|\Delta p|\)) are likewise
+scaled to \([0,1]\).
+
+\subsection{Models compared}
+Four surrogate architectures were benchmarked:
+\begin{enumerate}
+   \item \textbf{DNN} (as specified in the project plan):
+         \(6\!\to\!64\!\to\!128\!\to\!64\!\to\!32\!\to\!2\) with
+         ReLU activations, Adam optimiser
+         (\(\eta=10^{-3}\), \(\lambda_{\mathrm{L2}}=10^{-4}\)),
+         early stopping on a 15\% inner-validation split.
+         Evaluated by 5-fold cross-validation.
+   \item \textbf{Gaussian Process Regression (GPR)}: Mat\'ern-5/2
+         kernel with automatic relevance determination and a white-noise
+         term, 10~restarts.  Evaluated by leave-one-out (LOO-CV).
+   \item \textbf{Random Forest (RF)}: 200 trees,
+         \(\texttt{min\_samples\_leaf}=2\).  LOO-CV.
+   \item \textbf{Gradient Boosting (GB)}: 200 estimators,
+         \(\texttt{max\_depth}=3\), \(\texttt{learning\_rate}=0.05\).
+         LOO-CV.
+\end{enumerate}
+
+\subsection{Error analysis}
+Table~\ref{tab:surrogate_error} reports the cross-validated
+accuracy of each model on both targets.
+
+\begin{table}[H]
+\centering
+\caption{Cross-validated surrogate accuracy on 40~CFD cases}
+\label{tab:surrogate_error}
+\begin{tabular}{@{}llcccc@{}}
+\toprule
+\textbf{Model} & \textbf{Target} & \(\bm{R^{2}}\) & \textbf{MAE}
+  & \textbf{RMSE} & \textbf{MAPE\,(\%)} \\ \midrule
+GPR            & \CoV{}          & \textbf{0.925}  & 0.083 & 0.102 & 44 \\
+Gradient Boost & \CoV{}          & 0.897           & 0.096 & 0.119 & 38 \\
+Random Forest  & \CoV{}          & 0.865           & 0.103 & 0.137 & 111 \\
+DNN (5-fold)   & \CoV{}          & 0.735           & 0.129 & 0.192 & 56 \\ \midrule
+GPR            & \(|\Delta p|\)  & 0.081           & 0.93\,kPa & 1.47\,kPa & --- \\
+All others     & \(|\Delta p|\)  & \(\le 0.02\)    & 0.85--1.05\,kPa & 1.5--1.6\,kPa & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent
+\textbf{Key findings from the error analysis:}
+\begin{enumerate}
+   \item \textbf{CoV is well predicted.}
+         The GPR achieves \(R^{2}=0.925\) with an MAE of 0.083
+         (on a range of \([0.005,\,1.34]\)), confirming that the
+         design variables encode the dominant physics of mixing.
+         Gradient Boosting is a close second (\(R^{2}=0.90\)).
+   \item \textbf{The DNN is under-powered at \(N\!=\!40\).}
+         With \(\sim\!17\,400\) trainable parameters vs.\ 40 samples,
+         the DNN overfits despite L\(_2\) regularisation and early
+         stopping.  Its 5-fold \(R^{2}=0.74\) is markedly below
+         GPR.  \emph{This is expected}: the DNN architecture was
+         designed for the 420-case DoE in the project plan.
+         At current sample size the kernel-based GPR, which has only
+         a handful of hyperparameters, is the appropriate choice.
+   \item \textbf{\(\Delta p\) is unpredictable (\(R^{2}\!\approx\!0\)).}
+         No model can learn a mapping from
+         \((\alpha,\dD,\VR,\HBR,\text{side})\) to the LP-filtered
+         \(\Delta p\) at current data size.  This is
+         consistent with the acoustic-noise analysis in
+         Section~\ref{sec:dp_filter}: the per-case
+         \(\pm\!\SI{10}{\kilo\pascal}\) acoustic standard deviation
+         dwarfs the \(\lesssim\!\SI{2}{\kilo\pascal}\) between-case
+         signal, so any systematic trend is buried in noise.
+         With only two angle levels and 40 total rows, the
+         signal-to-noise ratio is insufficient for surrogate
+         learning.  \emph{Implication}: the Pareto front below
+         should be interpreted as a \textbf{CoV-only}
+         optimisation; the \(\Delta p\) axis serves as a
+         qualitative indicator, not a quantitative predictor.
+\end{enumerate}
+
+The parity and residual-distribution plots for all four models
+are shown in Figure~\ref{fig:parity_models} and the \(R^{2}\)
+comparison in Figure~\ref{fig:r2_bar}.
+
+\begin{figure}[H]
+   \centering
+   \includegraphics[width=0.75\textwidth]{../doe/surrogate/figures/fig_dnn_training_loss.png}
+   \caption{DNN training convergence (best fold).  The
+   validation loss plateaus after \(\sim\!150\) epochs; early stopping
+   terminates at \(\sim\!250\) epochs.  Despite convergence, the
+   5-fold \(R^{2}=0.71\) for \CoV{} indicates overfitting relative to
+   GPR, consistent with \(\sim\!17\,400\) parameters trained on only
+   32 samples per fold.}
+   \label{fig:dnn_loss}
+\end{figure}
+
+\begin{figure}[H]
+   \centering
+   \includegraphics[width=\textwidth]{../doe/surrogate/figures/fig_parity_all_models.png}
+   \caption{Parity plots (predicted vs.\ actual, cross-validated)
+   for all four surrogate models.  Top row: \CoV; bottom row:
+   \(|\Delta p|\).  GPR provides the tightest scatter for \CoV.}
+   \label{fig:parity_models}
+\end{figure}
+
+\begin{figure}[H]
+   \centering
+   \includegraphics[width=0.85\textwidth]{../doe/surrogate/figures/fig_r2_comparison.png}
+   \caption{\(R^{2}\) comparison by target.  GPR leads for \CoV;
+   all models fail for \(|\Delta p|\) due to acoustic noise.}
+   \label{fig:r2_bar}
+\end{figure}
+
+\begin{figure}[H]
+   \centering
+   \includegraphics[width=0.85\textwidth]{../doe/surrogate/figures/fig_residuals.png}
+   \caption{Residual distributions for \CoV{} (left) and
+   \(|\Delta p|\) (right).  The GPR residuals for \CoV{} are the
+   most tightly centred around zero.  All models show wide, flat
+   residual distributions for \(\Delta p\), confirming the signal
+   is dominated by noise.}
+   \label{fig:residuals}
+\end{figure}
+
+\subsection{NSGA-II optimisation on GPR surrogate}
+\label{sec:nsga2}
+Given the error analysis, the GPR surrogate (the best-performing
+model) was fitted on all 40 cases and embedded in NSGA-II with
+the same settings as the project plan
+(\(N_{\text{pop}}=200\), \(G=150\) generations, SBX crossover
+with \(\eta_c=15\), polynomial mutation with \(\eta_m=20\)).
+The optimisation was run independently for Top and Bottom
+injection.  The resulting Pareto fronts are shown in
+Figure~\ref{fig:pareto_surrogate}, overlaid with the actual
+CFD data.
+
+\begin{figure}[H]
+   \centering
+   \includegraphics[width=0.9\textwidth]{../doe/surrogate/figures/fig_pareto_front_surrogate.png}
+   \caption{Pareto fronts from NSGA-II on the GPR surrogate.
+   Hollow markers show actual CFD data.  The top-injection front
+   dominates the bottom-injection front, consistent with the
+   CFD cross-campaign analysis.}
+   \label{fig:pareto_surrogate}
+\end{figure}
+
+\noindent
+\textbf{Knee-point designs} (closest to the utopia point in
+normalised objective space):
+\begin{itemize}
+   \item \textbf{Top injection}: \(\alpha=30^\circ\),
+         \(\dD=0.45\), \(\VR=5.82\), \(\HBR=6.0\,\%\)
+         \(\Rightarrow\) predicted \(\CoV \approx 0.089\),
+         \(|\Delta p| \approx \SI{0.14}{\kilo\pascal}\).
+   \item \textbf{Bottom injection}: \(\alpha=90^\circ\),
+         \(\dD=0.26\), \(\VR=5.84\), \(\HBR=19.4\,\%\)
+         \(\Rightarrow\) predicted \(\CoV \approx 0.048\),
+         \(|\Delta p| \approx \SI{0.97}{\kilo\pascal}\).
+\end{itemize}
+Both knee points maximise \VR, confirming the SHAP analysis
+(Figure~\ref{fig:shap}) which identifies \VR{} and injection
+side as the two dominant features for \CoV.  Surrogate
+predictions are clamped to \(\CoV \ge 0\) to prevent
+non-physical extrapolation.
+
+\begin{figure}[H]
+   \centering
+   \includegraphics[width=0.85\textwidth]{../doe/surrogate/figures/fig_shap_importance.png}
+   \caption{SHAP feature importance for the GPR surrogate.
+   Left: \CoV{} (VR and injection side dominate).
+   Right: \(|\Delta p|\) (no clear dominant feature, consistent
+   with the unpredictable \(\Delta p\) signal).}
+   \label{fig:shap}
+\end{figure}
+
+\begin{figure}[H]
+   \centering
+   \includegraphics[width=0.85\textwidth]{../doe/surrogate/figures/fig_pareto_design_vars.png}
+   \caption{Distribution of design variables on the Pareto front.
+   Both injection sides converge to high VR; top injection prefers
+   low angles while bottom injection favours \(90^\circ\).}
+   \label{fig:pareto_vars}
+\end{figure}
+
+\subsection{Surrogate modelling: assessment and path forward}
+The GPR surrogate for \CoV{} (\(R^{2}=0.93\)) is within the
+acceptable range for a preliminary Pareto search (the
+literature threshold for ``usable surrogate'' is typically
+\(R^{2}>0.90\)).  However, two caveats apply:
+\begin{itemize}
+   \item The \(\Delta p\) surrogate is \textbf{not usable}
+         (\(R^{2}\approx 0\)). A reliable \(\Delta p\) predictor
+         requires either (a)~running the simulations longer to reduce
+         acoustic noise, or (b)~switching to a steady-state solver
+         (\texttt{rhoSimpleFoam}).
+   \item With only 40 samples spanning two angles and two injection
+         sides, the surrogate has limited extrapolation ability.
+         Extending the DoE to the full 420-case plan
+         (five angles \(\times\) three \(\dD\) levels \(\times\) two
+         sides) would provide the data density needed for the DNN
+         architecture and a reliable \(\Delta p\) model.
+\end{itemize}
+
+% =====================================================================
+
 \section{Conclusions and outlook}
 \label{sec:concl}
 
@@ -2177,15 +2637,15 @@ injection sides) has answered the primary design questions. Two
 further directions are flagged for future work.
 
 \begin{itemize}
-    \item \textbf{Re-fitting the surrogate-MOO chain on the
-    merged four-campaign dataset.}\;
-    The neural-network surrogate (regressor for \CoV{} and
-    \(|\Delta p|\)) and the NSGA-II Pareto optimiser that sit
-    downstream of the CFD dataset were prototyped on the
-    \(90^\circ\) top campaign; with the full angle\(\times\)side
-    dataset now available, the same chain can be re-fit on
-    all 40 cases and a final \((\dD,\VR,\alpha,\text{side})\)
-    Pareto front reported.
+    \item \textbf{Expanding the DoE for the DNN surrogate.}\;
+    The GPR surrogate fitted on all 40~cases
+    (Section~\ref{sec:surrogate}) achieves \(R^{2}=0.93\) for
+    \CoV{} but cannot learn \(\Delta p\).
+    Extending the DoE to the full 420-case plan
+    (five angles, three \(\dD\) levels, 14~LHS samples per mesh,
+    two injection sides) would supply the data density needed for
+    the \(6\!\to\!64\!\to\!128\!\to\!64\!\to\!32\!\to\!2\) DNN
+    architecture and a reliable bi-objective Pareto front.
     \item \textbf{Helical static mixer downstream of the
     best-tilt case.}\;
     The twisted-blade static mixer in

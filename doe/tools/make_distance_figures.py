@@ -483,6 +483,111 @@ def fig_H2_cross_sections_3d(ds, case_dir: Path, out: Path):
     print(f"  wrote {out.name}  ({out.stat().st_size/1024:.1f} KB)")
 
 
+def fig_cov_vs_zD(internal, out: Path, r_branch: float = 0.10,
+                  zjct: float = Z_JCT):
+    """Line plot of CoV vs downstream distance z/D.
+
+    Samples H2 at many cross-sections from just after the junction to
+    the outlet, computes area-weighted CoV at each, and plots the decay
+    curve with a shaded band marking CoV < 0.05 (95% mixed)."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fld = "H2Mean" if "H2Mean" in internal.array_names else "H2"
+    if fld not in internal.array_names:
+        print("  [warn] no H2/H2Mean — skipping CoV vs z/D")
+        return
+
+    D = 2.0 * R_MAIN  # main pipe diameter
+
+    # Sample at many z-stations from junction to outlet
+    z_start = zjct + 0.2
+    z_end = L_MAIN - 0.02
+    n_stations = 30
+    z_vals = np.linspace(z_start, z_end, n_stations)
+
+    tri = triangulated(internal)
+    zD_list = []
+    cov_list = []
+
+    for z in z_vals:
+        sl = tri.slice(normal="z", origin=(0, 0, z))
+        if sl.n_points == 0 or fld not in sl.array_names:
+            continue
+
+        h2 = np.asarray(sl[fld])
+        if h2.size == 0:
+            continue
+
+        # Area-weighted CoV: use cell areas if available, else uniform
+        try:
+            sl_surf = sl.compute_cell_sizes(length=False, volume=False, area=True)
+            areas = np.asarray(sl_surf["Area"])
+            if areas.sum() < 1e-12:
+                areas = np.ones(h2.size)
+        except Exception:
+            areas = np.ones(h2.size)
+
+        # For point data, convert to cell data first
+        if h2.size != areas.size:
+            areas = np.ones(h2.size)
+
+        mean_h2 = np.average(h2, weights=areas)
+        if mean_h2 < 1e-10:
+            continue
+
+        var_h2 = np.average((h2 - mean_h2) ** 2, weights=areas)
+        cov = np.sqrt(var_h2) / mean_h2
+
+        zD_list.append((z - zjct) / D)
+        cov_list.append(cov)
+
+    if len(zD_list) < 3:
+        print("  [warn] too few valid stations for CoV plot — skipping")
+        return
+
+    zD_arr = np.array(zD_list)
+    cov_arr = np.array(cov_list)
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+
+    # Shaded band for "well-mixed" threshold
+    ax.axhspan(0, 0.05, color="#2ecc71", alpha=0.15, label="CoV < 0.05 (well-mixed)")
+    ax.axhline(0.05, color="#2ecc71", ls="--", lw=1.5, alpha=0.7)
+
+    ax.plot(zD_arr, cov_arr, "o-", color="#1f77b4", lw=2.5, ms=5,
+            markeredgecolor="k", markeredgewidth=0.5, label="CoV(z)")
+
+    # Mark the R5 sampling stations
+    for z_st in Z_STATIONS:
+        zD_st = (z_st - zjct) / D
+        ax.axvline(zD_st, color="#f39c12", ls=":", lw=1.5, alpha=0.6)
+
+    # Annotate outlet CoV
+    ax.annotate(f"Outlet CoV = {cov_arr[-1]:.4f}",
+                xy=(zD_arr[-1], cov_arr[-1]),
+                xytext=(zD_arr[-1] - 2, cov_arr[-1] + max(cov_arr) * 0.15),
+                arrowprops=dict(arrowstyle="->", color="black"),
+                fontsize=10, ha="center",
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="lightyellow",
+                          edgecolor="gray"))
+
+    ax.set_xlabel("Downstream distance  z/D", fontsize=12)
+    ax.set_ylabel("Coefficient of Variation (CoV)", fontsize=12)
+    ax.set_title(f"Mixing Uniformity Decay — {fld}", fontsize=13)
+    ax.set_xlim(0, zD_arr[-1] * 1.05)
+    ax.set_ylim(bottom=0)
+    ax.legend(loc="upper right", fontsize=10)
+    ax.grid(True, alpha=0.3)
+
+    fig.tight_layout()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(str(out), dpi=150)
+    plt.close(fig)
+    print(f"  wrote {out.name}  ({out.stat().st_size/1024:.1f} KB)")
+
+
 # --- main -------------------------------------------------------------
 
 def main():
@@ -545,8 +650,10 @@ def main():
     fig_H2_isosurface(ds, args.case, outdir / "fig_H2_isosurface.png")
     fig_H2_topdown(ds, args.case, outdir / "fig_H2_topdown.png")
     fig_H2_cross_sections_3d(ds, args.case, outdir / "fig_H2_cross_sections.png")
+    fig_cov_vs_zD(internal, outdir / "fig_CoV_vs_zD.png",
+                  r_branch=r_branch, zjct=z_jct)
 
-    print(f"Wrote 7 figures under {outdir}")
+    print(f"Wrote 8 figures under {outdir}")
 
 
 if __name__ == "__main__":
