@@ -49,6 +49,35 @@ doe/results_full/cases/*/[1-9]/
 doe/results_full/cases/*/_stash/
 doe/results_full/cases/case_*/postProcessing/
 
+# Same exclusions for all other DoE campaigns
+doe/results_full_30deg/cases/*/0.[0-9]*/
+doe/results_full_30deg/cases/*/[1-9]*/
+doe/results_full_30deg/cases/*/_stash/
+doe/results_full_30deg/cases/case_*/postProcessing/
+
+doe/results_full_30deg_bottom/*/0.[0-9]*/
+doe/results_full_30deg_bottom/*/[1-9]*/
+doe/results_full_30deg_bottom/*/_stash/
+doe/results_full_30deg_bottom/case_*/postProcessing/
+
+doe/results_full_90deg_bottom/*/0.[0-9]*/
+doe/results_full_90deg_bottom/*/[1-9]*/
+doe/results_full_90deg_bottom/*/_stash/
+doe/results_full_90deg_bottom/case_*/postProcessing/
+
+doe/results_full_120deg/cases/*/0.[0-9]*/
+doe/results_full_120deg/cases/*/[1-9]*/
+doe/results_full_120deg/cases/*/_stash/
+doe/results_full_120deg/cases/case_*/postProcessing/
+
+doe/results_full_60deg/cases/*/0.[0-9]*/
+doe/results_full_60deg/cases/*/[1-9]*/
+doe/results_full_60deg/cases/*/_stash/
+doe/results_full_60deg/cases/case_*/postProcessing/
+
+# triSurface STL files (regeneratable, 2-5 MB each)
+**/constant/triSurface/
+
 # Early validation runs (mesh independence study etc.) with huge time dirs.
 # Skip the ENTIRE cases_staging/ tree -- it pre-dates the DoE and duplicates
 # what the base template already provides.  (Hundreds of MB of dumped fields.)
@@ -87,3 +116,30 @@ doe/results_full/_test_*.png
 doe/results_full/case_07_H2_diagnostic.png
 doe/results_full/case_07_H2_gridsample.png
 doe/results_full/case_07_H2_merged3.png
+
+# ---- LaTeX build artefacts (outside report dir) -------------------------
+*.aux
+*.log
+*.out
+*.toc
+*.bbl
+*.blg
+*.synctex.gz
+!MTP Report/*.tex
+
+# ---- postProcessing tarballs (can be large) ------------------------------
+**/postProcessing.tar.gz
+
+# ---- generated PDFs (regeneratable from .tex) ----------------------------
+openfoam_guide.pdf
+simulation_guide.pdf
+simulation_guide_v2.pdf
+
+# ---- legacy handoff / context / guide files ------------------------------
+MTP-Work-handoff-check/
+book.md
+paper.md
+report/
+*.nav
+*.snm
+*.vrb
